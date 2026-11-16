@@ -1,0 +1,15 @@
+<view class="page login">
+  <view class="login__brand">
+    <view class="page-title">化妆师作品集 · 接单门户</view>
+    <view class="page-subtitle">登录后可发布作品、设置档期、接受邀约</view>
+  </view>
+
+  <button class="btn btn--primary btn--block" loading="{{loading}}" bindtap="handleWxLogin">
+    微信一键登录
+  </button>
+  <button class="btn btn--ghost btn--block login__skip" bindtap="handleSkip">先随便看看</button>
+
+  <view class="login__agreement">
+    登录即表示同意《用户协议》与《隐私政策》，协议页在 E1-08 落地。
+  </view>
+</view>

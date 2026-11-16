@@ -1,0 +1,25 @@
+{
+  "description": "化妆师作品集 + 接单门户 小程序",
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "wechat-markup",
+  "libVersion": "3.5.5",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "coverView": true,
+    "nodeModules": false,
+    "autoAudits": false,
+    "checkInvalidKey": true,
+    "checkSiteMap": true,
+    "uploadWithSourceMap": true
+  },
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "condition": {}
+}

@@ -1,0 +1,10 @@
+// 模型定义见任务拆解 V1.1 附录 C（13 张表），在 E2-01 落地。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}

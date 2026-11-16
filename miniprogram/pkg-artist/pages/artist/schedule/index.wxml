@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="page-title">档期日历</view>
+  <view class="page-subtitle">P-M08 · 月视图与三态切换在 E6-01 接入</view>
+
+  <view class="card">
+    <view class="card__title">状态图例</view>
+    <view class="legend">
+      <text wx:for="{{legends}}" wx:key="text" class="{{item.className}}">{{item.text}}</text>
+    </view>
+    <view class="card__desc">
+      点击日期切换状态后即时保存；订单接受时在同一事务内把对应日期写为「已排期」，
+      并由 (artist_id, date) 唯一索引兜底并发冲突。
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="empty">日历组件占位</view>
+  </view>
+</view>

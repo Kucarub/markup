@@ -1,0 +1,57 @@
+<view class="page">
+  <view class="page-title">设计 Token 与基础组件</view>
+  <view class="page-subtitle">来源：styles/tokens.wxss + styles/base.wxss（E1-07）</view>
+
+  <view class="card section">
+    <view class="card__title">色彩</view>
+    <view class="swatches">
+      <view class="swatch swatch--primary"></view>
+      <view class="swatch swatch--light"></view>
+      <view class="swatch swatch--dark"></view>
+      <view class="swatch swatch--page"></view>
+      <view class="swatch swatch--border"></view>
+    </view>
+    <view class="card__desc">主色 #C08552 · 浅 #E8C9A6 · 深 #9A6537</view>
+  </view>
+
+  <view class="card section">
+    <view class="card__title">按钮</view>
+    <button class="btn btn--primary btn--block gap">主按钮</button>
+    <button class="btn btn--block gap">次按钮</button>
+    <button class="btn btn--ghost btn--block gap">描边按钮</button>
+    <button class="btn btn--primary btn--sm gap" disabled>禁用状态</button>
+  </view>
+
+  <view class="card section">
+    <view class="card__title">输入框</view>
+    <input
+      class="input gap"
+      value="{{inputValue}}"
+      placeholder="请输入作品标题"
+      placeholder-class="input-placeholder"
+      bindinput="onInput"
+    />
+    <picker mode="date" value="{{dateValue}}" bindchange="onDateChange">
+      <view class="input gap picker">
+        <text class="{{dateValue ? '' : 'muted'}}">{{dateValue || '选择档期日期'}}</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="card section">
+    <view class="card__title">标签</view>
+    <view class="tags gap">
+      <text class="tag">擅长风格</text>
+      <text class="tag tag--success">已通过</text>
+      <text class="tag tag--warning">待审核</text>
+      <text class="tag tag--danger">已驳回</text>
+    </view>
+  </view>
+
+  <view class="card section">
+    <view class="card__title">卡片</view>
+    <view class="card__desc">
+      统一使用 --radius-md / --shadow-card / --space-md，列表间以 --space-sm 间距拼接。
+    </view>
+  </view>
+</view>

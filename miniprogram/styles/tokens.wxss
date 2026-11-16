@@ -1,0 +1,56 @@
+/**
+ * 设计 token：与 admin/src/styles/tokens.scss 同名同值。
+ * 小程序换算：设计稿 375px → 750rpx，1px = 2rpx。
+ */
+page {
+  /* 品牌色 */
+  --color-primary: #c08552;
+  --color-primary-light: #e8c9a6;
+  --color-primary-dark: #9a6537;
+
+  /* 语义色 */
+  --color-success: #2e7d32;
+  --color-warning: #ed6c02;
+  --color-danger: #d32f2f;
+  --color-info: #6b6b6b;
+
+  /* 文本 */
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #6b6b6b;
+  --color-text-placeholder: #9e9e9e;
+  --color-text-inverse: #ffffff;
+
+  /* 背景与描边 */
+  --color-bg-page: #f7f5f2;
+  --color-bg-card: #ffffff;
+  --color-border: #ededed;
+  --color-divider: #f2f2f2;
+
+  /* 字号（px × 2 = rpx） */
+  --font-size-xs: 24rpx;
+  --font-size-sm: 28rpx;
+  --font-size-md: 32rpx;
+  --font-size-lg: 36rpx;
+  --font-size-xl: 44rpx;
+  --font-size-xxl: 56rpx;
+
+  /* 间距 */
+  --space-xs: 8rpx;
+  --space-sm: 16rpx;
+  --space-md: 32rpx;
+  --space-lg: 48rpx;
+  --space-xl: 64rpx;
+
+  /* 圆角 */
+  --radius-sm: 16rpx;
+  --radius-md: 24rpx;
+  --radius-lg: 40rpx;
+  --radius-pill: 999rpx;
+
+  /* 阴影 */
+  --shadow-card: 0 8rpx 32rpx rgba(31, 31, 31, 0.06);
+
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}

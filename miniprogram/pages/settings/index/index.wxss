@@ -1,0 +1,21 @@
+.list {
+  padding: 0 var(--space-md);
+}
+
+.list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 104rpx;
+  font-size: var(--font-size-sm);
+  border-bottom: 2rpx solid var(--color-divider);
+}
+
+.list__item:last-child {
+  border-bottom: none;
+}
+
+.logout {
+  margin-top: var(--space-md);
+  color: var(--color-danger);
+}

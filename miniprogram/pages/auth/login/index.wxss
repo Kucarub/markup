@@ -1,0 +1,19 @@
+.login {
+  padding-top: 160rpx;
+}
+
+.login__brand {
+  margin-bottom: var(--space-xl);
+}
+
+.login__skip {
+  margin-top: var(--space-sm);
+}
+
+.login__agreement {
+  margin-top: var(--space-xl);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-placeholder);
+  text-align: center;
+  line-height: 1.7;
+}

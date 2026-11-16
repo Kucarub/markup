@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="row row--between home-head">
+    <view>
+      <view class="page-title">你好</view>
+      <view class="page-subtitle">当前角色：{{roleText}}</view>
+    </view>
+    <button class="btn btn--sm btn--ghost" bindtap="goRole">切换角色</button>
+  </view>
+
+  <view class="card">
+    <view class="card__title">化妆师工作台</view>
+    <view class="card__desc">作品主页、档期日历、接单中心将在 E5 / E6 / E9 接入。</view>
+    <button class="btn btn--primary btn--block action" bindtap="goArtistWorkspace">进入档期日历</button>
+  </view>
+
+  <view class="card">
+    <view class="card__title">商家找化妆师</view>
+    <view class="card__desc">搜索列表、筛选、邀约将在 E8 / E9 接入。</view>
+    <button class="btn btn--block action" bindtap="goMerchantSearch">进入搜索列表</button>
+  </view>
+
+  <view class="card">
+    <view class="card__title">待办</view>
+    <view class="empty">暂无待处理事项</view>
+  </view>
+</view>

@@ -1,0 +1,13 @@
+<view class="page">
+  <view class="page-title">化妆师入驻</view>
+  <view class="page-subtitle">P-M03 · 表单字段与提审流程在 E4-02 接入</view>
+
+  <view class="card">
+    <view class="card__title">待接入内容</view>
+    <view class="card__desc">
+      昵称、从业年限、擅长风格标签、所在区域、作品首图、身份与资质材料；提交后进入「待审核」，
+      由运营后台 P-O03 审核。
+    </view>
+    <button class="btn btn--primary btn--block" bindtap="goSchedule">查看档期日历占位</button>
+  </view>
+</view>

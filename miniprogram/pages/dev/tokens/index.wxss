@@ -1,0 +1,51 @@
+.section {
+  margin-top: var(--space-md);
+}
+
+.gap {
+  margin-top: var(--space-sm);
+}
+
+.swatches {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.swatch {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--radius-sm);
+  border: 2rpx solid var(--color-border);
+}
+
+.swatch--primary {
+  background: var(--color-primary);
+}
+
+.swatch--light {
+  background: var(--color-primary-light);
+}
+
+.swatch--dark {
+  background: var(--color-primary-dark);
+}
+
+.swatch--page {
+  background: var(--color-bg-page);
+}
+
+.swatch--border {
+  background: var(--color-border);
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}

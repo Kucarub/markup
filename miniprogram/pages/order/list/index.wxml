@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="card">
+    <view class="card__title">我的订单</view>
+    <view class="card__desc">订单列表与状态流转在 E10 接入（待确认 → 已接受 → 已完成 / 已取消）。</view>
+    <view class="empty">暂无订单</view>
+    <button class="btn btn--primary btn--block" bindtap="goHome">去首页看看</button>
+  </view>
+</view>

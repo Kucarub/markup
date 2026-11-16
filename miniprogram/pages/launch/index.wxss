@@ -1,0 +1,12 @@
+.hero {
+  padding: var(--space-lg) var(--space-sm) var(--space-md);
+}
+
+.status-row {
+  justify-content: space-between;
+  margin-top: var(--space-sm);
+}
+
+.entry-row {
+  margin-top: var(--space-sm);
+}

@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="hero">
+    <view class="page-title">化妆师作品集 · 接单门户</view>
+    <view class="page-subtitle">单城市试点 · 小程序工程骨架（E1-02）</view>
+  </view>
+
+  <view class="card">
+    <view class="card__title">环境自检</view>
+    <view class="card__desc">调用 GET /api/ping 验证请求封装、域名与统一响应体。</view>
+    <view class="row row--gap status-row">
+      <text class="tag tag--success">{{apiStatus}}</text>
+      <button class="btn btn--sm btn--ghost" loading="{{checking}}" bindtap="onPing">检测服务</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card__title">分包入口</view>
+    <view class="card__desc">化妆师端与商家端各自独立分包，按需加载。</view>
+    <view class="row row--gap entry-row">
+      <button class="btn btn--primary btn--block" bindtap="goArtist">化妆师端</button>
+      <button class="btn btn--block" bindtap="goMerchant">商家端</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card__title">开发辅助</view>
+    <view class="row row--gap entry-row">
+      <button class="btn btn--sm btn--ghost" bindtap="goLogin">登录页</button>
+      <button class="btn btn--sm btn--ghost" bindtap="goTokens">设计 token 示例</button>
+    </view>
+  </view>
+</view>

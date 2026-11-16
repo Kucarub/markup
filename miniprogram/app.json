@@ -1,0 +1,50 @@
+{
+  "pages": [
+    "pages/launch/index",
+    "pages/home/index",
+    "pages/order/list/index",
+    "pages/settings/index/index",
+    "pages/auth/login/index",
+    "pages/auth/role/index",
+    "pages/dev/tokens/index"
+  ],
+  "subPackages": [
+    {
+      "root": "pkg-artist",
+      "name": "artist",
+      "pages": ["pages/artist/apply/index", "pages/artist/schedule/index"]
+    },
+    {
+      "root": "pkg-merchant",
+      "name": "merchant",
+      "pages": ["pages/merchant/apply/index", "pages/search/list/index"]
+    }
+  ],
+  "preloadRule": {
+    "pages/home/index": {
+      "network": "all",
+      "packages": ["artist", "merchant"]
+    }
+  },
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "化妆师接单",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F7F5F2"
+  },
+  "tabBar": {
+    "color": "#9E9E9E",
+    "selectedColor": "#C08552",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/order/list/index", "text": "订单" },
+      { "pagePath": "pages/settings/index/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

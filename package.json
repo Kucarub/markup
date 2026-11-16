@@ -1,0 +1,25 @@
+{
+  "name": "wechat-markup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "化妆师作品集 + 接单门户（小程序 / Node API / 运营后台）",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "eslint miniprogram server/src admin/src --ext .js,.ts,.vue",
+    "lint:fix": "eslint miniprogram server/src admin/src --ext .js,.ts,.vue --fix",
+    "format": "prettier --write \"miniprogram/**/*.{js,json,wxml,wxss}\" \"server/**/*.{ts,json,prisma}\" \"admin/**/*.{ts,vue,json,scss}\" \"*.{md,json}\"",
+    "format:check": "prettier --check \"miniprogram/**/*.{js,json,wxml,wxss}\" \"server/**/*.{ts,json,prisma}\" \"admin/**/*.{ts,vue,json,scss}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vue-eslint-parser": "^9.4.3"
+  }
+}

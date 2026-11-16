@@ -1,0 +1,161 @@
+/* 基础组件样式：按钮 / 输入框 / 卡片 / 标签，示例见 pages/dev/tokens/index */
+
+/* ---------- 按钮 ---------- */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-md);
+  line-height: 1;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border: 2rpx solid var(--color-border);
+}
+
+.btn::after {
+  border: none;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary-light);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--sm {
+  height: 64rpx;
+  padding: 0 var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+}
+
+/* ---------- 输入框 ---------- */
+.input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 var(--space-md);
+  box-sizing: border-box;
+  background: var(--color-bg-card);
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.input--textarea {
+  height: 200rpx;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.input-placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-md);
+}
+
+.card + .card {
+  margin-top: var(--space-sm);
+}
+
+.card__title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.card__desc {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* ---------- 标签 ---------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 44rpx;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-dark);
+  background: rgba(192, 133, 82, 0.12);
+}
+
+.tag--success {
+  color: var(--color-success);
+  background: rgba(46, 125, 50, 0.12);
+}
+
+.tag--warning {
+  color: var(--color-warning);
+  background: rgba(237, 108, 2, 0.12);
+}
+
+.tag--danger {
+  color: var(--color-danger);
+  background: rgba(211, 47, 47, 0.12);
+}
+
+/* ---------- 通用布局 ---------- */
+.page {
+  min-height: 100vh;
+  padding: var(--space-md);
+  box-sizing: border-box;
+}
+
+.page-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.page-subtitle {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row--between {
+  justify-content: space-between;
+}
+
+.row--gap {
+  gap: var(--space-sm);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.empty {
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  color: var(--color-text-placeholder);
+  font-size: var(--font-size-sm);
+}
