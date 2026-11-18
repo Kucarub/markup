@@ -7,7 +7,7 @@ require('dotenv').config()
 const jwt = require('jsonwebtoken')
 const { PrismaClient } = require('@prisma/client')
 
-const BASE = process.env.VERIFY_BASE || 'http://127.0.0.1:3100'
+const BASE = process.env.VERIFY_BASE || 'http://127.0.0.1:3000'
 const prisma = new PrismaClient()
 
 let passed = 0

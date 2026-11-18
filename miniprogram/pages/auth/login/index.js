@@ -65,12 +65,32 @@ Page({
     wx.showToast({ title: `${doc}页面将在后续版本开放`, icon: 'none' })
   },
 
-  handleWxLogin() {
+  /** 未勾选协议时点击登录：只提示，不拉起授权面板 */
+  handleLoginTap() {
     if (this.data.loading) return
-    if (!this.data.agreed) {
-      wx.showToast({ title: '请先阅读并同意用户协议', icon: 'none' })
-      return
+    wx.showToast({ title: '请先阅读并同意用户协议', icon: 'none' })
+  },
+
+  /** 登录 + 手机号一次授权：getPhoneNumber 面板返回后进入统一登录流程 */
+  handleLoginWithPhone(event) {
+    if (this.data.loading) return
+    const detail = event.detail || {}
+    const phoneCode = detail.code || ''
+    if (!phoneCode) {
+      // 用户拒绝或小程序未开通手机号快速验证权限：不阻塞登录，稍后可在「我的」绑定
+      console.warn('[phone] 未授权手机号', detail)
+      const noPermission = /permission|not support|invalid/i.test(detail.errMsg || '')
+      wx.showToast({
+        title: noPermission ? '未开通手机号权限，已跳过绑定' : '未授权手机号，可稍后绑定',
+        icon: 'none',
+      })
     }
+    this.runLogin(phoneCode)
+  },
+
+  /** 统一登录流程：wx.login → 服务端换 token → 新用户写角色 → 绑定手机号 → 按入驻状态分流 */
+  runLogin(phoneCode) {
+    if (this.data.loading) return
     this.setData({ loading: true })
 
     wxLoginCode()
@@ -90,14 +110,29 @@ Page({
         this.session = session
         setSession(session)
         clearProfileCache()
+        if (!phoneCode || session.phoneBound) return session
+        // 手机号绑定失败不阻塞登录，降级为「绑定手机号」卡片
+        return request
+          .post('/api/auth/phone', { code: phoneCode })
+          .then((res) => Object.assign({}, session, { phoneBound: true, phoneMasked: res.phoneMasked }))
+          .catch(() => session)
+      })
+      .then((session) => {
+        this.session = session
         if (!session.phoneBound) {
-          this.setData({ needPhone: true, phoneDenied: false })
+          this.setData({ needPhone: true, phoneDenied: true })
           return
         }
         routeAfterAuth(session)
       })
-      .catch(() => {
-        wx.showToast({ title: '微信登录失败，请重试', icon: 'none' })
+      .catch((err) => {
+        // 区分网络不可达与业务失败，便于真机排查（真机不能用 127.0.0.1）
+        const detail = (err && (err.errMsg || err.message)) || ''
+        console.error('[login] 微信登录失败', err)
+        wx.showToast({
+          title: /timeout|fail|domain/i.test(detail) ? '无法连接服务器，请检查网络与接口地址' : '微信登录失败，请重试',
+          icon: 'none',
+        })
       })
       .then(() => {
         this.setData({ loading: false })
@@ -106,10 +141,17 @@ Page({
 
   /** getPhoneNumber 授权回调（E3-02）：拒绝时保留「重新授权」入口，不阻塞浏览 */
   handleGetPhone(event) {
-    const { code } = event.detail || {}
+    const detail = event.detail || {}
+    const { code, errMsg } = detail
     if (!code) {
+      // 未返回 code：可能是用户拒绝，也可能是小程序未开通「手机号快速验证」权限 / 基础库过低
+      console.warn('[phone] getPhoneNumber 未返回 code', detail)
+      const noPermission = /permission|not support|invalid/i.test(errMsg || '')
       this.setData({ phoneDenied: true })
-      wx.showToast({ title: '未授权手机号，可稍后再绑定', icon: 'none' })
+      wx.showToast({
+        title: noPermission ? '当前小程序未开通手机号快速验证权限' : '未授权手机号，可稍后再绑定',
+        icon: 'none',
+      })
       return
     }
     request

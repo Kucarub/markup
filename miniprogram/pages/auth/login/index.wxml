@@ -67,7 +67,22 @@
   </view>
 
   <view wx:if="{{!needPhone}}" class="welcome__actions">
-    <button class="btn btn--primary welcome__login" loading="{{loading}}" bindtap="handleWxLogin">
+    <!-- 已勾选协议：登录按钮直接携带 getPhoneNumber，一次点击完成登录 + 手机号授权 -->
+    <button
+      wx:if="{{agreed}}"
+      class="btn btn--primary welcome__login"
+      loading="{{loading}}"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="handleLoginWithPhone"
+    >
+      微信一键登录
+    </button>
+    <button
+      wx:else
+      class="btn btn--primary welcome__login"
+      loading="{{loading}}"
+      bindtap="handleLoginTap"
+    >
       微信一键登录
     </button>
 
