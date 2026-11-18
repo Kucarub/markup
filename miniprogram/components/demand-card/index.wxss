@@ -1,0 +1,131 @@
+.demand-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 30rpx;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.demand-card--active {
+  transform: scale(0.99);
+  background: #fdfbfb;
+}
+
+.demand-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.demand-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  margin-bottom: 10rpx;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 20rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demand-card__title {
+  overflow: hidden;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demand-meta {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 18rpx;
+  color: var(--color-text-secondary);
+  font-size: 21rpx;
+}
+
+.demand-meta__dot {
+  width: 4rpx;
+  height: 4rpx;
+  border-radius: 50%;
+  background: var(--color-text-placeholder);
+}
+
+.demand-card__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid var(--color-divider);
+}
+
+.pay {
+  display: flex;
+  align-items: baseline;
+  color: var(--color-primary);
+  font-size: 42rpx;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay__unit {
+  margin-right: 4rpx;
+  font-size: 24rpx;
+}
+
+.pay__suffix {
+  margin-left: 4rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+}
+
+.location {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 19rpx;
+}
+
+.location__row {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.deadline {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx 0 0 0;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  font-size: 18rpx;
+}
+
+.deadline--urgent {
+  background: #fff3dd;
+  color: #bd7200;
+}
+
+.demand-card--compact {
+  padding: 28rpx;
+}
+
+.demand-card--compact .demand-card__foot {
+  margin-top: 22rpx;
+}

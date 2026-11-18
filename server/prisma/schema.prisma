@@ -1,4 +1,6 @@
-// 模型定义见任务拆解 V1.1 附录 C（13 张表），在 E2-01 落地。
+// 数据模型见任务拆解 V1.1 附录 C。
+// 表名与字段统一映射为 snake_case，模型/字段保持 camelCase 便于 TS 侧使用。
+// 状态类字段使用 VarChar + 注释约定取值，校验交给 zod（避免 MySQL ENUM 迭代时频繁迁移）。
 
 generator client {
   provider = "prisma-client-js"
@@ -7,4 +9,334 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+/// 微信用户与登录态（M/B 共用）
+model UserAuth {
+  id          Int       @id @default(autoincrement())
+  openid      String    @unique @db.VarChar(64)
+  unionid     String?   @db.VarChar(64)
+  /// AES-256-GCM 密文，禁止明文落库
+  phoneCipher String?   @map("phone_cipher") @db.VarChar(255)
+  /// artist | merchant，未选角色时为 null
+  role        String?   @db.VarChar(16)
+  /// active | disabled
+  status      String    @default("active") @db.VarChar(16)
+  nickname    String?   @db.VarChar(64)
+  avatarUrl   String?   @map("avatar_url") @db.VarChar(512)
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  artist        Artist?
+  merchant      Merchant?
+  notifications Notification[]
+  reports       Report[]
+
+  @@map("user_auth")
+}
+
+/// 化妆师入驻资料
+model Artist {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique @map("user_id")
+  name         String    @db.VarChar(32)
+  city         String    @db.VarChar(32)
+  district     String?   @db.VarChar(32)
+  years        Int       @default(0)
+  /// 擅长风格 code 数组
+  styles       Json?
+  intro        String?   @db.Text
+  /// AES-256-GCM 密文
+  idCardCipher String?   @map("id_card_cipher") @db.VarChar(255)
+  /// pending | approved | rejected | disabled
+  status       String    @default("pending") @db.VarChar(16)
+  rejectReason String?   @map("reject_reason") @db.VarChar(255)
+  lat          Float?
+  lng          Float?
+  auditAt      DateTime? @map("audit_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user        UserAuth          @relation(fields: [userId], references: [id])
+  portfolios  ArtistPortfolio[]
+  schedules   ArtistSchedule[]
+  invitations Invitation[]
+  orders      TradeOrder[]
+
+  @@index([status, city])
+  @@map("artist")
+}
+
+/// 化妆师作品
+model ArtistPortfolio {
+  id           Int      @id @default(autoincrement())
+  artistId     Int      @map("artist_id")
+  /// image | video
+  type         String   @default("image") @db.VarChar(16)
+  url          String   @db.VarChar(1024)
+  coverUrl     String?  @map("cover_url") @db.VarChar(1024)
+  /// 防盗水印版本（E14-02）
+  watermarkUrl String?  @map("watermark_url") @db.VarChar(1024)
+  title        String   @db.VarChar(64)
+  styles       Json?
+  sort         Int      @default(0)
+  /// pending | online | offline | rejected
+  status       String   @default("pending") @db.VarChar(16)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, sort])
+  @@map("artist_portfolio")
+}
+
+/// 档期（available / booked / rest）
+model ArtistSchedule {
+  id        Int      @id @default(autoincrement())
+  artistId  Int      @map("artist_id")
+  date      DateTime @db.Date
+  /// available | booked | rest
+  state     String   @default("available") @db.VarChar(16)
+  /// 被哪笔订单占用（booked 时回填）
+  orderId   Int?     @map("order_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, date], map: "uniq_artist_date")
+  @@index([date, state])
+  @@map("artist_schedule")
+}
+
+/// 商家入驻资料
+model Merchant {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @unique @map("user_id")
+  shopName      String    @map("shop_name") @db.VarChar(64)
+  /// studio | wedding | photo | other
+  type          String?   @db.VarChar(16)
+  address       String?   @db.VarChar(255)
+  lat           Float?
+  lng           Float?
+  /// AES-256-GCM 密文
+  licenseCipher String?   @map("license_cipher") @db.VarChar(255)
+  /// pending | approved | rejected | disabled
+  status        String    @default("pending") @db.VarChar(16)
+  rejectReason  String?   @map("reject_reason") @db.VarChar(255)
+  auditAt       DateTime? @map("audit_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user        UserAuth     @relation(fields: [userId], references: [id])
+  invitations Invitation[]
+  orders      TradeOrder[]
+
+  @@index([status])
+  @@map("merchant")
+}
+
+/// 商家发起的邀约
+model Invitation {
+  id            Int      @id @default(autoincrement())
+  merchantId    Int      @map("merchant_id")
+  artistId      Int      @map("artist_id")
+  /// bridal | daily | event | photo（服务类型）
+  serviceType   String   @map("service_type") @db.VarChar(16)
+  serviceDate   DateTime @map("service_date") @db.Date
+  address       String   @db.VarChar(255)
+  headcount     Int      @default(1)
+  budgetMin     Int      @map("budget_min")
+  budgetMax     Int      @map("budget_max")
+  remark        String?  @db.Text
+  /// pending | accepted | declined | expired | cancelled
+  status        String   @default("pending") @db.VarChar(16)
+  declineReason String?  @map("decline_reason") @db.VarChar(255)
+  /// user | admin
+  source        String   @default("user") @db.VarChar(8)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  merchant Merchant    @relation(fields: [merchantId], references: [id])
+  artist   Artist      @relation(fields: [artistId], references: [id])
+  order    TradeOrder?
+
+  @@index([artistId, status])
+  @@index([merchantId, status])
+  @@map("invitation")
+}
+
+/// 订单状态机（原 order 为 MySQL 保留字，统一改名 trade_order）
+model TradeOrder {
+  id                Int       @id @default(autoincrement())
+  invitationId      Int       @unique @map("invitation_id")
+  artistId          Int       @map("artist_id")
+  merchantId        Int       @map("merchant_id")
+  /// pending | accepted | in_service | finished | cancelled
+  status            String    @default("pending") @db.VarChar(16)
+  artistConfirmed   Boolean   @default(false) @map("artist_confirmed")
+  merchantConfirmed Boolean   @default(false) @map("merchant_confirmed")
+  finishTime        DateTime? @map("finish_time")
+  cancelReason      String?   @map("cancel_reason") @db.VarChar(255)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  invitation Invitation @relation(fields: [invitationId], references: [id])
+  artist     Artist     @relation(fields: [artistId], references: [id])
+  merchant   Merchant   @relation(fields: [merchantId], references: [id])
+
+  @@index([status])
+  @@index([artistId, status])
+  @@index([merchantId, status])
+  @@map("trade_order")
+}
+
+/// 审核操作流水
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  /// artist | merchant | portfolio | report
+  targetType String   @map("target_type") @db.VarChar(16)
+  targetId   Int      @map("target_id")
+  /// approve | reject | offline | restore
+  action     String   @db.VarChar(16)
+  reason     String?  @db.VarChar(255)
+  operatorId Int      @map("operator_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  operator AdminUser @relation(fields: [operatorId], references: [id])
+
+  @@index([targetType, targetId])
+  @@map("audit_log")
+}
+
+/// 后台账号
+model AdminUser {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(32)
+  passwordHash String    @map("password_hash") @db.VarChar(128)
+  /// super | admin | auditor
+  role         String    @default("admin") @db.VarChar(16)
+  /// active | disabled
+  status       String    @default("active") @db.VarChar(16)
+  failCount    Int       @default(0) @map("fail_count")
+  lockedUntil  DateTime? @map("locked_until")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@map("admin_user")
+}
+
+/// 订阅消息发送记录
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  /// invitation | order_result | ...
+  type       String    @db.VarChar(32)
+  payload    Json?
+  /// pending | sent | failed
+  status     String    @default("pending") @db.VarChar(16)
+  sentAt     DateTime? @map("sent_at")
+  failReason String?   @map("fail_reason") @db.VarChar(255)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notification")
+}
+
+/// 举报
+model Report {
+  id             Int      @id @default(autoincrement())
+  /// portfolio | artist | merchant
+  targetType     String   @map("target_type") @db.VarChar(16)
+  targetId       Int      @map("target_id")
+  reason         String   @db.VarChar(255)
+  reporterId     Int      @map("reporter_id")
+  /// 按天去重：同一用户同一目标每天只能举报一次
+  date           DateTime @db.Date
+  /// pending | handled | rejected
+  status         String   @default("pending") @db.VarChar(16)
+  handleOperator Int?     @map("handle_operator")
+  handleResult   String?  @map("handle_result") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  reporter UserAuth @relation(fields: [reporterId], references: [id])
+
+  @@unique([reporterId, targetType, targetId, date], map: "uniq_reporter_target_date")
+  @@index([status])
+  @@map("report")
+}
+
+/// 埋点事件（漏斗与看板数据源）
+model EventLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  /// artist | merchant | admin
+  role      String?  @db.VarChar(16)
+  event     String   @db.VarChar(64)
+  props     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([event, createdAt])
+  @@map("event_log")
+}
+
+/// 每日汇总指标
+model StatsDaily {
+  id             Int      @id @default(autoincrement())
+  date           DateTime @unique @db.Date
+  registrations  Int      @default(0)
+  artistPageUv   Int      @default(0) @map("artist_page_uv")
+  invitations    Int      @default(0)
+  matches        Int      @default(0)
+  matchRate      Float    @default(0) @map("match_rate")
+  retentionD7    Float    @default(0) @map("retention_d7")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("stats_daily")
+}
+
+/// 对象存储文件记录（私有桶；访问必须走签名 URL）
+model FileObject {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  /// portfolio | avatar | license | id_card | report
+  scene     String   @db.VarChar(16)
+  bucket    String   @db.VarChar(64)
+  objectKey String   @unique @map("object_key") @db.VarChar(180)
+  /// 落库路径或 CDN 地址，私有桶不直接对外
+  url       String?  @db.VarChar(1024)
+  size      Int      @default(0)
+  mimeType  String   @map("mime_type") @db.VarChar(64)
+  /// pending | uploaded | deleted
+  status    String   @default("pending") @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("file_object")
+}
+
+/// 字典（风格 / 城市等），E2-02 种子写入
+model DictItem {
+  id        Int      @id @default(autoincrement())
+  /// style | city | service_type | merchant_type
+  type      String   @db.VarChar(32)
+  code      String   @db.VarChar(64)
+  label     String   @db.VarChar(64)
+  sort      Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([type, code])
+  @@index([type, sort])
+  @@map("dict_item")
 }

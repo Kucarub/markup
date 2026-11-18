@@ -2,6 +2,9 @@ import { createApp } from './app'
 import { env } from './config/env'
 import { getPrisma } from './lib/prisma'
 import { redis } from './lib/redis'
+import { ensureStorageDir } from './services/storage'
+
+ensureStorageDir()
 
 const app = createApp()
 

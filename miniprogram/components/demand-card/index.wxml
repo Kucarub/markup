@@ -1,0 +1,41 @@
+<view
+  class="demand-card {{compact ? 'demand-card--compact' : ''}}"
+  hover-class="demand-card--active"
+  hover-stay-time="80"
+  bindtap="onTap"
+>
+  <view class="demand-card__head">
+    <view class="demand-card__main">
+      <view class="eyebrow">{{demand.merchant}}</view>
+      <view class="demand-card__title">{{demand.title}}</view>
+    </view>
+    <view class="tag tag--{{demand.statusTone}}">{{demand.status}}</view>
+  </view>
+
+  <view class="demand-meta">
+    <text>{{demand.occasion}}</text>
+    <view class="demand-meta__dot"></view>
+    <text>{{demand.people}} 人</text>
+    <view class="demand-meta__dot"></view>
+    <text>{{demand.duration}}</text>
+  </view>
+
+  <view class="demand-card__foot">
+    <view class="pay">
+      <text class="pay__unit">¥</text>
+      <text>{{demand.pay}}</text>
+      <text class="pay__suffix">/{{demand.payUnit}}</text>
+    </view>
+    <view class="location">
+      <view class="location__row">
+        <image class="icon icon--xs" src="/assets/icons/location-gray.svg" mode="aspectFit" />
+        <text>{{demand.district}} · {{demand.distance}}</text>
+      </view>
+      <view>{{demand.date}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!compact}}" class="deadline {{demand.status === '即将截止' ? 'deadline--urgent' : ''}}">
+    {{demand.deadline}}
+  </view>
+</view>

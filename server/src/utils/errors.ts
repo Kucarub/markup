@@ -27,4 +27,20 @@ export class AppError extends Error {
   static notFound(message = '资源不存在') {
     return new AppError(ErrorCode.NOT_FOUND, message)
   }
+
+  static conflict(message = '数据已存在或状态冲突') {
+    return new AppError(ErrorCode.CONFLICT, message)
+  }
+
+  static accountLocked(message = '账号已锁定，请稍后再试') {
+    return new AppError(ErrorCode.ACCOUNT_LOCKED, message)
+  }
+
+  static fileTooLarge(message = '文件超过大小限制') {
+    return new AppError(ErrorCode.FILE_TOO_LARGE, message)
+  }
+
+  static unsupportedMedia(message = '不支持的文件类型') {
+    return new AppError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, message)
+  }
 }

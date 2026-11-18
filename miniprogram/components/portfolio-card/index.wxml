@@ -1,0 +1,20 @@
+<view class="portfolio-card" hover-class="portfolio-card--active" hover-stay-time="80" bindtap="onTap">
+  <view class="cover cover--{{item.ratio}}">
+    <image class="cover__img" src="{{item.image}}" mode="aspectFill" lazy-load />
+    <view class="photo-count">
+      <image class="icon icon--xs" src="/assets/icons/photo.svg" mode="aspectFit" />
+      <text>{{item.count}}</text>
+    </view>
+  </view>
+
+  <view class="portfolio-body">
+    <view class="portfolio-title">{{item.title}}</view>
+    <view class="portfolio-tags">
+      <view class="tag tag--brand" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</view>
+    </view>
+    <view class="portfolio-status">
+      <text>{{item.category}}</text>
+      <view class="tag tag--{{item.statusTone}}">{{item.status}}</view>
+    </view>
+  </view>
+</view>

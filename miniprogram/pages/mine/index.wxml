@@ -1,0 +1,79 @@
+<view class="screen screen--with-tab mine-page">
+  <view class="mine-hero">
+    <view class="mine-heading">
+      <text class="kicker">PROFILE</text>
+      <view class="page-heading">我的</view>
+    </view>
+
+    <view class="mine-profile">
+      <view class="avatar avatar--lg">
+        <image class="avatar__img" src="{{profile.avatar}}" mode="aspectFill" />
+        <view class="level-badge">{{profile.level}}</view>
+      </view>
+      <view class="mine-profile__copy">
+        <view class="mine-name">{{profile.name}}</view>
+        <view class="mine-desc">{{profile.city}} · 成长中的专业化妆师</view>
+      </view>
+      <view class="mine-edit" bindtap="onEditProfile">
+        <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="mine-progress">
+      <view class="mine-progress__row">
+        <text>资料完整度</text>
+        <text class="mine-progress__value">{{profile.completeness}}%</text>
+      </view>
+      <view class="mine-progress__bar">
+        <view class="mine-progress__fill" style="width: {{profile.completeness}}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="mine-content">
+    <view class="mine-stats">
+      <view
+        wx:for="{{stats}}"
+        wx:key="key"
+        class="mine-stat"
+        data-key="{{item.key}}"
+        bindtap="onStatTap"
+      >
+        <text class="mine-stat__value">{{item.value}}</text>
+        <text class="mine-stat__label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <view class="menu-card">
+      <view
+        wx:for="{{menu}}"
+        wx:key="key"
+        class="menu-item {{item.separator ? 'menu-item--separator' : ''}}"
+        data-key="{{item.key}}"
+        data-label="{{item.label}}"
+        bindtap="onMenuTap"
+      >
+        <view class="menu-icon">
+          <image class="icon icon--sm" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" />
+        </view>
+        <text class="menu-label">{{item.label}}</text>
+        <text wx:if="{{item.badge}}" class="menu-badge">{{item.badge}}</text>
+        <text wx:if="{{item.note}}" class="menu-note">{{item.note}}</text>
+        <image class="icon icon--xs menu-arrow" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="growth-note">
+      <image class="icon icon--md growth-note__icon" src="/assets/icons/heart.svg" mode="aspectFit" />
+      <view class="growth-note__copy">
+        <text class="growth-note__title">每一次认真练习，都在积累专业</text>
+        <text class="growth-note__desc">继续完善作品，你会被更多商家看到</text>
+      </view>
+    </view>
+
+    <view class="logout-btn" bindtap="onLogout">
+      <image class="icon icon--sm" src="/assets/icons/logout.svg" mode="aspectFit" />
+      <text>退出登录</text>
+    </view>
+  </view>
+</view>

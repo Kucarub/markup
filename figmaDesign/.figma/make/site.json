@@ -1,0 +1,10 @@
+{
+  "description": "Create and explore multiple interface designs based on a supplied specification, helping designers visualize requirements as clear, consistent screen concepts.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

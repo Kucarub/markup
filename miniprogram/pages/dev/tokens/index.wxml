@@ -11,7 +11,7 @@
       <view class="swatch swatch--page"></view>
       <view class="swatch swatch--border"></view>
     </view>
-    <view class="card__desc">主色 #C08552 · 浅 #E8C9A6 · 深 #9A6537</view>
+    <view class="card__desc">主色 #B4566E · 浅 #C96D84 · 深 #96465B · 底 #F7E7EC / #FCF5F7</view>
   </view>
 
   <view class="card section">
@@ -41,10 +41,11 @@
   <view class="card section">
     <view class="card__title">标签</view>
     <view class="tags gap">
-      <text class="tag">擅长风格</text>
+      <text class="tag tag--brand">擅长风格</text>
       <text class="tag tag--success">已通过</text>
       <text class="tag tag--warning">待审核</text>
       <text class="tag tag--danger">已驳回</text>
+      <text class="tag tag--neutral">草稿</text>
     </view>
   </view>
 

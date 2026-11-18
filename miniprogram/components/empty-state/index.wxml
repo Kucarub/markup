@@ -1,0 +1,16 @@
+<view class="empty-state">
+  <view class="illustration">
+    <view class="empty-card">
+      <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
+      <view class="line"></view>
+      <view class="line line--short"></view>
+    </view>
+    <view class="filter">
+      <image class="icon icon--sm" src="/assets/icons/filter-white.svg" mode="aspectFit" />
+    </view>
+  </view>
+
+  <view class="empty-title">{{title}}</view>
+  <view class="empty-desc">{{description}}</view>
+  <view wx:if="{{action}}" class="btn btn--secondary" bindtap="onAction">{{action}}</view>
+</view>

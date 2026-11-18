@@ -1,0 +1,47 @@
+<view class="screen screen--with-tab">
+  <view class="portfolio-top">
+    <view class="page-title-row">
+      <view>
+        <text class="kicker">MY WORK</text>
+        <view class="page-heading">作品集</view>
+      </view>
+      <view class="btn btn--primary btn--sm create-btn" bindtap="onCreate">
+        <image class="icon icon--xs" src="/assets/icons/plus.svg" mode="aspectFit" />
+        <text>新建作品集</text>
+      </view>
+    </view>
+
+    <scroll-view class="segment-control" scroll-x show-scrollbar="{{false}}">
+      <view
+        wx:for="{{categories}}"
+        wx:key="*this"
+        class="segment {{category === item ? 'segment--active' : ''}}"
+        data-name="{{item}}"
+        bindtap="onSelectCategory"
+      >
+        {{item}}
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="portfolio-content">
+    <view class="portfolio-summary">
+      <text>{{list.length}} 组作品</text>
+      <text>最近更新：今天</text>
+    </view>
+
+    <view wx:if="{{list.length}}" class="portfolio-grid">
+      <view class="portfolio-cell" wx:for="{{list}}" wx:key="id">
+        <portfolio-card item="{{item}}" bind:open="onOpen" />
+      </view>
+    </view>
+
+    <empty-state
+      wx:else
+      title="还没有作品集"
+      description="上传第一组作品，让商家看到你"
+      action="创建作品集"
+      bind:action="onCreate"
+    />
+  </view>
+</view>

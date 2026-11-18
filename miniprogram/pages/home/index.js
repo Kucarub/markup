@@ -1,28 +1,49 @@
-const { getRole } = require('../../utils/auth')
+const { profile, stats, schedule, demands } = require('../../data/mock')
 
 Page({
   data: {
-    role: '',
-    roleText: '未选择角色',
+    profile,
+    stats,
+    schedule,
+    recommended: demands.slice(0, 3),
   },
 
   onShow() {
-    const role = getRole()
-    this.setData({
-      role,
-      roleText: role === 'artist' ? '化妆师' : role === 'merchant' ? '商家' : '未选择角色',
-    })
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 0 })
+    }
   },
 
-  goRole() {
-    wx.navigateTo({ url: '/pages/auth/role/index' })
+  onCityTap() {
+    this.toast('当前试点城市：上海')
   },
 
-  goArtistWorkspace() {
-    wx.navigateTo({ url: '/pkg-artist/pages/artist/schedule/index' })
+  onBellTap() {
+    this.toast('你有 2 条新消息')
   },
 
-  goMerchantSearch() {
-    wx.navigateTo({ url: '/pkg-merchant/pages/search/list/index' })
+  onEditProfile() {
+    this.toast('资料编辑功能将在下一版本开放')
+  },
+
+  onEditSchedule() {
+    this.toast('档期设置将在下一版本开放')
+  },
+
+  onDayTap(event) {
+    const { state, day } = event.currentTarget.dataset
+    this.toast(state === 'booked' ? '该日期已有预约' : `${day} 日当前可约`)
+  },
+
+  onDemandOpen(event) {
+    wx.navigateTo({ url: `/pages/demand/detail/index?id=${event.detail.id}` })
+  },
+
+  goHall() {
+    wx.switchTab({ url: '/pages/demand/hall/index' })
+  },
+
+  toast(title) {
+    wx.showToast({ title, icon: 'none' })
   },
 })

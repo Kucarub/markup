@@ -33,6 +33,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     return
   }
 
+  // body-parser 超限（文件直传 / JSON 过大）
+  if (err && typeof err === 'object' && (err as { type?: string }).type === 'entity.too.large') {
+    res.fail(ErrorCode.FILE_TOO_LARGE, '上传内容超过大小限制')
+    return
+  }
+
   console.error(`[error] trace=${req.traceId}`, err)
   const message = err instanceof Error ? err.message : '未知错误'
   res.fail(ErrorCode.INTERNAL_ERROR, isProd ? '服务内部错误，请稍后重试' : message)

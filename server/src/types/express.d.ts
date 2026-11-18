@@ -1,9 +1,12 @@
 import 'express'
+import type { TokenClaims } from '../utils/jwt'
 
 declare global {
   namespace Express {
     interface Request {
       traceId: string
+      /** requireAuth 注入的登录态；未鉴权接口为 undefined */
+      auth?: TokenClaims
     }
 
     interface Response {

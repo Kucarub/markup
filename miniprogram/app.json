@@ -1,9 +1,13 @@
 {
   "pages": [
-    "pages/launch/index",
     "pages/home/index",
+    "pages/demand/hall/index",
+    "pages/portfolio/list/index",
+    "pages/mine/index",
+    "pages/demand/detail/index",
     "pages/order/list/index",
     "pages/settings/index/index",
+    "pages/launch/index",
     "pages/auth/login/index",
     "pages/auth/role/index",
     "pages/dev/tokens/index"
@@ -29,19 +33,21 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "navigationBarTitleText": "化妆师接单",
+    "navigationBarTitleText": "妆集",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F5F2"
+    "backgroundColor": "#F7F7F7"
   },
   "tabBar": {
-    "color": "#9E9E9E",
-    "selectedColor": "#C08552",
+    "custom": true,
+    "color": "#8C8C8C",
+    "selectedColor": "#B4566E",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/home/index", "text": "首页" },
-      { "pagePath": "pages/order/list/index", "text": "订单" },
-      { "pagePath": "pages/settings/index/index", "text": "我的" }
+      { "pagePath": "pages/home/index", "text": "工作台" },
+      { "pagePath": "pages/demand/hall/index", "text": "需求大厅" },
+      { "pagePath": "pages/portfolio/list/index", "text": "作品集" },
+      { "pagePath": "pages/mine/index", "text": "我的" }
     ]
   },
   "style": "v2",

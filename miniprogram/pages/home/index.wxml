@@ -1,26 +1,87 @@
-<view class="page">
-  <view class="row row--between home-head">
-    <view>
-      <view class="page-title">你好</view>
-      <view class="page-subtitle">当前角色：{{roleText}}</view>
+<view class="screen screen--with-tab">
+  <view class="home-content">
+    <view class="home-toolbar">
+      <view class="city" bindtap="onCityTap">
+        <image class="icon icon--xs" src="/assets/icons/location.svg" mode="aspectFit" />
+        <text>{{profile.city}}</text>
+        <image class="icon icon--xs" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
+      </view>
+      <view class="bell" bindtap="onBellTap">
+        <image class="icon icon--md" src="/assets/icons/bell.svg" mode="aspectFit" />
+        <view class="bell__dot"></view>
+      </view>
     </view>
-    <button class="btn btn--sm btn--ghost" bindtap="goRole">切换角色</button>
-  </view>
 
-  <view class="card">
-    <view class="card__title">化妆师工作台</view>
-    <view class="card__desc">作品主页、档期日历、接单中心将在 E5 / E6 / E9 接入。</view>
-    <button class="btn btn--primary btn--block action" bindtap="goArtistWorkspace">进入档期日历</button>
-  </view>
+    <view class="profile-card">
+      <view class="avatar avatar--lg">
+        <image class="avatar__img" src="{{profile.avatar}}" mode="aspectFill" />
+        <view class="level-badge">{{profile.level}}</view>
+      </view>
+      <view class="profile-copy">
+        <view class="profile-name">{{profile.name}}</view>
+        <view class="profile-desc">{{profile.subtitle}}</view>
+        <view class="completion">
+          <view class="completion__bar">
+            <view class="completion__fill" style="width: {{profile.completeness}}%"></view>
+          </view>
+          <text>资料 {{profile.completeness}}%</text>
+        </view>
+        <view class="btn btn--secondary btn--sm profile-edit" bindtap="onEditProfile">完善资料</view>
+      </view>
+    </view>
 
-  <view class="card">
-    <view class="card__title">商家找化妆师</view>
-    <view class="card__desc">搜索列表、筛选、邀约将在 E8 / E9 接入。</view>
-    <button class="btn btn--block action" bindtap="goMerchantSearch">进入搜索列表</button>
-  </view>
+    <view class="stats-strip">
+      <view class="stat" wx:for="{{stats}}" wx:key="label">
+        <text class="stat__value">{{item.value}}</text>
+        <text class="stat__label">{{item.label}}</text>
+      </view>
+    </view>
 
-  <view class="card">
-    <view class="card__title">待办</view>
-    <view class="empty">暂无待处理事项</view>
+    <view class="section-block">
+      <view class="section-heading">
+        <view>
+          <text class="kicker">AVAILABILITY</text>
+          <view class="section-title">近期档期</view>
+        </view>
+        <view class="section-link" bindtap="onEditSchedule">
+          <text>设置</text>
+          <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+        </view>
+      </view>
+
+      <view class="schedule-strip">
+        <view
+          wx:for="{{schedule}}"
+          wx:key="day"
+          class="schedule-day {{item.state === 'today' ? 'schedule-day--today' : ''}} {{item.state === 'booked' ? 'schedule-day--booked' : ''}}"
+          data-state="{{item.state}}"
+          data-day="{{item.day}}"
+          bindtap="onDayTap"
+        >
+          <text class="schedule-day__week">{{item.weekday}}</text>
+          <text class="schedule-day__day">{{item.day}}</text>
+          <view wx:if="{{item.state === 'available'}}" class="schedule-day__dot"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-block">
+      <view class="section-heading">
+        <view>
+          <text class="kicker">FOR YOU</text>
+          <view class="section-title">适合你的需求</view>
+        </view>
+        <view class="section-link" bindtap="goHall">
+          <text>全部</text>
+          <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+        </view>
+      </view>
+
+      <view class="card-list">
+        <view class="card-item" wx:for="{{recommended}}" wx:key="id">
+          <demand-card demand="{{item}}" compact bind:open="onDemandOpen" />
+        </view>
+      </view>
+    </view>
   </view>
 </view>

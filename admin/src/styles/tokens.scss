@@ -1,29 +1,33 @@
-// 设计 token：与 miniprogram/styles/tokens.wxss 保持同名同值（单位换算见注释）
+// 设计 token：与 miniprogram/styles/tokens.wxss 保持同名同值（小程序 rpx = 本文件 px × 2）
 :root {
-  // 品牌色
-  --color-primary: #c08552;
-  --color-primary-light: #e8c9a6;
-  --color-primary-dark: #9a6537;
+  // 品牌色（豆沙玫瑰）
+  --color-primary: #b4566e;
+  --color-primary-light: #c96d84;
+  --color-primary-dark: #96465b;
+  --color-primary-tint: #f7e7ec;
+  --color-primary-soft: #fcf5f7;
 
   // 语义色
-  --color-success: #2e7d32;
-  --color-warning: #ed6c02;
-  --color-danger: #d32f2f;
-  --color-info: #6b6b6b;
+  --color-success: #2fa36b;
+  --color-warning: #e39a2b;
+  --color-danger: #d9483b;
+  --color-info: #3b7fd9;
 
   // 文本
-  --color-text-primary: #1f1f1f;
-  --color-text-secondary: #6b6b6b;
-  --color-text-placeholder: #9e9e9e;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #8c8c8c;
+  --color-text-regular: #4a4a4a;
+  --color-text-placeholder: #bfbfbf;
   --color-text-inverse: #ffffff;
 
   // 背景与描边
-  --color-bg-page: #f7f5f2;
+  --color-bg-page: #f7f7f7;
   --color-bg-card: #ffffff;
-  --color-border: #ededed;
-  --color-divider: #f2f2f2;
+  --color-bg-muted: #f5f5f5;
+  --color-border: #e8e8e8;
+  --color-divider: #f0f0f0;
 
-  // 字号（小程序对应 rpx：12→24rpx、14→28rpx、16→32rpx、18→36rpx、22→44rpx）
+  // 字号（小程序对应 rpx：12→24rpx、14→28rpx、16→32rpx、18→36rpx、22→44rpx、28→56rpx）
   --font-size-xs: 12px;
   --font-size-sm: 14px;
   --font-size-md: 16px;
@@ -41,20 +45,24 @@
   // 圆角
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 
   // 阴影
-  --shadow-card: 0 4px 16px rgba(31, 31, 31, 0.06);
-  --shadow-float: 0 8px 24px rgba(31, 31, 31, 0.12);
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.08);
 
-  // Element Plus 主题映射
+  // 字体栈
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans SC',
+    'Microsoft YaHei', sans-serif;
+
+  // Element Plus 主题映射（light-* 由主色与白色按 30/50/70/80/90% 混合得出）
   --el-color-primary: var(--color-primary);
-  --el-color-primary-light-3: #cfa079;
-  --el-color-primary-light-5: #dcb691;
-  --el-color-primary-light-7: #e8c9a6;
-  --el-color-primary-light-8: #efd9bf;
-  --el-color-primary-light-9: #f7ecdf;
+  --el-color-primary-light-3: #cb899a;
+  --el-color-primary-light-5: #daabb7;
+  --el-color-primary-light-7: #e8ccd4;
+  --el-color-primary-light-8: #f0dde2;
+  --el-color-primary-light-9: #f8eef1;
   --el-color-primary-dark-2: var(--color-primary-dark);
   --el-color-success: var(--color-success);
   --el-color-warning: var(--color-warning);
@@ -63,5 +71,8 @@
   --el-border-radius-base: var(--radius-sm);
   --el-font-size-base: var(--font-size-sm);
   --el-text-color-primary: var(--color-text-primary);
-  --el-text-color-regular: var(--color-text-secondary);
+  --el-text-color-regular: var(--color-text-regular);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-border-color: var(--color-border);
+  --el-bg-color-page: var(--color-bg-page);
 }

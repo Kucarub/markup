@@ -1,7 +1,9 @@
 import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
-import { corsOrigins } from './config/env'
+import { corsOrigins, isProd } from './config/env'
+import { mockRouter } from './docs/mock'
+import { docsRouter } from './docs/router'
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler'
 import { requestLogger } from './middlewares/requestLogger'
 import { attachResponse } from './middlewares/response'
@@ -26,6 +28,8 @@ export function createApp() {
   app.use(requestLogger)
 
   app.use('/api', apiRouter)
+  app.use(docsRouter)
+  if (!isProd) app.use('/mock', mockRouter)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

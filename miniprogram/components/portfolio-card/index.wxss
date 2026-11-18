@@ -1,0 +1,81 @@
+.portfolio-card {
+  width: 100%;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.portfolio-card--active {
+  transform: scale(0.985);
+}
+
+.cover {
+  position: relative;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  background: var(--color-bg-muted);
+}
+
+.cover--portrait {
+  padding-bottom: 133.33%;
+}
+
+.cover--square {
+  padding-bottom: 100%;
+}
+
+.cover__img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.photo-count {
+  position: absolute;
+  right: 14rpx;
+  bottom: 14rpx;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 46rpx;
+  padding: 0 14rpx;
+  border-radius: 999rpx;
+  background: rgba(26, 26, 26, 0.66);
+  color: var(--color-text-inverse);
+  font-size: 18rpx;
+}
+
+.portfolio-body {
+  padding: 22rpx;
+}
+
+.portfolio-title {
+  overflow: hidden;
+  font-size: 26rpx;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.portfolio-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid var(--color-divider);
+  color: var(--color-text-secondary);
+  font-size: 18rpx;
+}

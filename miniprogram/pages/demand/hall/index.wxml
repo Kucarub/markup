@@ -1,0 +1,73 @@
+<view class="screen screen--with-tab">
+  <view class="hall-top">
+    <view class="page-title-row">
+      <view>
+        <text class="kicker">OPPORTUNITIES</text>
+        <view class="page-heading">需求大厅</view>
+      </view>
+      <view class="filter-icon" bindtap="onSmartFilter">
+        <image class="icon icon--md" src="/assets/icons/filter.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="search-field">
+      <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
+      <input
+        class="search-input"
+        value="{{query}}"
+        placeholder="搜索需求/场合/商家"
+        placeholder-class="input-placeholder"
+        confirm-type="search"
+        bindinput="onQueryInput"
+      />
+      <view wx:if="{{query}}" class="search-clear" bindtap="onClearQuery">×</view>
+    </view>
+
+    <scroll-view class="filter-strip" scroll-x show-scrollbar="{{false}}">
+      <view
+        class="filter-pill {{occasion !== '全部场合' ? 'filter-pill--selected' : ''}}"
+        bindtap="onCycleOccasion"
+      >
+        <text>{{occasion}}</text>
+        <image class="icon icon--xs" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
+      </view>
+      <view
+        wx:for="{{filters}}"
+        wx:key="*this"
+        class="filter-pill {{activeFilter === item ? 'filter-pill--selected' : ''}}"
+        data-name="{{item}}"
+        bindtap="onToggleFilter"
+      >
+        <text>{{item}}</text>
+        <image class="icon icon--xs" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
+      </view>
+      <view
+        class="filter-pill {{availableOnly ? 'filter-pill--selected' : ''}}"
+        bindtap="onToggleAvailable"
+      >
+        <text>仅看可约</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="hall-content">
+    <view class="result-count">
+      <text>为你找到 {{list.length}} 个机会</text>
+      <text class="result-count__tag">智能匹配</text>
+    </view>
+
+    <view wx:if="{{list.length}}" class="card-list">
+      <view class="card-item" wx:for="{{list}}" wx:key="id">
+        <demand-card demand="{{item}}" bind:open="onDemandOpen" />
+      </view>
+    </view>
+
+    <empty-state
+      wx:else
+      title="当前城市暂无匹配需求"
+      description="换个筛选条件，或开启新需求提醒"
+      action="放宽筛选条件"
+      bind:action="onResetFilter"
+    />
+  </view>
+</view>

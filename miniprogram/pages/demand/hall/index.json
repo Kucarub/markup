@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "需求大厅",
+  "usingComponents": {
+    "demand-card": "/components/demand-card/index",
+    "empty-state": "/components/empty-state/index"
+  }
+}

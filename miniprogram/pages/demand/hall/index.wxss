@@ -1,0 +1,113 @@
+.hall-top {
+  border-bottom: 2rpx solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 32rpx 20rpx;
+}
+
+.filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 50%;
+  color: var(--color-text-regular);
+}
+
+.filter-icon:active {
+  background: var(--color-bg-muted);
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  height: 84rpx;
+  margin: 0 32rpx 24rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: var(--color-text-primary);
+}
+
+.search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #dedede;
+  color: #ffffff;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.filter-strip {
+  white-space: nowrap;
+  padding: 0 32rpx 26rpx;
+  box-sizing: border-box;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 64rpx;
+  margin-right: 16rpx;
+  padding: 0 22rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: 999rpx;
+  background: var(--color-bg-card);
+  color: var(--color-text-regular);
+  font-size: 22rpx;
+}
+
+.filter-pill--selected {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.hall-content {
+  padding: 28rpx 32rpx 40rpx;
+}
+
+.result-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  color: var(--color-text-secondary);
+  font-size: 20rpx;
+}
+
+.result-count__tag {
+  color: var(--color-primary);
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.card-item {
+  display: block;
+}
