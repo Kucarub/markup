@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="card">
+    <view class="card__title">{{copy.title}}</view>
+    <view class="card__desc">{{copy.desc}}</view>
+    <view wx:if="{{rejectReason}}" class="card__desc">驳回原因：{{rejectReason}}</view>
+    <button class="btn btn--primary btn--block" bindtap="handleAction">{{copy.action}}</button>
+  </view>
+
+  <view wx:if="{{status === 'pending'}}" class="card">
+    <view class="card__desc">审核通过前暂不能进入接单、搜索等业务页，请耐心等待。</view>
+  </view>
+</view>
