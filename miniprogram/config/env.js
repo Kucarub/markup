@@ -8,7 +8,7 @@
 const ENVS = {
   develop: {
     name: 'dev',
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: 'http://127.0.0.1:3100',
     debug: true,
   },
   trial: {
@@ -40,6 +40,7 @@ module.exports = {
   envVersion,
   storageKeys: {
     TOKEN: 'token',
+    REFRESH_TOKEN: 'refreshToken',
     ROLE: 'role',
   },
 }

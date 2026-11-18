@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.2.0',
+    version: '0.3.0',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -63,6 +63,30 @@ export const openApiDocument = {
           refreshToken: { type: 'string' },
           expiresIn: { type: 'string', example: '7d' },
         },
+      },
+      UserProfile: {
+        type: 'object',
+        properties: {
+          userId: { type: 'integer' },
+          role: { type: 'string', nullable: true, enum: ['artist', 'merchant'] },
+          needRoleSelect: { type: 'boolean', description: '未选角色时为 true，前端跳角色选择页' },
+          phoneBound: { type: 'boolean' },
+          phoneMasked: { type: 'string', example: '138****8000' },
+          nickname: { type: 'string', nullable: true },
+          avatarUrl: { type: 'string', nullable: true },
+          profileId: { type: 'integer', nullable: true, description: 'artist.id / merchant.id' },
+          profileStatus: {
+            type: 'string',
+            enum: ['none', 'pending', 'approved', 'rejected', 'disabled'],
+          },
+          rejectReason: { type: 'string', nullable: true },
+        },
+      },
+      WxSession: {
+        allOf: [
+          { $ref: '#/components/schemas/TokenPair' },
+          { $ref: '#/components/schemas/UserProfile' },
+        ],
       },
       AdminInfo: {
         type: 'object',
@@ -143,12 +167,105 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/auth/wx-login': {
+      post: {
+        tags: ['登录态'],
+        summary: '微信登录（code2session，首次自动建号）',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['code'],
+                properties: {
+                  code: { type: 'string', description: 'wx.login 返回的 code' },
+                  nickname: { type: 'string' },
+                  avatarUrl: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'token 对 + 登录态资料',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/WxSession' } } },
+          },
+          400: errorResponse,
+        },
+      },
+    },
     '/api/auth/me': {
       get: {
         tags: ['登录态'],
-        summary: '当前登录态（占位，E3-03 接入数据库）',
+        summary: '当前登录态（数据库资料 + 入驻状态）',
         security: bearer,
-        responses: { 200: { description: 'userId / role' }, 401: errorResponse },
+        responses: {
+          200: {
+            description: '登录态资料',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/UserProfile' } } },
+          },
+          401: errorResponse,
+        },
+      },
+    },
+    '/api/auth/role': {
+      post: {
+        tags: ['登录态'],
+        summary: '绑定 / 切换角色（artist | merchant），重签 token',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['role'],
+                properties: { role: { type: 'string', enum: ['artist', 'merchant'] } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '新的 token 对 + 登录态资料',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/WxSession' } } },
+          },
+          400: errorResponse,
+          401: errorResponse,
+        },
+      },
+    },
+    '/api/auth/phone': {
+      post: {
+        tags: ['登录态'],
+        summary: '手机号快速验证（getPhoneNumber code 换手机号，加密落库）',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['code'],
+                properties: { code: { type: 'string', description: 'getPhoneNumber 返回的 code' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '绑定结果',
+            content: {
+              'application/json': {
+                example: { phoneBound: true, phoneMasked: '138****8000' },
+              },
+            },
+          },
+          400: errorResponse,
+          401: errorResponse,
+        },
       },
     },
     '/api/admin/auth/login': {

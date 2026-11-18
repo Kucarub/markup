@@ -1,7 +1,10 @@
-const { setRole } = require('../../../utils/auth')
+const request = require('../../../utils/request')
+const { setSession, getToken } = require('../../../utils/auth')
+const { routeAfterAuth, clearProfileCache } = require('../../../utils/guard')
 
 Page({
   data: {
+    submitting: '',
     roles: [
       {
         key: 'artist',
@@ -16,12 +19,31 @@ Page({
     ],
   },
 
+  onLoad() {
+    if (!getToken()) {
+      wx.reLaunch({ url: '/pages/auth/login/index' })
+    }
+  },
+
+  /** 角色写库并重签 token（E3-03）；切换角色同样走此入口 */
   selectRole(event) {
     const { role } = event.currentTarget.dataset
-    setRole(role)
-    wx.showToast({ title: '角色已选择', icon: 'success' })
-    setTimeout(() => {
-      wx.switchTab({ url: '/pages/home/index' })
-    }, 400)
+    if (this.data.submitting) return
+    this.setData({ submitting: role })
+
+    request
+      .post('/api/auth/role', { role })
+      .then((session) => {
+        setSession(session)
+        clearProfileCache()
+        wx.showToast({ title: '角色已选择', icon: 'success' })
+        setTimeout(() => {
+          routeAfterAuth(session)
+        }, 400)
+      })
+      .catch(() => {})
+      .then(() => {
+        this.setData({ submitting: '' })
+      })
   },
 })

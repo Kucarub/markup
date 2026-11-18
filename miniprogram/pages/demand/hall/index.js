@@ -1,4 +1,6 @@
 const { demands } = require('../../../data/mock')
+const { getRole } = require('../../../utils/auth')
+const { businessGuard } = require('../../../utils/guard')
 
 const OCCASIONS = ['全部场合', '婚礼跟妆', '影楼拍摄', '活动会展']
 
@@ -10,6 +12,8 @@ Page({
     availableOnly: false,
     filters: ['报酬', '日期', '距离'],
     list: [],
+    /** B 端复用本 Tab 承载「找化妆师」（E3-03），E8 接入完整搜索 */
+    isMerchant: false,
   },
 
   onLoad() {
@@ -18,8 +22,10 @@ Page({
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1 })
+      this.getTabBar().syncSelected()
     }
+    this.setData({ isMerchant: getRole() === 'merchant' })
+    businessGuard()
   },
 
   applyFilter() {
@@ -77,6 +83,10 @@ Page({
 
   onDemandOpen(event) {
     wx.navigateTo({ url: `/pages/demand/detail/index?id=${event.detail.id}` })
+  },
+
+  goHome() {
+    wx.switchTab({ url: '/pages/home/index' })
   },
 
   toast(title) {

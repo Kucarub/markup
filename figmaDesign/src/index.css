@@ -9,8 +9,8 @@
   --neutral-700: #4a4a4a;
   --neutral-500: #8c8c8c;
   --neutral-400: #bfbfbf;
-  --neutral-200: #e8e8e8;
-  --neutral-100: #f5f5f5;
+  --neutral-200: #dedede;
+  --neutral-100: #f2f2f2;
   --white: #fff;
   --success: #2fa36b;
   --warning: #e39a2b;
@@ -92,7 +92,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fafafa;
+  background: var(--white);
   animation: page-in 220ms ease-out;
 }
 
@@ -488,6 +488,7 @@
 
 .home-content {
   padding: 12px 16px 96px;
+  background: var(--white);
 }
 
 .profile-card {
@@ -622,7 +623,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 3px;
-  border: 1px solid var(--neutral-200);
+  border: 1px solid #d8d8d8;
   border-radius: 9px;
   background: var(--white);
 }
@@ -657,9 +658,9 @@
 }
 
 .schedule-day.booked {
-  border-color: transparent;
-  background: var(--neutral-100);
-  color: var(--neutral-400);
+  border-color: #e2e2e2;
+  background: #ececec;
+  color: #9b9b9b;
 }
 
 .card-list {
@@ -674,7 +675,7 @@
   display: block;
   padding: 15px;
   overflow: hidden;
-  border: 1px solid var(--neutral-200);
+  border: 1px solid #dddddd;
   border-radius: 12px;
   background: var(--white);
   text-align: left;
@@ -837,7 +838,7 @@
   padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 8px;
-  background: var(--neutral-100);
+  background: #eeeeee;
   color: var(--neutral-500);
 }
 
@@ -1713,9 +1714,30 @@
 
 .logout-btn {
   width: 100%;
-  margin-top: 12px;
-  color: var(--neutral-500);
+  height: 46px;
+  margin-top: 16px;
+  border: 1px solid #e2d9dc;
+  border-radius: 10px;
+  background: var(--white);
+  color: #786d70;
   font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgb(49 35 39 / 3%);
+}
+
+.logout-btn svg {
+  color: var(--brand-500);
+  stroke-width: 1.8;
+}
+
+.logout-btn:hover {
+  border-color: #d7bdc4;
+  background: var(--brand-50);
+  color: var(--brand-600);
+}
+
+.logout-btn:active {
+  background: var(--brand-100);
 }
 
 .toast {
@@ -1742,6 +1764,301 @@
 .toast.show {
   opacity: 1;
   transform: translate(50%, 0);
+}
+
+/* Logged out */
+.logged-out-page {
+  isolation: isolate;
+  background: linear-gradient(180deg, var(--brand-50) 0, #fff 36%, #fff 100%);
+}
+
+.auth-decoration {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--brand-100);
+  filter: blur(1px);
+  opacity: 0.65;
+}
+
+.auth-decoration-one {
+  top: 74px;
+  right: -48px;
+  width: 132px;
+  height: 132px;
+}
+
+.auth-decoration-two {
+  top: 186px;
+  left: -50px;
+  width: 86px;
+  height: 86px;
+  background: #f9eef1;
+}
+
+.auth-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 20px 186px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 7px;
+  text-align: center;
+}
+
+.auth-logo {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 11px;
+  border: 1px solid #e4bec8;
+  border-radius: 20px;
+  background: var(--brand-600);
+  color: var(--white);
+  box-shadow: 0 10px 24px rgb(180 86 110 / 22%);
+  transform: rotate(-3deg);
+}
+
+.auth-logo > span {
+  position: absolute;
+  width: 15px;
+  height: 26px;
+  border-radius: 999px 999px 4px 4px;
+  background: rgb(255 255 255 / 17%);
+  transform-origin: 50% 100%;
+}
+
+.auth-logo > span:nth-child(1) {
+  top: 7px;
+  transform: rotate(-38deg);
+}
+
+.auth-logo > span:nth-child(2) {
+  top: 4px;
+}
+
+.auth-logo > span:nth-child(3) {
+  top: 7px;
+  transform: rotate(38deg);
+}
+
+.auth-logo svg {
+  position: relative;
+  z-index: 1;
+  transform: rotate(3deg);
+}
+
+.auth-wordmark {
+  color: var(--neutral-900);
+  font-family: serif;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+}
+
+.auth-brand > p {
+  margin-top: 5px;
+  color: var(--neutral-500);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.role-section {
+  margin-top: 34px;
+}
+
+.auth-section-heading > span {
+  color: var(--brand-500);
+  font-family: Inter, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.auth-section-heading h1 {
+  margin-top: 4px;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.auth-section-heading p {
+  margin-top: 4px;
+  color: var(--neutral-500);
+  font-size: 11px;
+}
+
+.role-options {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 17px;
+}
+
+.role-card {
+  position: relative;
+  width: 100%;
+  min-height: 104px;
+  display: grid;
+  grid-template-columns: 52px 1fr 28px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--neutral-200);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 92%);
+  text-align: left;
+  box-shadow: 0 3px 12px rgb(50 35 40 / 4%);
+  transition:
+    border-color 160ms,
+    background 160ms,
+    transform 100ms,
+    box-shadow 160ms;
+}
+
+.role-card:active {
+  transform: scale(0.99);
+}
+
+.role-card.selected {
+  border-color: #d999aa;
+  background: var(--brand-50);
+  box-shadow: 0 5px 16px rgb(180 86 110 / 10%);
+}
+
+.role-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.artist-icon {
+  background: var(--brand-100);
+  color: var(--brand-600);
+}
+
+.business-icon {
+  background: #edf2f7;
+  color: #68819a;
+}
+
+.role-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.role-copy strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.role-copy small {
+  margin-top: 3px;
+  color: var(--neutral-500);
+  font-size: 10.5px;
+}
+
+.role-copy em {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 9px;
+  color: var(--neutral-400);
+  font-size: 8.5px;
+  font-style: normal;
+}
+
+.role-check {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--neutral-400);
+}
+
+.role-card.selected .role-check {
+  background: var(--brand-600);
+  color: var(--white);
+}
+
+.auth-actions {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 18px 20px max(22px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgb(255 255 255 / 0%), #fff 16%, #fff 100%);
+}
+
+.wechat-login {
+  width: 100%;
+  height: 49px;
+  border-radius: 9px;
+  box-shadow: 0 7px 16px rgb(180 86 110 / 18%);
+}
+
+.wechat-login svg {
+  color: #fff;
+}
+
+.agreement {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 13px;
+  color: var(--neutral-500);
+  font-size: 9px;
+  line-height: 16px;
+}
+
+.agreement input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.agreement-check {
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  margin-top: 0.5px;
+  border: 1px solid var(--neutral-400);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--white);
+}
+
+.agreement input:checked + .agreement-check {
+  border-color: var(--brand-600);
+  background: var(--brand-600);
+}
+
+.agreement input:focus-visible + .agreement-check {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+.agreement button {
+  color: var(--info);
 }
 
 @keyframes page-in {

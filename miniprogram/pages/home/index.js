@@ -1,4 +1,6 @@
 const { profile, stats, schedule, demands } = require('../../data/mock')
+const { getToken, isGuestBrowse } = require('../../utils/auth')
+const { entryGuard } = require('../../utils/guard')
 
 Page({
   data: {
@@ -8,10 +10,18 @@ Page({
     recommended: demands.slice(0, 3),
   },
 
+  onLoad() {
+    // 新用户默认进入欢迎页；点过「先随便看看」的游客放行
+    if (!getToken() && !isGuestBrowse()) {
+      wx.reLaunch({ url: '/pages/auth/login/index' })
+    }
+  },
+
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 0 })
+      this.getTabBar().syncSelected()
     }
+    entryGuard()
   },
 
   onCityTap() {

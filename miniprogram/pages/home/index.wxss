@@ -161,7 +161,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 6rpx;
-  border: 2rpx solid var(--color-border);
+  border: 2rpx solid #d8d8d8;
   border-radius: 18rpx;
   background: var(--color-bg-card);
 }
@@ -196,13 +196,13 @@
 }
 
 .schedule-day--booked {
-  border-color: transparent;
-  background: var(--color-bg-muted);
-  color: var(--color-text-placeholder);
+  border-color: #e2e2e2;
+  background: #ececec;
+  color: #9b9b9b;
 }
 
 .schedule-day--booked .schedule-day__week {
-  color: var(--color-text-placeholder);
+  color: #9b9b9b;
 }
 
 /* 需求列表 */

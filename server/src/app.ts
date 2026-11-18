@@ -21,10 +21,11 @@ export function createApp() {
       exposedHeaders: ['x-request-id'],
     }),
   )
+  // attachResponse 必须早于 body 解析：JSON 解析失败时也要有 res.fail
+  app.use(attachResponse)
   app.use(express.json({ limit: '1mb' }))
   app.use(express.urlencoded({ extended: true }))
 
-  app.use(attachResponse)
   app.use(requestLogger)
 
   app.use('/api', apiRouter)

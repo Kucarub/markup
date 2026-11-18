@@ -1,4 +1,5 @@
 const { portfolios } = require('../../../data/mock')
+const { businessGuard } = require('../../../utils/guard')
 
 const CATEGORIES = ['全部', '新娘妆', '生活妆', '舞台妆', '证件照']
 
@@ -11,8 +12,9 @@ Page({
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 2 })
+      this.getTabBar().syncSelected()
     }
+    businessGuard()
   },
 
   onSelectCategory(event) {

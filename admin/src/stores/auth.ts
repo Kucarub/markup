@@ -5,8 +5,10 @@ import { clearToken, getToken, http, setToken } from '@/api/request'
 const NAME_KEY = 'admin_name'
 
 interface LoginResult {
-  token: string
-  name: string
+  accessToken: string
+  refreshToken: string
+  expiresIn: string
+  admin: { id: number; username: string; role: string }
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -16,11 +18,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => Boolean(token.value))
 
   async function login(payload: { username: string; password: string }) {
-    const data = await http.post<LoginResult>('/admin/auth/login', payload)
-    token.value = data.token
-    name.value = data.name
-    setToken(data.token)
-    localStorage.setItem(NAME_KEY, data.name)
+    const data = await http.post<LoginResult>('/api/admin/auth/login', payload)
+    token.value = data.accessToken
+    name.value = data.admin.username
+    setToken(data.accessToken)
+    localStorage.setItem(NAME_KEY, data.admin.username)
   }
 
   function logout() {

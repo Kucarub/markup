@@ -71,8 +71,8 @@
       </view>
     </view>
 
-    <view class="logout-btn" bindtap="onLogout">
-      <image class="icon icon--sm" src="/assets/icons/logout.svg" mode="aspectFit" />
+    <view class="logout-btn" hover-class="logout-btn--hover" hover-stay-time="80" bindtap="onLogout">
+      <image class="icon icon--sm" src="/assets/icons/logout-brand.svg" mode="aspectFit" />
       <text>退出登录</text>
     </view>
   </view>

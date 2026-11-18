@@ -7,7 +7,7 @@
   display: flex;
   align-items: flex-start;
   padding: 14rpx 12rpx calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 2rpx solid var(--color-border, #e8e8e8);
+  border-top: 2rpx solid var(--color-border, #dedede);
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(20px);
 }

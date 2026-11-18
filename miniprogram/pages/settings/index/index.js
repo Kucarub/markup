@@ -1,4 +1,5 @@
 const { clearAuth } = require('../../../utils/auth')
+const { clearProfileCache } = require('../../../utils/guard')
 
 Page({
   data: {
@@ -15,6 +16,7 @@ Page({
 
   handleLogout() {
     clearAuth()
+    clearProfileCache()
     wx.reLaunch({ url: '/pages/auth/login/index' })
   },
 })

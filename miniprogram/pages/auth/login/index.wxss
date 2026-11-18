@@ -1,19 +1,353 @@
-.login {
-  padding-top: 160rpx;
+/* 欢迎页：未登录默认入口，身份选择 + 协议勾选（参考 figmaDesign LoggedOutPage） */
+.welcome {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--color-primary-soft) 0, #ffffff 36%, #ffffff 100%);
 }
 
-.login__brand {
-  margin-bottom: var(--space-xl);
+.welcome__deco {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary-tint);
+  opacity: 0.65;
+  pointer-events: none;
 }
 
-.login__skip {
-  margin-top: var(--space-sm);
+.welcome__deco--one {
+  top: 148rpx;
+  right: -96rpx;
+  width: 264rpx;
+  height: 264rpx;
 }
 
-.login__agreement {
-  margin-top: var(--space-xl);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-placeholder);
+.welcome__deco--two {
+  top: 372rpx;
+  left: -100rpx;
+  width: 172rpx;
+  height: 172rpx;
+  background: #f9eef1;
+}
+
+.welcome__content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 56rpx 40rpx 340rpx;
+}
+
+/* 品牌区 */
+.auth-brand {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
   text-align: center;
+}
+
+.auth-logo {
+  position: relative;
+  width: 132rpx;
+  height: 132rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22rpx;
+  border: 2rpx solid #e4bec8;
+  border-radius: 40rpx;
+  background: var(--color-primary);
+  box-shadow: 0 20rpx 48rpx rgba(180, 86, 110, 0.22);
+  transform: rotate(-3deg);
+}
+
+.auth-logo__petal {
+  position: absolute;
+  width: 30rpx;
+  height: 52rpx;
+  border-radius: 999rpx 999rpx 8rpx 8rpx;
+  background: rgba(255, 255, 255, 0.17);
+  transform-origin: 50% 100%;
+}
+
+.auth-logo__petal--left {
+  top: 14rpx;
+  transform: rotate(-38deg);
+}
+
+.auth-logo__petal--mid {
+  top: 8rpx;
+}
+
+.auth-logo__petal--right {
+  top: 14rpx;
+  transform: rotate(38deg);
+}
+
+.auth-logo__mark {
+  position: relative;
+  z-index: 1;
+  width: 46rpx;
+  height: 46rpx;
+  transform: rotate(3deg);
+}
+
+.auth-wordmark {
+  color: var(--color-text-primary);
+  font-family: serif;
+  font-size: 50rpx;
+  font-weight: 700;
+  letter-spacing: 11rpx;
+  text-indent: 11rpx;
+}
+
+.auth-tagline {
+  margin-top: 10rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  letter-spacing: 1.6rpx;
+}
+
+/* 身份选择 */
+.role-section {
+  margin-top: 68rpx;
+}
+
+.welcome-kicker {
+  display: block;
+  color: var(--color-primary-light);
+  font-size: 16rpx;
+  font-weight: 700;
+  letter-spacing: 3.6rpx;
+}
+
+.welcome-title {
+  margin-top: 8rpx;
+  font-size: 42rpx;
+  font-weight: 650;
+  letter-spacing: -0.4rpx;
+}
+
+.welcome-subtitle {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  margin-top: 34rpx;
+}
+
+.role-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  min-height: 208rpx;
+  padding: 28rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--color-border);
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6rpx 24rpx rgba(50, 35, 40, 0.04);
+  transition:
+    border-color 0.16s,
+    background 0.16s,
+    transform 0.1s;
+}
+
+.role-card:active {
+  transform: scale(0.99);
+}
+
+.role-card--selected {
+  border-color: #d999aa;
+  background: var(--color-primary-soft);
+  box-shadow: 0 10rpx 32rpx rgba(180, 86, 110, 0.1);
+}
+
+.role-icon {
+  width: 100rpx;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 24rpx;
+}
+
+.role-icon--artist {
+  background: var(--color-primary-tint);
+}
+
+.role-icon--merchant {
+  background: #edf2f7;
+}
+
+.role-icon__img {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+.role-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.role-title {
+  font-size: 30rpx;
+  font-weight: 650;
+}
+
+.role-desc {
+  margin-top: 6rpx;
+  color: var(--color-text-secondary);
+  font-size: 21rpx;
+}
+
+.role-note {
+  margin-top: 18rpx;
+  color: var(--color-text-placeholder);
+  font-size: 17rpx;
+}
+
+.role-check {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.role-check__arrow {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.role-check--on {
+  background: var(--color-primary);
+}
+
+.role-check__tick {
+  width: 12rpx;
+  height: 22rpx;
+  margin-top: -4rpx;
+  border-right: 4rpx solid #ffffff;
+  border-bottom: 4rpx solid #ffffff;
+  transform: rotate(45deg);
+}
+
+/* 底部操作区 */
+.welcome__actions {
+  position: fixed;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 36rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 16%, #ffffff 100%);
+}
+
+.welcome__login {
+  width: 100%;
+  height: 98rpx;
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  box-shadow: 0 14rpx 32rpx rgba(180, 86, 110, 0.18);
+}
+
+.agreement {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12rpx;
+  margin-top: 26rpx;
+  color: var(--color-text-secondary);
+  font-size: 20rpx;
   line-height: 1.7;
+}
+
+.agreement__box {
+  width: 30rpx;
+  height: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin-top: 2rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--color-text-placeholder);
+  border-radius: 8rpx;
+  background: #ffffff;
+}
+
+.agreement__box--on {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.agreement__tick {
+  width: 9rpx;
+  height: 16rpx;
+  margin-top: -3rpx;
+  border-right: 3rpx solid #ffffff;
+  border-bottom: 3rpx solid #ffffff;
+  transform: rotate(45deg);
+}
+
+.agreement__text {
+  flex: 0 1 auto;
+}
+
+.agreement__link {
+  color: var(--color-info);
+}
+
+.welcome__skip {
+  margin-top: 20rpx;
+  padding: 8rpx 0;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
+}
+
+/* 手机号授权步骤 */
+.phone-card {
+  margin-top: 72rpx;
+  padding: 40rpx 36rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.phone-card__title {
+  font-size: 36rpx;
+  font-weight: 650;
+}
+
+.phone-card__desc {
+  margin-top: 12rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.phone-card__action {
+  margin-top: 40rpx;
+}
+
+.phone-card__skip {
+  margin-top: 20rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
 }

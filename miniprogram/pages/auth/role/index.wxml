@@ -1,6 +1,6 @@
 <view class="page">
   <view class="page-title">选择你的身份</view>
-  <view class="page-subtitle">角色提交后由服务端校验，入驻资料在 E4 / E7 补齐</view>
+  <view class="page-subtitle">身份决定底部导航与后续入驻流程，可随时在「我的」中切换</view>
 
   <view
     class="card role"
@@ -11,5 +11,6 @@
   >
     <view class="card__title">{{item.title}}</view>
     <view class="card__desc">{{item.desc}}</view>
+    <view wx:if="{{submitting === item.key}}" class="card__desc">提交中…</view>
   </view>
 </view>

@@ -1,15 +1,87 @@
-<view class="page login">
-  <view class="login__brand">
-    <view class="page-title">化妆师作品集 · 接单门户</view>
-    <view class="page-subtitle">登录后可发布作品、设置档期、接受邀约</view>
+<view class="welcome">
+  <view class="welcome__deco welcome__deco--one"></view>
+  <view class="welcome__deco welcome__deco--two"></view>
+
+  <view class="welcome__content">
+    <view class="auth-brand">
+      <view class="auth-logo">
+        <view class="auth-logo__petal auth-logo__petal--left"></view>
+        <view class="auth-logo__petal auth-logo__petal--mid"></view>
+        <view class="auth-logo__petal auth-logo__petal--right"></view>
+        <image class="auth-logo__mark" src="/assets/icons/photo.svg" mode="aspectFit" />
+      </view>
+      <view class="auth-wordmark">妆集</view>
+      <view class="auth-tagline">让每一次练习，都被看见</view>
+    </view>
+
+    <block wx:if="{{!needPhone}}">
+      <view class="role-section">
+        <text class="welcome-kicker">WELCOME</text>
+        <view class="welcome-title">选择你的身份</view>
+        <view class="welcome-subtitle">我们会为你准备更合适的工作台</view>
+
+        <view class="role-list">
+          <view
+            wx:for="{{roles}}"
+            wx:key="key"
+            class="role-card {{role === item.key ? 'role-card--selected' : ''}}"
+            data-role="{{item.key}}"
+            bindtap="selectRole"
+          >
+            <view class="role-icon role-icon--{{item.key}}">
+              <image class="role-icon__img" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" />
+            </view>
+            <view class="role-copy">
+              <text class="role-title">{{item.title}}</text>
+              <text class="role-desc">{{item.desc}}</text>
+              <text class="role-note">{{item.note}}</text>
+            </view>
+            <view class="role-check {{role === item.key ? 'role-check--on' : ''}}">
+              <view wx:if="{{role === item.key}}" class="role-check__tick"></view>
+              <image
+                wx:else
+                class="role-check__arrow"
+                src="/assets/icons/chevron-right.svg"
+                mode="aspectFit"
+              />
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="phone-card">
+        <view class="phone-card__title">绑定手机号</view>
+        <view class="phone-card__desc">用于接收邀约与订单通知，手机号加密存储，不会对外展示。</view>
+        <button
+          class="btn btn--primary btn--block phone-card__action"
+          open-type="getPhoneNumber"
+          bindgetphonenumber="handleGetPhone"
+        >
+          {{phoneDenied ? '重新授权手机号' : '授权手机号'}}
+        </button>
+        <view class="phone-card__skip" bindtap="handleSkipPhone">暂不绑定，先去逛逛</view>
+      </view>
+    </block>
   </view>
 
-  <button class="btn btn--primary btn--block" loading="{{loading}}" bindtap="handleWxLogin">
-    微信一键登录
-  </button>
-  <button class="btn btn--ghost btn--block login__skip" bindtap="handleSkip">先随便看看</button>
+  <view wx:if="{{!needPhone}}" class="welcome__actions">
+    <button class="btn btn--primary welcome__login" loading="{{loading}}" bindtap="handleWxLogin">
+      微信一键登录
+    </button>
 
-  <view class="login__agreement">
-    登录即表示同意《用户协议》与《隐私政策》，协议页在 E1-08 落地。
+    <view class="agreement">
+      <view class="agreement__box {{agreed ? 'agreement__box--on' : ''}}" bindtap="toggleAgreement">
+        <view wx:if="{{agreed}}" class="agreement__tick"></view>
+      </view>
+      <view class="agreement__text">
+        <text bindtap="toggleAgreement">已阅读并同意</text>
+        <text class="agreement__link" data-doc="用户协议" catchtap="showDoc">《用户协议》</text>
+        <text class="agreement__link" data-doc="隐私政策" catchtap="showDoc">《隐私政策》</text>
+      </view>
+    </view>
+
+    <view class="welcome__skip" bindtap="handleSkip">先随便看看</view>
   </view>
 </view>

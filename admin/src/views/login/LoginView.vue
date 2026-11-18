@@ -61,7 +61,7 @@ async function handleSubmit() {
         </el-button>
       </el-form>
 
-      <p class="login__tip">账号由 E12-01 提供，E1 阶段仅验证登录拦截与主题样式。</p>
+      <p class="login__tip">演示账号：admin / Admin@123456（来自服务端 seed 数据）</p>
     </div>
   </div>
 </template>

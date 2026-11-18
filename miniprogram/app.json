@@ -10,6 +10,7 @@
     "pages/launch/index",
     "pages/auth/login/index",
     "pages/auth/role/index",
+    "pages/apply/status/index",
     "pages/dev/tokens/index"
   ],
   "subPackages": [
@@ -35,7 +36,7 @@
     "navigationBarBackgroundColor": "#FFFFFF",
     "navigationBarTitleText": "妆集",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F7F7"
+    "backgroundColor": "#FFFFFF"
   },
   "tabBar": {
     "custom": true,
@@ -47,6 +48,7 @@
       { "pagePath": "pages/home/index", "text": "工作台" },
       { "pagePath": "pages/demand/hall/index", "text": "需求大厅" },
       { "pagePath": "pages/portfolio/list/index", "text": "作品集" },
+      { "pagePath": "pages/order/list/index", "text": "订单" },
       { "pagePath": "pages/mine/index", "text": "我的" }
     ]
   },

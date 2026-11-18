@@ -1,10 +1,11 @@
 const { profile, mineMenu } = require('../../data/mock')
 const { clearAuth } = require('../../utils/auth')
+const { entryGuard, clearProfileCache } = require('../../utils/guard')
 
 Page({
   data: {
     profile,
-    menu: mineMenu,
+    menu: mineMenu.concat([{ key: 'role', label: '切换身份', icon: 'users', separator: true }]),
     stats: [
       { key: 'works', value: '12', label: '作品' },
       { key: 'favorites', value: '8', label: '收藏' },
@@ -14,8 +15,9 @@ Page({
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 3 })
+      this.getTabBar().syncSelected()
     }
+    entryGuard()
   },
 
   onEditProfile() {
@@ -37,8 +39,12 @@ Page({
 
   onMenuTap(event) {
     const { key, label } = event.currentTarget.dataset
+    if (key === 'role') {
+      wx.navigateTo({ url: '/pages/auth/role/index' })
+      return
+    }
     if (key === 'deliveries') {
-      wx.navigateTo({ url: '/pages/order/list/index' })
+      wx.switchTab({ url: '/pages/order/list/index' })
       return
     }
     if (key === 'schedule') {
@@ -59,6 +65,7 @@ Page({
       success: (res) => {
         if (!res.confirm) return
         clearAuth()
+        clearProfileCache()
         wx.reLaunch({ url: '/pages/auth/login/index' })
       },
     })
