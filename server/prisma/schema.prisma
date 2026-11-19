@@ -61,6 +61,7 @@ model Artist {
   user        UserAuth          @relation(fields: [userId], references: [id])
   portfolios  ArtistPortfolio[]
   schedules   ArtistSchedule[]
+  visits      ArtistVisit[]
   invitations Invitation[]
   orders      TradeOrder[]
 
@@ -109,6 +110,22 @@ model ArtistSchedule {
   @@unique([artistId, date], map: "uniq_artist_date")
   @@index([date, state])
   @@map("artist_schedule")
+}
+
+/// 主页访问 UV（同设备 + 同自然日仅记一条，E5-06）
+model ArtistVisit {
+  id         Int      @id @default(autoincrement())
+  artistId   Int      @map("artist_id")
+  /// 设备标识的 SHA-256，不落明文设备号
+  deviceHash String   @map("device_hash") @db.VarChar(64)
+  visitDate  DateTime @map("visit_date") @db.Date
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, deviceHash, visitDate], map: "uniq_artist_device_day")
+  @@index([visitDate])
+  @@map("artist_visit")
 }
 
 /// 商家入驻资料

@@ -24,6 +24,7 @@ interface WechatErrorBody {
 const CODE2SESSION_URL = 'https://api.weixin.qq.com/sns/jscode2session'
 const ACCESS_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token'
 const PHONE_URL = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber'
+const WXACODE_URL = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit'
 const TIMEOUT_MS = 8000
 
 let warnedDevFallback = false
@@ -125,4 +126,32 @@ export async function getPhoneNumber(code: string): Promise<string> {
   const phone = body.phone_info?.purePhoneNumber || body.phone_info?.phoneNumber
   if (!phone) throw AppError.badRequest('手机号验证失败：未返回手机号')
   return phone
+}
+
+/**
+ * 生成小程序码（E5-05）：未配置 AppID/Secret 时抛出明确错误。
+ * scene 上限 32 字符，page 必须为已发布页面路径。
+ */
+export async function getUnlimitedQrCode(
+  scene: string,
+  page: string,
+  width = 430,
+): Promise<Buffer> {
+  if (!hasWxConfig()) {
+    throw new AppError(ErrorCode.INTERNAL_ERROR, '未配置小程序 AppID / Secret，暂无法生成小程序码')
+  }
+
+  const token = await getAccessToken()
+  const res = await fetch(`${WXACODE_URL}?access_token=${token}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ scene, page, width, check_path: false }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  const contentType = res.headers.get('content-type') || ''
+  if (!res.ok || !contentType.includes('image')) {
+    const body = (await res.json().catch(() => ({}))) as WechatErrorBody
+    throw new AppError(ErrorCode.INTERNAL_ERROR, `生成小程序码失败：${body.errmsg || res.status}`)
+  }
+  return Buffer.from(await res.arrayBuffer())
 }

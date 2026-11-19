@@ -5,43 +5,80 @@
         <text class="kicker">MY WORK</text>
         <view class="page-heading">作品集</view>
       </view>
-      <view class="btn btn--primary btn--sm create-btn" bindtap="onCreate">
+      <view class="btn btn--primary btn--sm create-btn" hover-class="btn--hover" bindtap="onCreate">
         <image class="icon icon--xs" src="/assets/icons/plus.svg" mode="aspectFit" />
-        <text>新建作品集</text>
+        <text>上传作品</text>
       </view>
     </view>
 
-    <scroll-view class="segment-control" scroll-x show-scrollbar="{{false}}">
-      <view
-        wx:for="{{categories}}"
-        wx:key="*this"
-        class="segment {{category === item ? 'segment--active' : ''}}"
-        data-name="{{item}}"
-        bindtap="onSelectCategory"
-      >
-        {{item}}
+    <view class="portfolio-toolbar">
+      <text class="portfolio-count">{{total}} 个作品</text>
+      <view class="portfolio-preview" hover-class="portfolio-preview--hover" bindtap="onPreview">
+        <text>预览我的主页</text>
+        <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
       </view>
-    </scroll-view>
+    </view>
   </view>
 
   <view class="portfolio-content">
-    <view class="portfolio-summary">
-      <text>{{list.length}} 组作品</text>
-      <text>最近更新：今天</text>
+    <view wx:if="{{belowThreshold}}" class="threshold-tip">
+      <image class="icon icon--xs" src="/assets/icons/info.svg" mode="aspectFit" />
+      <text>作品不足 {{counts.minImages}} 张图片（或 1 个视频），入驻审核可能不通过</text>
     </view>
 
-    <view wx:if="{{list.length}}" class="portfolio-grid">
-      <view class="portfolio-cell" wx:for="{{list}}" wx:key="id">
-        <portfolio-card item="{{item}}" bind:open="onOpen" />
+    <!-- 首屏骨架屏 -->
+    <view wx:if="{{loading}}" class="portfolio-grid">
+      <view class="skeleton-cell" wx:for="{{[1, 2, 3, 4]}}" wx:key="*this">
+        <view class="skeleton-cell__cover shimmer"></view>
+        <view class="skeleton-cell__line shimmer"></view>
+        <view class="skeleton-cell__line skeleton-cell__line--short shimmer"></view>
       </view>
     </view>
 
-    <empty-state
-      wx:else
-      title="还没有作品集"
-      description="上传第一组作品，让商家看到你"
-      action="创建作品集"
-      bind:action="onCreate"
-    />
+    <block wx:else>
+      <view wx:if="{{list.length}}" class="portfolio-grid">
+        <view
+          class="work-card"
+          wx:for="{{list}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onOpen"
+          bindlongpress="onLongPress"
+          hover-class="work-card--hover"
+          hover-stay-time="80"
+        >
+          <view class="work-card__cover">
+            <image class="work-card__img" src="{{item.cover}}" mode="aspectFill" lazy-load />
+            <view wx:if="{{item.isVideo}}" class="work-card__video">
+              <view class="work-card__play"></view>
+            </view>
+            <view class="work-card__order">#{{item.index}}</view>
+          </view>
+          <view class="work-card__body">
+            <view class="work-card__title ellipsis">{{item.title || '未命名作品'}}</view>
+            <view class="work-card__tags" wx:if="{{item.labels.length}}">
+              <text class="tag tag--brand" wx:for="{{item.labels}}" wx:for-item="label" wx:key="*this">{{label}}</text>
+            </view>
+            <view class="work-card__hint" wx:else>长按可排序 / 删除</view>
+          </view>
+        </view>
+      </view>
+
+      <empty-state
+        wx:elif="{{artistId}}"
+        title="还没有作品"
+        description="上传第一组作品，让商家看到你"
+        action="上传作品"
+        bind:action="onCreate"
+      />
+
+      <view wx:else class="empty">
+        <view>登录并完成化妆师入驻后，即可管理作品</view>
+        <view class="empty__action btn btn--secondary btn--sm" bindtap="onGoApply">去登录 / 入驻</view>
+      </view>
+
+      <view wx:if="{{hasMore}}" class="list-footer">{{loadingMore ? '加载中…' : '上滑加载更多'}}</view>
+      <view wx:elif="{{list.length}}" class="list-footer">已展示全部 {{total}} 个作品</view>
+    </block>
   </view>
 </view>

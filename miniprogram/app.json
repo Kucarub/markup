@@ -11,6 +11,8 @@
     "pages/auth/login/index",
     "pages/auth/role/index",
     "pages/apply/status/index",
+    "pages/artist/portfolio/edit/index",
+    "pages/artist/detail/index",
     "pages/dev/tokens/index"
   ],
   "subPackages": [

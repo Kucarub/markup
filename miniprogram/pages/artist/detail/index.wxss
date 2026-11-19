@@ -1,0 +1,365 @@
+/* 化妆师主页（E5-04 / E5-05 / E5-07）：名片、档期摘要、作品双列、骨架屏 */
+.detail {
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+/* ---------- 骨架屏 ---------- */
+.detail-skeleton {
+  padding: 48rpx 32rpx;
+}
+
+.skeleton-hero {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.skeleton-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+}
+
+.skeleton-lines {
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 24rpx;
+  margin-bottom: 16rpx;
+  border-radius: 8rpx;
+}
+
+.skeleton-line--lg {
+  width: 45%;
+  height: 40rpx;
+}
+
+.skeleton-line--short {
+  width: 60%;
+}
+
+.skeleton-block {
+  height: 180rpx;
+  margin-top: 32rpx;
+  border-radius: var(--radius-md);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f2f2f2 25%, #fafafa 37%, #f2f2f2 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ---------- 名片 ---------- */
+.hero {
+  padding: 32rpx 32rpx 36rpx;
+  background: linear-gradient(180deg, var(--color-primary-soft) 0%, #ffffff 100%);
+  border-bottom: 2rpx solid var(--color-divider);
+}
+
+.hero__top {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.hero__avatar-placeholder {
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.hero__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero__name {
+  font-size: 40rpx;
+  font-weight: 650;
+  letter-spacing: -0.5rpx;
+}
+
+.hero__meta {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  margin-top: 10rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.hero__dot {
+  margin: 0 2rpx;
+}
+
+.hero__stats {
+  display: flex;
+  gap: 28rpx;
+  margin-top: 14rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.hero__stat-value {
+  color: var(--color-primary);
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.hero__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 24rpx;
+}
+
+.hero__intro {
+  margin-top: 20rpx;
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 30rpx;
+}
+
+.hero__contact {
+  flex: 1;
+  height: 88rpx;
+  font-size: 30rpx;
+  box-shadow: 0 12rpx 28rpx rgba(180, 86, 110, 0.18);
+}
+
+.hero__action {
+  height: 88rpx;
+  padding: 0 26rpx;
+  font-size: 26rpx;
+}
+
+.hero__action--hover {
+  opacity: 0.82;
+}
+
+/* ---------- 区块 ---------- */
+.section {
+  padding: 36rpx 32rpx 0;
+}
+
+/* ---------- 档期摘要 ---------- */
+.schedule-strip {
+  white-space: nowrap;
+}
+
+.schedule-day {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  height: 112rpx;
+  margin-right: 14rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+}
+
+.schedule-day__date {
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.schedule-day__state {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 18rpx;
+}
+
+.schedule-day--available {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.schedule-day--available .schedule-day__date,
+.schedule-day--available .schedule-day__state {
+  color: var(--color-primary);
+}
+
+.schedule-day--booked {
+  border-color: #f3ddb5;
+  background: #fff8ea;
+}
+
+.schedule-day--booked .schedule-day__date,
+.schedule-day--booked .schedule-day__state {
+  color: #bd7200;
+}
+
+.schedule-day--rest {
+  background: var(--color-bg-muted);
+}
+
+.schedule-day--none {
+  border-color: var(--color-divider);
+  background: #fbfbfb;
+}
+
+.schedule-day--none .schedule-day__date {
+  color: var(--color-text-placeholder);
+}
+
+/* ---------- 作品双列 ---------- */
+.works-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.work-item {
+  width: calc(50% - 12rpx);
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.16s ease;
+}
+
+.work-item--hover {
+  transform: scale(0.985);
+}
+
+.work-item__cover {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 133.33%;
+  overflow: hidden;
+  background: var(--color-bg-muted);
+}
+
+.work-item__img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.work-item__play {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.work-item__tri {
+  width: 0;
+  height: 0;
+  margin-left: 8rpx;
+  border-top: 22rpx solid transparent;
+  border-bottom: 22rpx solid transparent;
+  border-left: 36rpx solid rgba(255, 255, 255, 0.94);
+}
+
+.work-item__title {
+  padding: 16rpx 20rpx 18rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.list-footer {
+  padding: 16rpx 0 8rpx;
+  color: var(--color-text-placeholder);
+  font-size: 20rpx;
+  text-align: center;
+}
+
+/* ---------- 小程序码弹层 ---------- */
+.qr-mask {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.qr-panel {
+  width: 560rpx;
+  padding: 40rpx 32rpx 32rpx;
+  box-sizing: border-box;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  text-align: center;
+}
+
+.qr-panel__title {
+  font-size: 30rpx;
+  font-weight: 650;
+}
+
+.qr-panel__img {
+  width: 360rpx;
+  height: 360rpx;
+  margin-top: 24rpx;
+  background: var(--color-bg-muted);
+}
+
+.qr-panel__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300rpx;
+  margin-top: 24rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+}
+
+.qr-panel__fallback-text {
+  margin-top: 16rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.qr-panel__hint {
+  margin-top: 16rpx;
+  color: var(--color-text-placeholder);
+  font-size: 20rpx;
+}
+
+.qr-panel__actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.qr-panel__actions .btn {
+  flex: 1;
+}

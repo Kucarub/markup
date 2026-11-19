@@ -1,0 +1,125 @@
+<view class="page edit">
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <view class="page-title">{{mode === 'edit' ? '编辑作品' : '上传作品'}}</view>
+    <view class="page-subtitle">
+      {{mode === 'edit' ? '标题与风格会展示在作品卡片上' : '支持批量选择，图片自动压缩至 500KB 以内'}}
+    </view>
+
+    <!-- 编辑模式：封面预览 -->
+    <view wx:if="{{mode === 'edit'}}" class="card edit__preview">
+      <image
+        wx:if="{{preview && type === 'image'}}"
+        class="edit__cover"
+        src="{{preview}}"
+        mode="aspectFill"
+      />
+      <view wx:elif="{{type === 'video'}}" class="edit__cover edit__cover--video">
+        <view class="work__play"></view>
+        <text class="edit__cover-text">视频作品</text>
+      </view>
+      <view wx:else class="edit__cover edit__cover--empty">
+        <image class="icon icon--md" src="/assets/icons/photo.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <!-- 上传模式：九宫格 + 上传进度 -->
+    <view wx:else class="card">
+      <view class="edit__section">
+        <text class="edit__section-title">作品文件</text>
+        <text class="muted">{{pending.length}}/{{maxWorks}}</text>
+      </view>
+
+      <view class="works">
+        <view
+          class="work"
+          wx:for="{{pending}}"
+          wx:key="key"
+          data-key="{{item.key}}"
+          bindtap="onPendingTap"
+        >
+          <image
+            wx:if="{{item.type === 'image'}}"
+            class="work__media"
+            src="{{item.preview}}"
+            mode="aspectFill"
+          />
+          <view wx:else class="work__media work__media--video">
+            <view class="work__play"></view>
+            <view class="work__type">视频</view>
+          </view>
+
+          <view class="work__mask" wx:if="{{item.status === 'waiting'}}">待上传</view>
+          <view class="work__mask" wx:elif="{{item.status === 'compressing'}}">压缩中</view>
+          <view class="work__mask" wx:elif="{{item.status === 'uploading'}}">上传中</view>
+          <view class="work__mask work__mask--error" wx:elif="{{item.status === 'error'}}">
+            {{item.message || '上传失败'}}
+          </view>
+
+          <view class="work__done" wx:if="{{item.status === 'done'}}">
+            <image class="icon icon--xs" src="/assets/icons/check.svg" mode="aspectFit" />
+          </view>
+          <view class="work__remove" data-key="{{item.key}}" catchtap="removePending">×</view>
+        </view>
+
+        <view class="work work--add" wx:if="{{pending.length < maxWorks}}" bindtap="chooseWorks">
+          <image class="icon icon--md" src="/assets/icons/plus.svg" mode="aspectFit" />
+          <view class="work__add-text">添加作品</view>
+        </view>
+      </view>
+
+      <view class="upload-progress" wx:if="{{uploading}}">
+        <view class="upload-progress__bar">
+          <view class="upload-progress__fill" style="width: {{uploadProgress}}%"></view>
+        </view>
+        <text class="upload-progress__text">正在上传 {{uploadProgress}}%</text>
+      </view>
+
+      <view class="field__hint">支持图片与视频，单个文件上限 5MB；图片会自动压缩至 500KB 以内。</view>
+    </view>
+
+    <view class="card">
+      <view class="field">
+        <view class="field__label">作品标题</view>
+        <input
+          class="input"
+          value="{{title}}"
+          bindinput="onTitleInput"
+          maxlength="64"
+          placeholder="{{mode === 'edit' ? '给这个作品起个名字' : '选填，不填自动命名为「作品 N」'}}"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+
+      <view class="field">
+        <view class="field__label">
+          风格标签
+          <text class="field__label-note">最多 8 个</text>
+        </view>
+        <view class="styles">
+          <view
+            wx:for="{{styleOptions}}"
+            wx:key="code"
+            class="style-chip {{item.checked ? 'style-chip--on' : ''}}"
+            data-code="{{item.code}}"
+            bindtap="toggleStyle"
+          >
+            {{item.label}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="edit__footer" wx:if="{{!loading}}">
+    <button
+      class="btn btn--primary btn--block edit__submit"
+      bindtap="submit"
+      loading="{{saving}}"
+      disabled="{{saving}}"
+    >
+      {{mode === 'edit' ? '保存修改' : '保存作品'}}
+    </button>
+  </view>
+</view>

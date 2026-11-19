@@ -1,0 +1,334 @@
+/* eslint-disable */
+/**
+ * E4 冒烟验证脚本（可重复执行）：node scripts/verify-e4.cjs
+ * 覆盖 E4-01 ~ E4-06 的服务端验收点：
+ * 入驻提交 / 作品与身份证处理 / 重复提交 / 审核状态机 / 编辑重审规则 / audit_log。
+ * 依赖 dev 兜底（WX_APPID / WX_SECRET 为空）与种子后台账号。
+ */
+require('dotenv').config()
+const { PrismaClient } = require('@prisma/client')
+
+const BASE = process.env.VERIFY_BASE || 'http://127.0.0.1:3000'
+const prisma = new PrismaClient()
+
+const ID_CARD = '310101199001011234'
+const ID_CARD_MASKED = '310***********1234'
+
+let passed = 0
+let failed = 0
+
+function check(name, ok, detail = '') {
+  if (ok) {
+    passed += 1
+    console.log(`  PASS  ${name}`)
+  } else {
+    failed += 1
+    console.log(`  FAIL  ${name}${detail ? ` -> ${detail}` : ''}`)
+  }
+}
+
+async function request(method, path, { token, body, headers = {} } = {}) {
+  const finalHeaders = { ...headers }
+  if (body !== undefined && !Buffer.isBuffer(body)) finalHeaders['content-type'] = 'application/json'
+  if (token) finalHeaders.authorization = `Bearer ${token}`
+  const res = await fetch(BASE + path, {
+    method,
+    headers: finalHeaders,
+    body: body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body),
+  })
+  const isJson = (res.headers.get('content-type') || '').includes('json')
+  const data = isJson ? await res.json() : null
+  return { status: res.status, data }
+}
+
+/** 走「签名 → PUT 二进制」完整链路，返回可提交的 fileId 列表 */
+async function uploadWorks(token, count) {
+  const fileIds = []
+  for (let index = 0; index < count; index += 1) {
+    const sign = await request('POST', '/api/upload/sign', {
+      token,
+      body: {
+        scene: 'portfolio',
+        fileName: `e4-work-${index}.png`,
+        mimeType: 'image/png',
+        size: 68,
+      },
+    })
+    if (sign.status !== 200) throw new Error(`签名失败：${JSON.stringify(sign.data)}`)
+
+    const payload = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    )
+    const uploaded = await request('PUT', sign.data.data.uploadPath, {
+      body: payload,
+      headers: { 'content-type': 'image/png' },
+    })
+    if (uploaded.status !== 200) throw new Error(`上传失败：${JSON.stringify(uploaded.data)}`)
+    fileIds.push(sign.data.data.fileId)
+  }
+  return fileIds
+}
+
+function payloadOf(fileIds, overrides = {}) {
+  return {
+    name: '林小满',
+    city: '上海',
+    district: '浦东新区',
+    years: 5,
+    styles: ['fresh', 'bridal'],
+    intro: '五年新娘跟妆经验',
+    idCard: ID_CARD,
+    works: fileIds.map((fileId) => ({ fileId })),
+    agreed: true,
+    ...overrides,
+  }
+}
+
+async function main() {
+  console.log(`[verify] base=${BASE}`)
+
+  const stamp = Date.now()
+  const openid = `dev-openid-e4-${stamp}`
+  const openidB = `dev-openid-e4b-${stamp}`
+  let userIdA = null
+  let userIdB = null
+  let artistId = null
+
+  // 准备：两个化妆师账号 + 一个后台账号
+  const loginA = await request('POST', '/api/auth/wx-login', { body: { code: openid } })
+  userIdA = loginA.data.data.userId
+  const roleA = await request('POST', '/api/auth/role', {
+    token: loginA.data.data.accessToken,
+    body: { role: 'artist' },
+  })
+  const tokenA = roleA.data.data.accessToken
+
+  const loginB = await request('POST', '/api/auth/wx-login', { body: { code: openidB } })
+  userIdB = loginB.data.data.userId
+  const roleB = await request('POST', '/api/auth/role', {
+    token: loginB.data.data.accessToken,
+    body: { role: 'artist' },
+  })
+  const tokenB = roleB.data.data.accessToken
+
+  const adminLogin = await request('POST', '/api/admin/auth/login', {
+    body: { username: 'admin', password: 'Admin@123456' },
+  })
+  const adminToken = (adminLogin.data.data || {}).accessToken
+  const adminId = (adminLogin.data.data || {}).admin
+    ? adminLogin.data.data.admin.id
+    : null
+  check('后台账号可登录（审核入口可用）', adminLogin.status === 200 && !!adminToken)
+
+  console.log('\n[E4-02] 入驻提交与 artist 落库')
+  const empty = await request('GET', '/api/artist/me', { token: tokenA })
+  check('未提交时 GET /artist/me 返回 data=null', empty.status === 200 && empty.data.data === null)
+
+  const twoWorks = await uploadWorks(tokenA, 2)
+  const tooFew = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: payloadOf(twoWorks),
+  })
+  check(
+    '作品不足 6 图且无视频 → 400/40001',
+    tooFew.status === 400 && tooFew.data.code === 40001,
+    JSON.stringify(tooFew.data),
+  )
+
+  const sixWorks = await uploadWorks(tokenA, 4)
+  const allWorks = twoWorks.concat(sixWorks)
+  const applied = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: payloadOf(allWorks),
+  })
+  artistId = (applied.data.data || {}).id
+  check(
+    '提交成功返回 artistId 且状态 pending',
+    applied.status === 200 && !!artistId && applied.data.data.status === 'pending',
+    JSON.stringify(applied.data).slice(0, 300),
+  )
+  check(
+    '返回身份证脱敏值（不含明文）',
+    applied.data.data.idCardMasked === ID_CARD_MASKED &&
+      !JSON.stringify(applied.data).includes(ID_CARD),
+    applied.data.data.idCardMasked,
+  )
+  check(
+    '作品返回私有签名地址（/api/files/raw）',
+    applied.data.data.works.length === 6 &&
+      applied.data.data.works.every((work) => work.path.indexOf('/api/files/raw') === 0),
+  )
+
+  const artistRow = await prisma.artist.findUnique({ where: { id: artistId } })
+  check(
+    '身份证仅存 AES 密文（v1. 前缀，不含明文）',
+    !!artistRow.idCardCipher &&
+      artistRow.idCardCipher.startsWith('v1.') &&
+      !artistRow.idCardCipher.includes(ID_CARD),
+  )
+
+  const duplicate = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: payloadOf(allWorks),
+  })
+  check(
+    '待审核状态重复提交 → 409/40900',
+    duplicate.status === 409 && duplicate.data.code === 40900,
+    JSON.stringify(duplicate.data),
+  )
+
+  const noAuth = await request('POST', '/api/artist/apply', { body: payloadOf(allWorks) })
+  check('未登录提交 → 401/40100', noAuth.status === 401 && noAuth.data.code === 40100)
+
+  const merchantLogin = await request('POST', '/api/auth/wx-login', {
+    body: { code: 'dev-merchant-openid' },
+  })
+  const merchantToken = merchantLogin.data.data.accessToken
+  const wrongRole = await request('POST', '/api/artist/apply', {
+    token: merchantToken,
+    body: payloadOf(allWorks),
+  })
+  check('商家角色提交入驻 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
+
+  const foreignWorks = await uploadWorks(tokenB, 1)
+  const foreign = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: payloadOf(allWorks.concat(foreignWorks)),
+  })
+  check(
+    '引用他人 fileId 提交 → 400/40001',
+    foreign.status === 400 && foreign.data.code === 40001,
+    JSON.stringify(foreign.data),
+  )
+
+  console.log('\n[E4-06] 审核状态机与 audit_log')
+  const artistApprove = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
+    token: tokenA,
+  })
+  check('化妆师 token 调用审核接口 → 403', artistApprove.status === 403)
+
+  const approved = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
+    token: adminToken,
+  })
+  check(
+    'pending → approved 成功',
+    approved.status === 200 && approved.data.data.status === 'approved',
+    JSON.stringify(approved.data),
+  )
+
+  const approveAgain = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
+    token: adminToken,
+  })
+  check(
+    '已通过再次审核 → 409（状态机限制）',
+    approveAgain.status === 409 && approveAgain.data.code === 40900,
+  )
+
+  console.log('\n[E4-05] 资料编辑与重审规则')
+  const introOnly = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: payloadOf(allWorks, { intro: '补充：擅长法式盘发与妈妈妆' }),
+  })
+  check(
+    '仅改简介 keyChanged=false 且状态保持 approved',
+    introOnly.status === 200 &&
+      introOnly.data.data.keyChanged === false &&
+      introOnly.data.data.status === 'approved',
+    JSON.stringify({ keyChanged: introOnly.data.data.keyChanged, status: introOnly.data.data.status }),
+  )
+
+  const nameChanged = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: payloadOf(allWorks, { name: '林小满满' }),
+  })
+  check(
+    '改姓名 keyChanged=true 且回退 pending',
+    nameChanged.status === 200 &&
+      nameChanged.data.data.keyChanged === true &&
+      nameChanged.data.data.status === 'pending',
+    JSON.stringify({ keyChanged: nameChanged.data.data.keyChanged, status: nameChanged.data.data.status }),
+  )
+
+  const rejectNoReason = await request('POST', `/api/admin/audits/artists/${artistId}/reject`, {
+    token: adminToken,
+    body: {},
+  })
+  check('驳回缺少原因 → 400/40001', rejectNoReason.status === 400 && rejectNoReason.data.code === 40001)
+
+  const rejected = await request('POST', `/api/admin/audits/artists/${artistId}/reject`, {
+    token: adminToken,
+    body: { reason: '作品风格与资料描述不一致，请补充婚礼跟妆作品' },
+  })
+  check(
+    'pending → rejected 并记录原因',
+    rejected.status === 200 &&
+      rejected.data.data.status === 'rejected' &&
+      rejected.data.data.rejectReason === '作品风格与资料描述不一致，请补充婚礼跟妆作品',
+    JSON.stringify(rejected.data),
+  )
+
+  const approveRejected = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
+    token: adminToken,
+  })
+  check('驳回状态直接通过 → 409（须先重新提审）', approveRejected.status === 409)
+
+  const resubmitted = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: payloadOf(allWorks, { intro: '已补充婚礼跟妆作品' }),
+  })
+  check(
+    '驳回 → 重新提审回到 pending 且清空原因',
+    resubmitted.status === 200 &&
+      resubmitted.data.data.status === 'pending' &&
+      resubmitted.data.data.rejectReason === null,
+    JSON.stringify(resubmitted.data).slice(0, 300),
+  )
+
+  const logs = await prisma.auditLog.findMany({
+    where: { targetType: 'artist', targetId: artistId },
+    orderBy: { id: 'asc' },
+  })
+  check(
+    'audit_log 记录通过/驳回且包含操作人',
+    logs.length === 2 &&
+      logs[0].action === 'approve' &&
+      logs[1].action === 'reject' &&
+      logs.every((log) => log.operatorId === adminId) &&
+      logs[1].reason === '作品风格与资料描述不一致，请补充婚礼跟妆作品',
+    JSON.stringify(logs.map((log) => ({ action: log.action, operatorId: log.operatorId }))),
+  )
+
+  console.log('\n[E4-08] 接口文档')
+  const doc = await request('GET', '/api-docs/openapi.json')
+  const paths = (doc.data && doc.data.paths) || {}
+  check(
+    'OpenAPI 已包含 E4 五个接口',
+    [
+      '/api/artist/apply',
+      '/api/artist/me',
+      '/api/admin/audits/artists/{id}/approve',
+      '/api/admin/audits/artists/{id}/reject',
+    ].every((path) => !!paths[path]) && !!paths['/api/artist/me'].put,
+  )
+
+  // 清理测试数据（作品随 artist 级联删除，文件记录按用户清理）
+  if (artistId) {
+    await prisma.auditLog.deleteMany({ where: { targetType: 'artist', targetId: artistId } })
+    await prisma.artist.deleteMany({ where: { id: artistId } })
+  }
+  await prisma.fileObject.deleteMany({ where: { userId: { in: [userIdA, userIdB] } } })
+  await prisma.userAuth.deleteMany({ where: { openid: { in: [openid, openidB] } } })
+
+  console.log(`\n[verify] 通过 ${passed} / 失败 ${failed}`)
+  if (failed > 0) process.exitCode = 1
+}
+
+main()
+  .catch((error) => {
+    console.error('[verify] 执行异常：', error)
+    process.exitCode = 1
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

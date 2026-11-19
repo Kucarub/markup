@@ -1,0 +1,149 @@
+<view class="screen detail">
+  <view wx:if="{{loading}}" class="detail-skeleton">
+    <view class="skeleton-hero">
+      <view class="skeleton-avatar shimmer"></view>
+      <view class="skeleton-lines">
+        <view class="skeleton-line skeleton-line--lg shimmer"></view>
+        <view class="skeleton-line shimmer"></view>
+        <view class="skeleton-line skeleton-line--short shimmer"></view>
+      </view>
+    </view>
+    <view class="skeleton-block shimmer"></view>
+    <view class="skeleton-block shimmer"></view>
+  </view>
+
+  <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+  <block wx:else>
+    <!-- 化妆师名片 -->
+    <view class="hero">
+      <view class="hero__top">
+        <view class="avatar avatar--lg">
+          <image
+            wx:if="{{profile.avatarUrl}}"
+            class="avatar__img"
+            src="{{profile.avatarUrl}}"
+            mode="aspectFill"
+          />
+          <image
+            wx:else
+            class="avatar__img hero__avatar-placeholder"
+            src="/assets/icons/photo.svg"
+            mode="aspectFit"
+          />
+        </view>
+
+        <view class="hero__copy">
+          <view class="hero__name">{{profile.name}}</view>
+          <view class="hero__meta">
+            <image class="icon icon--xs" src="/assets/icons/location-gray.svg" mode="aspectFit" />
+            <text>{{profile.city}}{{profile.district ? ' · ' + profile.district : ''}}</text>
+            <text class="hero__dot">·</text>
+            <text>{{profile.years}} 年经验</text>
+          </view>
+          <view class="hero__stats">
+            <text class="hero__stat"><text class="hero__stat-value">{{profile.worksTotal}}</text> 个作品</text>
+            <text class="hero__stat"><text class="hero__stat-value">{{profile.schedule.availableDays}}</text> 天可约</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="hero__tags">
+        <text wx:for="{{labels}}" wx:key="*this" class="tag tag--brand">{{item}}</text>
+        <text wx:if="{{!labels.length}}" class="tag tag--neutral">未填写风格</text>
+      </view>
+
+      <view class="hero__intro" wx:if="{{profile.intro}}">{{profile.intro}}</view>
+
+      <view class="hero__actions">
+        <view class="btn btn--primary hero__contact" hover-class="hero__action--hover" bindtap="onContact">
+          联系 TA
+        </view>
+        <button class="btn btn--secondary hero__action" open-type="share">分享</button>
+        <view
+          class="btn btn--secondary hero__action"
+          hover-class="hero__action--hover"
+          bindtap="onShowQrcode"
+        >
+          二维码
+        </view>
+      </view>
+    </view>
+
+    <!-- 档期摘要 -->
+    <view class="section">
+      <view class="section-heading">
+        <text class="section-title">未来 14 天档期</text>
+        <text class="muted">
+          {{profile.schedule.nextAvailableDate ? '最近可约 ' + profile.schedule.nextAvailableDate : '暂无可约日期'}}
+        </text>
+      </view>
+      <scroll-view class="schedule-strip" scroll-x show-scrollbar="{{false}}">
+        <view
+          wx:for="{{scheduleDays}}"
+          wx:key="date"
+          class="schedule-day schedule-day--{{item.state}}"
+        >
+          <text class="schedule-day__date">{{item.month}}/{{item.day}}</text>
+          <text class="schedule-day__state">{{item.stateLabel}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 作品集 -->
+    <view class="section">
+      <view class="section-heading">
+        <text class="section-title">作品集</text>
+        <text class="muted">共 {{profile.worksTotal}} 个</text>
+      </view>
+
+      <view wx:if="{{works.length}}" class="works-grid">
+        <view
+          class="work-item"
+          wx:for="{{works}}"
+          wx:key="id"
+          data-index="{{index}}"
+          bindtap="onPreviewWork"
+          hover-class="work-item--hover"
+          hover-stay-time="80"
+        >
+          <view class="work-item__cover">
+            <image class="work-item__img" src="{{item.cover}}" mode="aspectFill" lazy-load />
+            <view wx:if="{{item.isVideo}}" class="work-item__play">
+              <view class="work-item__tri"></view>
+            </view>
+          </view>
+          <view class="work-item__title ellipsis">{{item.title}}</view>
+        </view>
+      </view>
+
+      <view wx:else class="empty">还没有上传作品</view>
+
+      <view wx:if="{{hasMore}}" class="list-footer">{{loadingMore ? '加载中…' : '上滑加载更多'}}</view>
+    </view>
+  </block>
+
+  <!-- 小程序码 -->
+  <view class="qr-mask" wx:if="{{showQrcode}}" bindtap="closeQrcode">
+    <view class="qr-panel" catchtap="stopProp">
+      <view class="qr-panel__title">扫码查看主页</view>
+      <image
+        wx:if="{{!qrcodeError}}"
+        class="qr-panel__img"
+        src="{{qrcodeUrl}}"
+        mode="aspectFit"
+        show-menu-by-longpress
+        binderror="onQrcodeError"
+      />
+      <view wx:else class="qr-panel__fallback">
+        <image class="icon icon--lg" src="/assets/icons/info.svg" mode="aspectFit" />
+        <text class="qr-panel__fallback-text">暂未配置小程序 AppID，无法生成小程序码</text>
+      </view>
+      <view class="qr-panel__hint">长按图片可保存或转发</view>
+      <view class="qr-panel__actions">
+        <view class="btn btn--secondary" bindtap="saveQrcode">保存到相册</view>
+        <view class="btn btn--primary" bindtap="closeQrcode">关闭</view>
+      </view>
+    </view>
+  </view>
+</view>

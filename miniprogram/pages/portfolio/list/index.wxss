@@ -1,3 +1,4 @@
+/* 作品管理列表（E5-02 / E5-07）：骨架屏、双列卡片、长按操作 */
 .portfolio-top {
   border-bottom: 2rpx solid var(--color-border);
   background: var(--color-bg-card);
@@ -16,60 +17,204 @@
   font-size: 22rpx;
 }
 
-.segment-control {
-  white-space: nowrap;
-  padding: 0 32rpx;
-  box-sizing: border-box;
+.btn--hover {
+  opacity: 0.86;
 }
 
-.segment {
-  position: relative;
-  display: inline-block;
-  padding: 0 26rpx 24rpx;
+.portfolio-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx 24rpx;
+}
+
+.portfolio-count {
   color: var(--color-text-secondary);
   font-size: 22rpx;
 }
 
-.segment::after {
-  content: '';
-  position: absolute;
-  left: 26rpx;
-  right: 26rpx;
-  bottom: 0;
-  height: 4rpx;
-  border-radius: 999rpx;
-  background: transparent;
+.portfolio-preview {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  min-height: 44rpx;
+  color: var(--color-primary);
+  font-size: 22rpx;
+  font-weight: 600;
 }
 
-.segment--active {
-  color: var(--color-text-primary);
-  font-weight: 650;
-}
-
-.segment--active::after {
-  background: var(--color-primary);
+.portfolio-preview--hover {
+  opacity: 0.7;
 }
 
 .portfolio-content {
-  padding: 28rpx 32rpx 40rpx;
+  padding: 24rpx 32rpx 40rpx;
 }
 
-.portfolio-summary {
+/* 作品数量不足提示 */
+.threshold-tip {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10rpx;
   margin-bottom: 24rpx;
-  color: var(--color-text-secondary);
-  font-size: 20rpx;
+  padding: 18rpx 22rpx;
+  border: 2rpx solid #f3ddb5;
+  border-radius: var(--radius-sm);
+  background: #fff8ea;
+  color: #bd7200;
+  font-size: 22rpx;
+  line-height: 1.5;
 }
 
+/* 双列网格 */
 .portfolio-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
 }
 
-.portfolio-cell {
+.work-card {
   width: calc(50% - 12rpx);
   margin-bottom: 24rpx;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.16s ease;
+}
+
+.work-card--hover {
+  transform: scale(0.985);
+}
+
+.work-card__cover {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 133.33%;
+  overflow: hidden;
+  background: var(--color-bg-muted);
+}
+
+.work-card__img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.work-card__video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.work-card__play {
+  width: 0;
+  height: 0;
+  margin-left: 8rpx;
+  border-top: 22rpx solid transparent;
+  border-bottom: 22rpx solid transparent;
+  border-left: 36rpx solid rgba(255, 255, 255, 0.94);
+}
+
+.work-card__order {
+  position: absolute;
+  right: 12rpx;
+  bottom: 12rpx;
+  min-width: 44rpx;
+  height: 40rpx;
+  padding: 0 10rpx;
+  box-sizing: border-box;
+  border-radius: 999rpx;
+  background: rgba(26, 26, 26, 0.62);
+  color: var(--color-text-inverse);
+  font-size: 18rpx;
+  line-height: 40rpx;
+  text-align: center;
+}
+
+.work-card__body {
+  padding: 18rpx 20rpx 20rpx;
+}
+
+.work-card__title {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.work-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.work-card__hint {
+  margin-top: 12rpx;
+  color: var(--color-text-placeholder);
+  font-size: 18rpx;
+}
+
+/* 骨架屏 */
+.skeleton-cell {
+  width: calc(50% - 12rpx);
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+}
+
+.skeleton-cell__cover {
+  width: 100%;
+  height: 0;
+  padding-bottom: 133.33%;
+}
+
+.skeleton-cell__line {
+  height: 26rpx;
+  margin: 20rpx 20rpx 0;
+  border-radius: 8rpx;
+}
+
+.skeleton-cell__line--short {
+  width: 40%;
+  margin-bottom: 24rpx;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f2f2f2 25%, #fafafa 37%, #f2f2f2 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* 空态与页脚 */
+.empty__action {
+  margin: 24rpx auto 0;
+  display: inline-flex;
+}
+
+.list-footer {
+  padding: 16rpx 0 8rpx;
+  color: var(--color-text-placeholder);
+  font-size: 20rpx;
+  text-align: center;
 }

@@ -1,13 +1,191 @@
-<view class="page">
-  <view class="page-title">化妆师入驻</view>
-  <view class="page-subtitle">P-M03 · 表单字段与提审流程在 E4-02 接入</view>
+<view class="page apply">
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
 
-  <view class="card">
-    <view class="card__title">待接入内容</view>
-    <view class="card__desc">
-      昵称、从业年限、擅长风格标签、所在区域、作品首图、身份与资质材料；提交后进入「待审核」，
-      由运营后台 P-O03 审核。
+  <block wx:else>
+    <view class="page-title">化妆师入驻</view>
+    <view class="page-subtitle">资料仅用于平台审核，身份证号加密存储</view>
+
+    <view class="notice notice--{{status}}" wx:if="{{mode === 'edit'}}">
+      <view class="notice__title">
+        {{status === 'approved' ? '已通过审核' : status === 'rejected' ? '审核未通过' : '资料审核中'}}
+      </view>
+      <view class="notice__desc" wx:if="{{status === 'rejected' && rejectReason}}">驳回原因：{{rejectReason}}</view>
+      <view class="notice__desc" wx:else>修改姓名、城市、从业年限、风格、身份证或作品后会重新进入审核。</view>
     </view>
-    <button class="btn btn--primary btn--block" bindtap="goSchedule">查看档期日历占位</button>
+
+    <view class="card apply__card">
+      <view class="form-section form-section--first">基本信息</view>
+
+      <view class="field" id="field-name">
+        <view class="field__label">姓名<text class="field__required">*</text></view>
+        <input
+          class="input"
+          value="{{form.name}}"
+          data-field="name"
+          bindinput="onFieldInput"
+          maxlength="32"
+          placeholder="请填写与身份证一致的姓名"
+          placeholder-class="input-placeholder"
+        />
+        <view class="field__error" wx:if="{{errors.name}}">{{errors.name}}</view>
+      </view>
+
+      <view class="field" id="field-city">
+        <view class="field__label">所在城市<text class="field__required">*</text></view>
+        <picker mode="selector" range="{{cities}}" value="{{cityIndex}}" bindchange="onCityChange">
+          <view class="input field__picker">
+            <text class="field__picker-text {{form.city ? '' : 'is-placeholder'}}">{{form.city || '请选择城市'}}</text>
+            <image class="icon icon--sm" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
+          </view>
+        </picker>
+        <view class="field__error" wx:if="{{errors.city}}">{{errors.city}}</view>
+      </view>
+
+      <view class="field">
+        <view class="field__label">所在区域</view>
+        <input
+          class="input"
+          value="{{form.district}}"
+          data-field="district"
+          bindinput="onFieldInput"
+          maxlength="32"
+          placeholder="选填，如 浦东新区"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+
+      <view class="field" id="field-years">
+        <view class="field__label">从业年限<text class="field__required">*</text></view>
+        <input
+          class="input"
+          type="number"
+          value="{{form.years}}"
+          data-field="years"
+          bindinput="onFieldInput"
+          maxlength="2"
+          placeholder="0–60 之间的整数"
+          placeholder-class="input-placeholder"
+        />
+        <view class="field__error" wx:if="{{errors.years}}">{{errors.years}}</view>
+      </view>
+
+      <view class="field" id="field-styles">
+        <view class="field__label">
+          擅长风格<text class="field__required">*</text>
+          <text class="field__label-note">最多 3 个</text>
+        </view>
+        <view class="styles">
+          <view
+            wx:for="{{styles}}"
+            wx:key="code"
+            class="style-chip {{item.checked ? 'style-chip--on' : ''}}"
+            data-code="{{item.code}}"
+            bindtap="toggleStyle"
+          >
+            {{item.label}}
+          </view>
+        </view>
+        <view class="field__error" wx:if="{{errors.styles}}">{{errors.styles}}</view>
+      </view>
+
+      <view class="field">
+        <view class="field__label">自我介绍</view>
+        <textarea
+          class="input input--textarea"
+          value="{{form.intro}}"
+          data-field="intro"
+          bindinput="onFieldInput"
+          maxlength="500"
+          placeholder="从业经历、擅长妆面、服务特色等（选填）"
+          placeholder-class="input-placeholder"
+        />
+        <view class="field__counter">{{form.intro.length}}/500</view>
+      </view>
+
+      <view class="form-section">实名信息</view>
+
+      <view class="field" id="field-id-card">
+        <view class="field__label">身份证号<text class="field__required">*</text></view>
+        <input
+          class="input"
+          value="{{form.idCard}}"
+          data-field="idCard"
+          bindinput="onFieldInput"
+          maxlength="18"
+          placeholder="{{idCardMasked ? '已提交，不修改可留空' : '请输入 18 位身份证号'}}"
+          placeholder-class="input-placeholder"
+        />
+        <view class="field__hint" wx:if="{{idCardMasked}}">已提交证件号：{{idCardMasked}}</view>
+        <view class="field__hint" wx:else>仅用于实名审核，平台加密存储，不会对外展示</view>
+        <view class="field__error" wx:if="{{errors.idCard}}">{{errors.idCard}}</view>
+      </view>
+
+      <view class="form-section">作品展示</view>
+
+      <view class="field" id="field-works">
+        <view class="field__label">
+          作品<text class="field__required">*</text>
+          <text class="field__label-note">至少 {{minImages}} 张图片或 1 个视频</text>
+        </view>
+        <view class="works">
+          <view class="work" wx:for="{{works}}" wx:key="key">
+            <image
+              wx:if="{{item.type === 'image' && item.preview}}"
+              class="work__media"
+              src="{{item.preview}}"
+              mode="aspectFill"
+              data-key="{{item.key}}"
+              bindtap="previewWork"
+            />
+            <view
+              wx:elif="{{item.type === 'video'}}"
+              class="work__media work__media--video"
+              data-key="{{item.key}}"
+              bindtap="previewWork"
+            >
+              <view class="work__play"></view>
+              <view class="work__type">视频</view>
+            </view>
+            <view wx:else class="work__media work__media--empty">
+              <image class="icon icon--sm" src="/assets/icons/photo.svg" mode="aspectFit" />
+            </view>
+
+            <view class="work__mask" wx:if="{{item.status === 'uploading'}}">上传中</view>
+            <view class="work__remove" data-key="{{item.key}}" catchtap="removeWork">×</view>
+          </view>
+
+          <view class="work work--add" wx:if="{{works.length < maxWorks}}" bindtap="chooseWorks">
+            <image class="icon icon--md" src="/assets/icons/plus.svg" mode="aspectFit" />
+            <view class="work__add-text">添加作品</view>
+          </view>
+        </view>
+        <view class="field__hint">已上传 {{imageCount}} 张图片 · {{videoCount}} 个视频，最多 {{maxWorks}} 个</view>
+        <view class="field__error" wx:if="{{errors.works}}">{{errors.works}}</view>
+      </view>
+    </view>
+
+    <view class="card apply__agreement" id="field-agreed">
+      <view class="agreement">
+        <view class="agreement__box {{form.agreed ? 'agreement__box--on' : ''}}" bindtap="toggleAgreement">
+          <view wx:if="{{form.agreed}}" class="agreement__tick"></view>
+        </view>
+        <view class="agreement__text">
+          <text bindtap="toggleAgreement">我已阅读并同意</text>
+          <text class="agreement__link" catchtap="openAgreement">《化妆师入驻协议》</text>
+        </view>
+      </view>
+      <view class="field__error" wx:if="{{errors.agreed}}">{{errors.agreed}}</view>
+    </view>
+  </block>
+
+  <view class="apply__footer" wx:if="{{!loading}}">
+    <button
+      class="btn btn--primary btn--block apply__submit"
+      bindtap="submit"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >
+      {{mode === 'edit' ? '保存并重新提交' : '提交审核'}}
+    </button>
   </view>
 </view>
