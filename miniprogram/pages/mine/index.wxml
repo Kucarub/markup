@@ -67,7 +67,7 @@
       <image class="icon icon--md growth-note__icon" src="/assets/icons/heart.svg" mode="aspectFit" />
       <view class="growth-note__copy">
         <text class="growth-note__title">每一次认真练习，都在积累专业</text>
-        <text class="growth-note__desc">继续完善作品，你会被更多商家看到</text>
+        <text class="growth-note__desc">继续完善作品，你会被更多客户看到</text>
       </view>
     </view>
 

@@ -12,7 +12,7 @@ const TAB_ROUTES = [
   '/pages/home/index',
   '/pages/demand/hall/index',
   '/pages/portfolio/list/index',
-  '/pages/order/list/index',
+  '/pages/demand/mine/index',
   '/pages/mine/index',
 ]
 
@@ -34,10 +34,12 @@ function fetchProfile(force) {
 
 function targetRoute(profile) {
   if (!profile.role) return '/pages/auth/role/index'
+  // 客户免审核：选完角色即视为通过，直接进我的需求
+  if (profile.role === 'customer') {
+    return profile.profileStatus === 'disabled' ? '/pages/apply/status/index' : ''
+  }
   if (!profile.profileStatus || profile.profileStatus === 'none') {
-    return profile.role === 'artist'
-      ? '/pkg-artist/pages/artist/apply/index'
-      : '/pkg-merchant/pages/merchant/apply/index'
+    return '/pkg-artist/pages/artist/apply/index'
   }
   if (profile.profileStatus !== 'approved') return '/pages/apply/status/index'
   return ''
@@ -84,7 +86,11 @@ function entryGuard() {
 function routeAfterAuth(profile) {
   if (profile) cache = { at: Date.now(), profile }
   const route = profile ? targetRoute(profile) : ''
-  go(route || '/pages/home/index')
+  if (route) {
+    go(route)
+    return
+  }
+  go(profile && profile.role === 'customer' ? '/pages/demand/mine/index' : '/pages/home/index')
 }
 
 module.exports = {

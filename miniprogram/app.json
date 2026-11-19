@@ -5,6 +5,7 @@
     "pages/portfolio/list/index",
     "pages/mine/index",
     "pages/demand/detail/index",
+    "pages/demand/mine/index",
     "pages/order/list/index",
     "pages/settings/index/index",
     "pages/launch/index",
@@ -22,15 +23,15 @@
       "pages": ["pages/artist/apply/index", "pages/artist/schedule/index"]
     },
     {
-      "root": "pkg-merchant",
-      "name": "merchant",
-      "pages": ["pages/merchant/apply/index", "pages/search/list/index"]
+      "root": "pkg-customer",
+      "name": "customer",
+      "pages": ["pages/demand/create/index", "pages/search/list/index"]
     }
   ],
   "preloadRule": {
     "pages/home/index": {
       "network": "all",
-      "packages": ["artist", "merchant"]
+      "packages": ["artist", "customer"]
     }
   },
   "window": {
@@ -50,7 +51,7 @@
       { "pagePath": "pages/home/index", "text": "工作台" },
       { "pagePath": "pages/demand/hall/index", "text": "需求大厅" },
       { "pagePath": "pages/portfolio/list/index", "text": "作品集" },
-      { "pagePath": "pages/order/list/index", "text": "订单" },
+      { "pagePath": "pages/demand/mine/index", "text": "我的需求" },
       { "pagePath": "pages/mine/index", "text": "我的" }
     ]
   },

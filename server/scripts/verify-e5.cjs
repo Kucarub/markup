@@ -246,17 +246,17 @@ async function main() {
     JSON.stringify(noArtistCreate.data),
   )
 
-  const merchantLogin = await request('POST', '/api/auth/wx-login', {
+  const otherLogin = await request('POST', '/api/auth/wx-login', {
     body: { code: `dev-openid-e5m-${stamp}` },
   })
-  const merchantUser = merchantLogin.data.data
-  created.userIds.push(merchantUser.userId)
-  const merchantToken = merchantUser.accessToken
+  const otherUser = otherLogin.data.data
+  created.userIds.push(otherUser.userId)
+  const otherToken = otherUser.accessToken
   const wrongRole = await request('POST', '/api/portfolio', {
-    token: merchantToken,
+    token: otherToken,
     body: { fileId: worksB[0] },
   })
-  check('商家角色新增作品 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
+  check('未入驻账号新增作品 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
 
   console.log('\n[E5-01] 新增作品与默认命名')
   const extraWorks = await uploadWorks(accountA.token, 1, 'e5-a-extra')

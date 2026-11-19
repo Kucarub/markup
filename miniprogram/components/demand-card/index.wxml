@@ -6,7 +6,7 @@
 >
   <view class="demand-card__head">
     <view class="demand-card__main">
-      <view class="eyebrow">{{demand.merchant}}</view>
+      <view class="eyebrow">{{demand.eyebrow}}</view>
       <view class="demand-card__title">{{demand.title}}</view>
     </view>
     <view class="tag tag--{{demand.statusTone}}">{{demand.status}}</view>

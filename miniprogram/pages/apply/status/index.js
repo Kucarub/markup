@@ -56,14 +56,9 @@ Page({
   },
 
   handleAction() {
-    const { status, role } = this.data
+    const { status } = this.data
     if (status === 'rejected') {
-      wx.reLaunch({
-        url:
-          role === 'merchant'
-            ? '/pkg-merchant/pages/merchant/apply/index'
-            : '/pkg-artist/pages/artist/apply/index',
-      })
+      wx.reLaunch({ url: '/pkg-artist/pages/artist/apply/index' })
       return
     }
     if (status === 'disabled') {

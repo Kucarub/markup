@@ -37,7 +37,7 @@ const demands = [
   {
     id: 1,
     title: '10月20日婚礼跟妆 · 需2人',
-    merchant: '云朵婚礼定制',
+    eyebrow: '林小满',
     pay: 800,
     payUnit: '人',
     occasion: '婚礼跟妆',
@@ -67,7 +67,7 @@ const demands = [
   {
     id: 2,
     title: '秋季婚纱样片拍摄化妆',
-    merchant: '光屿摄影工作室',
+    eyebrow: '周雅',
     pay: 1200,
     payUnit: '天',
     occasion: '影楼拍摄',
@@ -83,7 +83,7 @@ const demands = [
     status: '招募中',
     statusTone: 'success',
     makeupType: '清透妆、复古妆',
-    kit: '商家提供',
+    kit: '化妆师自备',
     settlement: '拍摄完成后 3 个工作日',
     requirements:
       '本次拍摄包含两组室内景和一组街景，需要根据服装快速调整唇色与发型。希望你熟悉镜头妆感，能够与造型师顺畅协作。',
@@ -97,7 +97,7 @@ const demands = [
   {
     id: 3,
     title: '品牌秋冬发布会后台妆造',
-    merchant: '缪斯活动策划',
+    eyebrow: '陈可',
     pay: 680,
     payUnit: '天',
     occasion: '活动会展',
@@ -127,7 +127,7 @@ const demands = [
   {
     id: 4,
     title: '古风主题写真妆发',
-    merchant: '拾光照相馆',
+    eyebrow: '顾南',
     pay: 500,
     payUnit: '单',
     occasion: '写真拍摄',
@@ -143,7 +143,7 @@ const demands = [
     status: '招募中',
     statusTone: 'success',
     makeupType: '古风妆、发簪造型',
-    kit: '商家提供',
+    kit: '化妆师自备',
     settlement: '拍摄结束当日结算',
     requirements: '熟悉古风眉形、面部修容和发包造型，现场提供服装与主要发饰。请携带个人常用刷具。',
     match: 88,
@@ -156,7 +156,7 @@ const demands = [
   {
     id: 5,
     title: '企业形象照轻妆服务',
-    merchant: '一格商业摄影',
+    eyebrow: '许清和',
     pay: 900,
     payUnit: '天',
     occasion: '企业拍摄',
@@ -185,7 +185,7 @@ const demands = [
   {
     id: 6,
     title: '周末证件照妆容协作',
-    merchant: '简影照相馆',
+    eyebrow: '苏味',
     pay: 450,
     payUnit: '天',
     occasion: '证件照',
@@ -201,7 +201,7 @@ const demands = [
     status: '招募中',
     statusTone: 'success',
     makeupType: '证件照妆',
-    kit: '商家提供',
+    kit: '化妆师自备',
     settlement: '当日结算',
     requirements: '妆面干净自然，能够根据不同面部特点快速调整。平均每位顾客服务时间约 30 分钟。',
     match: 80,

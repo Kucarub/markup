@@ -29,8 +29,8 @@ Page({
     wx.navigateTo({ url: '/pkg-artist/pages/artist/schedule/index' })
   },
 
-  goMerchant() {
-    wx.navigateTo({ url: '/pkg-merchant/pages/search/list/index' })
+  goCustomer() {
+    wx.navigateTo({ url: '/pkg-customer/pages/search/list/index' })
   },
 
   goTokens() {

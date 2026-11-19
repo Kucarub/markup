@@ -15,10 +15,10 @@
 
   <view class="card">
     <view class="card__title">分包入口</view>
-    <view class="card__desc">化妆师端与商家端各自独立分包，按需加载。</view>
+    <view class="card__desc">化妆师端与客户端各自独立分包，按需加载。</view>
     <view class="row row--gap entry-row">
       <button class="btn btn--primary btn--block" bindtap="goArtist">化妆师端</button>
-      <button class="btn btn--block" bindtap="goMerchant">商家端</button>
+      <button class="btn btn--block" bindtap="goCustomer">客户端</button>
     </view>
   </view>
 

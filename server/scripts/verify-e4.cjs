@@ -181,15 +181,15 @@ async function main() {
   const noAuth = await request('POST', '/api/artist/apply', { body: payloadOf(allWorks) })
   check('未登录提交 → 401/40100', noAuth.status === 401 && noAuth.data.code === 40100)
 
-  const merchantLogin = await request('POST', '/api/auth/wx-login', {
-    body: { code: 'dev-merchant-openid' },
+  const customerLogin = await request('POST', '/api/auth/wx-login', {
+    body: { code: 'dev-customer-openid' },
   })
-  const merchantToken = merchantLogin.data.data.accessToken
+  const customerToken = customerLogin.data.data.accessToken
   const wrongRole = await request('POST', '/api/artist/apply', {
-    token: merchantToken,
+    token: customerToken,
     body: payloadOf(allWorks),
   })
-  check('商家角色提交入驻 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
+  check('客户角色提交入驻 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
 
   const foreignWorks = await uploadWorks(tokenB, 1)
   const foreign = await request('PUT', '/api/artist/me', {

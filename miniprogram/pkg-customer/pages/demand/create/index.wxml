@@ -1,0 +1,154 @@
+<view class="page create">
+  <view class="page-title">发布需求</view>
+  <view class="page-subtitle">填写服务信息，同城化妆师会主动联系你</view>
+
+  <view wx:if="{{!checking && !phoneBound}}" class="card create__notice" id="field-phone">
+    <view class="card__title">先绑定手机号</view>
+    <view class="card__desc">发布需求前需绑定手机号，便于化妆师与你联系；手机号加密存储，不会对外展示。</view>
+    <button
+      class="btn btn--primary btn--block create__notice-btn"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhone"
+    >授权手机号</button>
+    <view class="field__error" wx:if="{{errors.phone}}">{{errors.phone}}</view>
+  </view>
+
+  <view class="card create__card">
+    <view class="form-section form-section--first">服务信息</view>
+
+    <view class="field" id="field-city">
+      <view class="field__label">服务城市<text class="field__required">*</text></view>
+      <picker mode="selector" range="{{cities}}" value="{{cityIndex}}" bindchange="onCityChange">
+        <view class="input field__picker">
+          <text class="field__picker-text {{form.city ? '' : 'is-placeholder'}}">{{form.city || '请选择城市'}}</text>
+          <image class="icon icon--sm" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
+        </view>
+      </picker>
+      <view class="field__error" wx:if="{{errors.city}}">{{errors.city}}</view>
+    </view>
+
+    <view class="field" id="field-district">
+      <view class="field__label">服务区域<text class="field__required">*</text></view>
+      <input
+        class="input"
+        value="{{form.district}}"
+        data-field="district"
+        bindinput="onFieldInput"
+        maxlength="32"
+        placeholder="如 静安区、西湖区"
+        placeholder-class="input-placeholder"
+      />
+      <view class="field__error" wx:if="{{errors.district}}">{{errors.district}}</view>
+    </view>
+
+    <view class="field" id="field-date">
+      <view class="field__label">服务日期<text class="field__required">*</text></view>
+      <picker mode="date" value="{{form.serviceDate}}" start="{{today}}" end="{{maxDate}}" bindchange="onDateChange">
+        <view class="input field__picker">
+          <text class="field__picker-text {{form.serviceDate ? '' : 'is-placeholder'}}">{{form.serviceDate || '请选择服务日期'}}</text>
+          <image class="icon icon--sm" src="/assets/icons/calendar.svg" mode="aspectFit" />
+        </view>
+      </picker>
+      <view class="field__hint">最早今天，最远 {{maxDate}}，请提前与化妆师确认档期。</view>
+      <view class="field__error" wx:if="{{errors.serviceDate}}">{{errors.serviceDate}}</view>
+    </view>
+
+    <view class="field" id="field-type">
+      <view class="field__label">服务类型<text class="field__required">*</text></view>
+      <view class="chips">
+        <view
+          wx:for="{{serviceTypes}}"
+          wx:key="code"
+          class="chip {{form.serviceType === item.code ? 'chip--on' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="onTypeTap"
+        >{{item.label}}</view>
+      </view>
+      <view class="field__error" wx:if="{{errors.serviceType}}">{{errors.serviceType}}</view>
+    </view>
+
+    <view class="field" id="field-headcount">
+      <view class="field__label">服务人数<text class="field__required">*</text></view>
+      <input
+        class="input"
+        type="number"
+        value="{{form.headcount}}"
+        data-field="headcount"
+        bindinput="onFieldInput"
+        maxlength="2"
+        placeholder="1–50 人"
+        placeholder-class="input-placeholder"
+      />
+      <view class="field__error" wx:if="{{errors.headcount}}">{{errors.headcount}}</view>
+    </view>
+
+    <view class="field" id="field-budget">
+      <view class="field__label">
+        预算区间<text class="field__required">*</text>
+        <text class="field__label-note">元 · 仅作撮合参考</text>
+      </view>
+      <view class="budget-row">
+        <input
+          class="input budget-row__input"
+          type="number"
+          value="{{form.budgetMin}}"
+          data-field="budgetMin"
+          bindinput="onBudgetInput"
+          placeholder="下限"
+          placeholder-class="input-placeholder"
+        />
+        <text class="budget-row__sep">—</text>
+        <input
+          class="input budget-row__input"
+          type="number"
+          value="{{form.budgetMax}}"
+          data-field="budgetMax"
+          bindinput="onBudgetInput"
+          placeholder="上限"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      <view class="field__error" wx:if="{{errors.budget}}">{{errors.budget}}</view>
+    </view>
+
+    <view class="field" id="field-styles">
+      <view class="field__label">
+        偏好风格
+        <text class="field__label-note">最多 {{maxStyles}} 个</text>
+      </view>
+      <view class="chips">
+        <view
+          wx:for="{{styles}}"
+          wx:key="code"
+          class="chip {{item.checked ? 'chip--on' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="toggleStyle"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field__label">补充说明</view>
+      <textarea
+        class="input input--textarea"
+        value="{{form.remark}}"
+        data-field="remark"
+        bindinput="onFieldInput"
+        maxlength="500"
+        placeholder="场地、到场时间、妆造要求等（选填）"
+        placeholder-class="input-placeholder"
+      />
+      <view class="field__counter">{{form.remark.length}}/500</view>
+    </view>
+  </view>
+
+  <view class="create__footer">
+    <button
+      class="btn btn--primary btn--block create__submit"
+      loading="{{submitting}}"
+      disabled="{{submitting || checking}}"
+      bindtap="submit"
+    >发布需求</button>
+    <view class="create__tip">平台不参与交易与收款，价格与履约请线下确认。</view>
+  </view>
+</view>

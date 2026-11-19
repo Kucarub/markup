@@ -67,7 +67,7 @@
       <empty-state
         wx:elif="{{artistId}}"
         title="还没有作品"
-        description="上传第一组作品，让商家看到你"
+        description="上传第一组作品，让客户看到你"
         action="上传作品"
         bind:action="onCreate"
       />

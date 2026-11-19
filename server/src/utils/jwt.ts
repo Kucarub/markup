@@ -4,7 +4,7 @@ import { AppError } from './errors'
 import { ErrorCode } from './response'
 
 /** guest 表示已登录但未选择身份（E3-03），业务接口不接受该角色 */
-export type TokenRole = 'artist' | 'merchant' | 'admin' | 'guest'
+export type TokenRole = 'artist' | 'customer' | 'admin' | 'guest'
 export type TokenType = 'access' | 'refresh'
 
 export interface TokenClaims {

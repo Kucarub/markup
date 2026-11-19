@@ -184,7 +184,7 @@
   background: var(--color-primary-tint);
 }
 
-.role-icon--merchant {
+.role-icon--customer {
   background: #edf2f7;
 }
 

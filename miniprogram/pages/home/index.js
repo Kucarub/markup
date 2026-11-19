@@ -1,5 +1,5 @@
 const { profile, stats, schedule, demands } = require('../../data/mock')
-const { getToken, isGuestBrowse } = require('../../utils/auth')
+const { getToken, isGuestBrowse, getRole } = require('../../utils/auth')
 const { entryGuard } = require('../../utils/guard')
 
 Page({
@@ -20,6 +20,11 @@ Page({
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().syncSelected()
+    }
+    // 客户首页即「我的需求」，工作台仅服务化妆师
+    if (getRole() === 'customer') {
+      wx.switchTab({ url: '/pages/demand/mine/index' })
+      return
     }
     entryGuard()
   },

@@ -45,14 +45,14 @@ Page({
   onApply() {
     const { demand, isApplied } = this.data
     if (isApplied) {
-      this.toast('投递进度：商家尚未查看')
+      this.toast('投递进度：化妆师尚未响应')
       return
     }
 
     const applied = wx.getStorageSync(APPLIED_KEY) || []
     wx.setStorageSync(APPLIED_KEY, applied.concat(demand.id))
     this.setData({ isApplied: true })
-    this.toast('投递成功，等待商家查看')
+    this.toast('投递成功，等待化妆师响应')
   },
 
   onNavigate() {

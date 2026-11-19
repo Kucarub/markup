@@ -1,0 +1,169 @@
+/* 我的需求列表（E7-04）：四态 Tab + 需求卡片 + 悬浮发布入口 */
+.demand-mine {
+  padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
+}
+
+.demand-mine__head {
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+.demand-mine__sub {
+  margin-top: var(--space-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+}
+
+/* 状态筛选 */
+.tabs {
+  display: flex;
+  margin-top: var(--space-md);
+  padding: 0 var(--space-md);
+  white-space: nowrap;
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  margin-right: 32rpx;
+  padding-bottom: 18rpx;
+  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
+.tab--active {
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
+.tab--active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 6rpx;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  content: '';
+}
+
+/* 登录 / 角色提示 */
+.demand-mine__notice {
+  margin: var(--space-md);
+}
+
+.demand-mine__notice-btn {
+  margin-top: var(--space-md);
+}
+
+/* 卡片列表 */
+.demand-list {
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.demand {
+  padding: 30rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.demand + .demand {
+  margin-top: var(--space-sm);
+}
+
+.demand__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.demand__date {
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+
+.demand__title {
+  margin-top: 12rpx;
+  font-size: 32rpx;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.demand__meta {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-top: 12rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+.demand__dot {
+  width: 4rpx;
+  height: 4rpx;
+  border-radius: 50%;
+  background: var(--color-text-placeholder);
+}
+
+.demand__budget {
+  color: var(--color-primary);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.demand__styles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.demand__remark {
+  margin-top: 16rpx;
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.demand__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid var(--color-divider);
+}
+
+.demand__responses {
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.demand-mine__more {
+  padding: var(--space-md) 0;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
+}
+
+/* 悬浮发布入口：避开自定义 TabBar */
+.publish-fab {
+  position: fixed;
+  right: var(--space-md);
+  bottom: calc(170rpx + env(safe-area-inset-bottom));
+  z-index: 6;
+  height: 84rpx;
+  padding: 0 34rpx;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  box-shadow: 0 12rpx 28rpx rgba(180, 86, 110, 0.28);
+  color: var(--color-text-inverse);
+  font-size: 26rpx;
+  font-weight: 650;
+  line-height: 84rpx;
+}

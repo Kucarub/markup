@@ -161,11 +161,11 @@ Page({
       wx.showToast({ title: '这是你的主页', icon: 'none' })
       return
     }
-    if (getRole() === 'merchant') {
-      wx.showToast({ title: '联系方式将在下单后开放', icon: 'none' })
+    if (getRole() === 'customer') {
+      wx.showToast({ title: '定向预约将在下一版本开放', icon: 'none' })
       return
     }
-    wx.showToast({ title: '商家账号可联系化妆师', icon: 'none' })
+    wx.showToast({ title: '登录后可预约该化妆师', icon: 'none' })
   },
 
   onShowQrcode() {

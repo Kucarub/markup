@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { ensureCustomer } from '../services/customer'
 import { code2session, getPhoneNumber } from '../services/wechat'
 import { asyncHandler } from '../utils/asyncHandler'
 import { decryptAndMask, encryptSensitive, maskPhone } from '../utils/crypto'
@@ -21,7 +22,7 @@ const wxLoginSchema = z.object({
 })
 
 const roleSchema = z.object({
-  role: z.enum(['artist', 'merchant'], { invalid_type_error: '角色只能是 artist 或 merchant' }),
+  role: z.enum(['artist', 'customer'], { invalid_type_error: '角色只能是 artist 或 customer' }),
 })
 
 const phoneSchema = z.object({
@@ -31,29 +32,35 @@ const phoneSchema = z.object({
 /**
  * 登录态资料（E3-03 / E3-05）：
  * profileStatus 供前端路由守卫判断入驻三态，none 表示尚未提交入驻。
+ * 客户无资质审核（E7-01），profileStatus 恒为 approved。
  */
 async function buildProfile(userId: number) {
   const user = await getPrisma().userAuth.findUnique({
     where: { id: userId },
     include: {
       artist: { select: { id: true, status: true, rejectReason: true } },
-      merchant: { select: { id: true, status: true, rejectReason: true } },
+      customer: { select: { id: true, status: true } },
     },
   })
   if (!user || user.status !== 'active') throw AppError.unauthorized('账号不存在或已禁用')
 
-  const entity = user.role === 'artist' ? user.artist : user.role === 'merchant' ? user.merchant : null
+  const entity = user.role === 'artist' ? user.artist : user.role === 'customer' ? user.customer : null
+  const profileStatus =
+    user.role === 'customer' ? 'approved' : entity ? entity.status : 'none'
+  const rejectReason =
+    user.role === 'artist' && user.artist?.status === 'rejected' ? user.artist.rejectReason : null
+
   return {
     userId: user.id,
-    role: user.role as 'artist' | 'merchant' | null,
+    role: user.role as 'artist' | 'customer' | null,
     needRoleSelect: !user.role,
     phoneBound: Boolean(user.phoneCipher),
     phoneMasked: decryptAndMask(user.phoneCipher),
     nickname: user.nickname,
     avatarUrl: user.avatarUrl,
     profileId: entity?.id ?? null,
-    profileStatus: entity ? entity.status : 'none',
-    rejectReason: entity && entity.status === 'rejected' ? entity.rejectReason : null,
+    profileStatus,
+    rejectReason,
   }
 }
 
@@ -114,13 +121,14 @@ authRouter.get(
   }),
 )
 
-/** 绑定 / 切换角色（E3-03）：写库后重新签发 token，前端据此渲染 TabBar */
+/** 绑定 / 切换角色（E3-03 / E7-01）：写库后重签 token；切客户角色时自动建档 */
 authRouter.post(
   '/auth/role',
   requireAuth(),
   asyncHandler(async (req, res) => {
     const { role } = roleSchema.parse(req.body)
     await getPrisma().userAuth.update({ where: { id: req.auth!.uid }, data: { role } })
+    if (role === 'customer') await ensureCustomer(req.auth!.uid)
     res.ok(await issueSession(req.auth!.uid))
   }),
 )

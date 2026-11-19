@@ -126,13 +126,13 @@ async function main() {
   })
   check('非法角色返回 400/40001', badRole.status === 400 && badRole.data.code === 40001)
 
-  const roleMerchant = await request('POST', '/api/auth/role', {
+  const roleCustomer = await request('POST', '/api/auth/role', {
     token: artistBound.accessToken,
-    body: { role: 'merchant' },
+    body: { role: 'customer' },
   })
   check(
-    '切换为商家成功且入驻状态为 none',
-    roleMerchant.data.data.role === 'merchant' && roleMerchant.data.data.profileStatus === 'none',
+    '切换为客户成功且自动建档（profileStatus=approved）',
+    roleCustomer.data.data.role === 'customer' && roleCustomer.data.data.profileStatus === 'approved',
   )
 
   console.log('\n[E3-04] 登录态管理')
@@ -161,20 +161,21 @@ async function main() {
   check('过期 token 返回 401/40101', expired.status === 401 && expired.data.code === 40101)
 
   console.log('\n[E3-05] 入驻状态路由守卫数据')
-  const noneProfile = await request('GET', '/api/auth/me', { token: roleMerchant.data.data.accessToken })
+  const customerProfile = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
   check(
-    '无入驻记录时 profileStatus=none',
-    noneProfile.data.data.profileStatus === 'none' && noneProfile.data.data.profileId === null,
+    '客户资料回传 profileId 且无需审核',
+    customerProfile.data.data.profileStatus === 'approved' && customerProfile.data.data.profileId !== null,
+    JSON.stringify(customerProfile.data.data),
   )
 
   const pendingArtist = await prisma.artist.create({
     data: { userId: testUser.userId, name: '冒烟测试', city: '上海', status: 'pending' },
   })
   await request('POST', '/api/auth/role', {
-    token: roleMerchant.data.data.accessToken,
+    token: roleCustomer.data.data.accessToken,
     body: { role: 'artist' },
   })
-  const pendingMe = await request('GET', '/api/auth/me', { token: roleMerchant.data.data.accessToken })
+  const pendingMe = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
   check(
     '审核中返回 profileStatus=pending 与 profileId',
     pendingMe.data.data.profileStatus === 'pending' &&
@@ -186,20 +187,20 @@ async function main() {
     where: { id: pendingArtist.id },
     data: { status: 'rejected', rejectReason: '作品数量不足' },
   })
-  const rejectedMe = await request('GET', '/api/auth/me', { token: roleMerchant.data.data.accessToken })
+  const rejectedMe = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
   check(
     '驳回时回传 profileStatus=rejected 与驳回原因',
     rejectedMe.data.data.profileStatus === 'rejected' &&
       rejectedMe.data.data.rejectReason === '作品数量不足',
   )
 
-  const merchantLogin = await request('POST', '/api/auth/wx-login', {
-    body: { code: 'dev-merchant-openid' },
+  const customerLogin = await request('POST', '/api/auth/wx-login', {
+    body: { code: 'dev-customer-openid' },
   })
   check(
-    '种子商家登录已入驻（profileStatus=approved）',
-    merchantLogin.data.data.role === 'merchant' &&
-      merchantLogin.data.data.profileStatus === 'approved',
+    '种子客户登录已建档（profileStatus=approved）',
+    customerLogin.data.data.role === 'customer' &&
+      customerLogin.data.data.profileStatus === 'approved',
   )
 
   console.log('\n[E3-08] 接口文档')
@@ -214,7 +215,7 @@ async function main() {
 
   // 清理测试数据
   await prisma.artist.deleteMany({ where: { userId: testUser.userId } })
-  await prisma.merchant.deleteMany({ where: { userId: testUser.userId } })
+  await prisma.customer.deleteMany({ where: { userId: testUser.userId } })
   await prisma.userAuth.deleteMany({ where: { openid } })
 
   console.log(`\n[verify] 通过 ${passed} / 失败 ${failed}`)

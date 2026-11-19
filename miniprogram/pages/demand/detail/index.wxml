@@ -6,10 +6,10 @@
     </view>
     <view class="detail-title">{{demand.title}}</view>
     <view class="merchant-row">
-      <view class="merchant-logo">云</view>
-      <text>{{demand.merchant}}</text>
+      <view class="merchant-logo">客</view>
+      <text>{{demand.eyebrow}}</text>
       <image class="icon icon--xs merchant-check" src="/assets/icons/check-info.svg" mode="aspectFit" />
-      <text class="merchant-verified">已认证</text>
+      <text class="merchant-verified">已实名</text>
     </view>
     <view class="detail-pay">
       <text class="detail-pay__unit">¥</text>
@@ -87,7 +87,7 @@
   <view class="detail-section">
     <view class="detail-section-title">
       <text class="detail-section-no">02</text>
-      <text class="detail-section-name">商家要求</text>
+      <text class="detail-section-name">需求说明</text>
     </view>
     <view class="requirements {{expanded ? 'requirements--expanded' : ''}}">{{demand.requirements}}</view>
     <view class="expand-btn" bindtap="onToggleExpand">

@@ -31,10 +31,6 @@ const DICTS: Array<{ type: string; code: string; label: string; sort: number }> 
   { type: 'service_type', code: 'daily', label: '日常妆造', sort: 2 },
   { type: 'service_type', code: 'event', label: '商业活动', sort: 3 },
   { type: 'service_type', code: 'photo', label: '写真拍摄', sort: 4 },
-  { type: 'merchant_type', code: 'studio', label: '摄影工作室', sort: 1 },
-  { type: 'merchant_type', code: 'wedding', label: '婚庆公司', sort: 2 },
-  { type: 'merchant_type', code: 'photo', label: '影楼', sort: 3 },
-  { type: 'merchant_type', code: 'other', label: '其他', sort: 4 },
 ]
 
 async function seedAdmin() {
@@ -92,42 +88,38 @@ async function seedDemoArtist() {
   console.info('[seed] artist: 林知夏（approved）')
 }
 
-async function seedDemoMerchant() {
+async function seedDemoCustomer() {
   const phoneCipher = encryptSensitive('13900002345')
   const user = await prisma.userAuth.upsert({
-    where: { openid: 'dev-merchant-openid' },
-    update: { role: 'merchant', status: 'active' },
+    where: { openid: 'dev-customer-openid' },
+    update: { role: 'customer', status: 'active' },
     create: {
-      openid: 'dev-merchant-openid',
-      role: 'merchant',
-      nickname: '知夏造型工作室',
+      openid: 'dev-customer-openid',
+      role: 'customer',
+      nickname: '林小满',
       phoneCipher,
     },
   })
 
-  await prisma.merchant.upsert({
+  await prisma.customer.upsert({
     where: { userId: user.id },
     update: {},
     create: {
       userId: user.id,
-      shopName: '知夏造型工作室',
-      type: 'studio',
-      address: '上海市静安区南京西路 1266 号',
-      licenseCipher: encryptSensitive('91310101MA1FL0XXXX'),
-      status: 'approved',
-      auditAt: new Date(),
-      lat: 31.2291,
-      lng: 121.4447,
+      nickname: '林小满',
+      city: '上海',
+      district: '静安区',
+      status: 'active',
     },
   })
-  console.info('[seed] merchant: 知夏造型工作室（approved）')
+  console.info('[seed] customer: 林小满')
 }
 
 async function main() {
   await seedAdmin()
   await seedDicts()
   await seedDemoArtist()
-  await seedDemoMerchant()
+  await seedDemoCustomer()
 }
 
 main()

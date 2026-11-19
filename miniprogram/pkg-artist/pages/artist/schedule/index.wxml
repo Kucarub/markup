@@ -1,19 +1,171 @@
-<view class="page">
-  <view class="page-title">档期日历</view>
-  <view class="page-subtitle">P-M08 · 月视图与三态切换在 E6-01 接入</view>
-
-  <view class="card">
-    <view class="card__title">状态图例</view>
-    <view class="legend">
-      <text wx:for="{{legends}}" wx:key="text" class="{{item.className}}">{{item.text}}</text>
+<view class="page schedule-page">
+  <view class="schedule-head">
+    <view>
+      <text class="kicker">SCHEDULE</text>
+      <view class="page-title">档期日历</view>
     </view>
-    <view class="card__desc">
-      点击日期切换状态后即时保存；订单接受时在同一事务内把对应日期写为「已排期」，
-      并由 (artist_id, date) 唯一索引兜底并发冲突。
+    <view wx:if="{{!error}}" class="batch-toggle" bindtap="toggleBatch">
+      {{batchOpen ? '收起批量' : '批量设置'}}
     </view>
   </view>
 
-  <view class="card">
-    <view class="empty">日历组件占位</view>
+  <!-- 未登录 / 未入驻 / 非化妆师 -->
+  <view wx:if="{{error}}" class="card schedule-empty">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">档期用于客户判断你哪天可接单；未设置的日期默认不可接。</view>
+    <button class="btn btn--primary btn--block schedule-empty__action" bindtap="onGoApply">去登录 / 入驻</button>
   </view>
+
+  <view wx:elif="{{loading}}" class="card schedule-loading">档期加载中…</view>
+
+  <block wx:else>
+    <!-- 批量设置（E6-02） -->
+    <view wx:if="{{batchOpen}}" class="card batch-panel">
+      <view class="batch-panel__head">
+        <text class="card__title">批量设置</text>
+        <text class="batch-panel__hint">单次最多 92 天</text>
+      </view>
+
+      <view class="batch-row">
+        <text class="batch-row__label">日期段</text>
+        <view class="batch-range">
+          <picker
+            mode="date"
+            value="{{batchStart}}"
+            start="{{settable.minDate}}"
+            end="{{settable.maxDate}}"
+            bindchange="onBatchStartChange"
+          >
+            <view class="batch-range__value">{{batchStart || '开始日期'}}</view>
+          </picker>
+          <text class="batch-range__sep">至</text>
+          <picker
+            mode="date"
+            value="{{batchEnd}}"
+            start="{{settable.minDate}}"
+            end="{{settable.maxDate}}"
+            bindchange="onBatchEndChange"
+          >
+            <view class="batch-range__value">{{batchEnd || '结束日期'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="batch-row">
+        <text class="batch-row__label">星期</text>
+        <view class="batch-chips">
+          <view
+            wx:for="{{weekdayOptions}}"
+            wx:key="value"
+            class="chip {{item.active ? 'chip--active' : ''}}"
+            data-weekday="{{item.value}}"
+            bindtap="onWeekdayTap"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="batch-row">
+        <text class="batch-row__label">设为</text>
+        <view class="batch-chips">
+          <view
+            class="chip {{batchState === 'available' ? 'chip--active' : ''}}"
+            data-state="available"
+            bindtap="onBatchStateTap"
+          >可接单</view>
+          <view
+            class="chip {{batchState === 'rest' ? 'chip--active' : ''}}"
+            data-state="rest"
+            bindtap="onBatchStateTap"
+          >休息</view>
+        </view>
+      </view>
+
+      <button
+        class="btn btn--primary btn--block batch-submit"
+        loading="{{batchSaving}}"
+        disabled="{{batchSaving}}"
+        bindtap="submitBatch"
+      >应用批量设置</button>
+      <view class="batch-panel__tip">已被订单占用的日期会自动跳过，不会覆盖。</view>
+    </view>
+
+    <!-- 本月汇总 -->
+    <view class="schedule-summary">
+      <view class="summary-item">
+        <text class="summary-item__value summary-item__value--available">{{summary.available}}</text>
+        <text class="summary-item__label">可接</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-item__value summary-item__value--booked">{{summary.booked}}</text>
+        <text class="summary-item__label">已排</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-item__value summary-item__value--rest">{{summary.rest}}</text>
+        <text class="summary-item__label">休息</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-item__value">{{summary.none}}</text>
+        <text class="summary-item__label">未设置</text>
+      </view>
+    </view>
+
+    <!-- 月视图（E6-01） -->
+    <view class="card calendar">
+      <view class="calendar__head">
+        <view
+          class="calendar__nav {{canPrev ? '' : 'calendar__nav--disabled'}}"
+          bindtap="prevMonth"
+        >‹</view>
+        <text class="calendar__title">{{year}} 年 {{month}} 月</text>
+        <view
+          class="calendar__nav {{canNext ? '' : 'calendar__nav--disabled'}}"
+          bindtap="nextMonth"
+        >›</view>
+      </view>
+
+      <view class="calendar__week">
+        <text wx:for="{{weekLabels}}" wx:key="*this" class="calendar__week-item">{{item}}</text>
+      </view>
+
+      <view class="calendar__grid">
+        <view
+          wx:for="{{cells}}"
+          wx:key="key"
+          class="day {{item.blank ? 'day--blank' : ''}} {{item.isToday ? 'day--today' : ''}} {{item.isPast ? 'day--past' : ''}} {{!item.blank ? 'day--' + item.state : ''}}"
+          data-date="{{item.date}}"
+          data-state="{{item.state}}"
+          data-is-past="{{item.isPast}}"
+          bindtap="onDayTap"
+        >
+          <block wx:if="{{!item.blank}}">
+            <text class="day__num">{{item.day}}</text>
+            <view class="day__dot"></view>
+          </block>
+        </view>
+      </view>
+
+      <view class="calendar__legend">
+        <view class="legend-item">
+          <view class="legend-dot legend-dot--available"></view>
+          <text>可接</text>
+        </view>
+        <view class="legend-item">
+          <view class="legend-dot legend-dot--booked"></view>
+          <text>已排</text>
+        </view>
+        <view class="legend-item">
+          <view class="legend-dot legend-dot--rest"></view>
+          <text>休息</text>
+        </view>
+        <view class="legend-item">
+          <view class="legend-dot legend-dot--none"></view>
+          <text>未设置</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="schedule-tip">
+      点击日期可切换为「可接 / 休息 / 清空」并即时保存；「已排」由订单占用，需先处理订单才能改动。
+    </view>
+  </block>
 </view>

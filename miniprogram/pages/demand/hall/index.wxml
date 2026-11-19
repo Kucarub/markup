@@ -1,105 +1,63 @@
 <view class="screen screen--with-tab">
-  <block wx:if="{{isMerchant}}">
-    <view class="hall-top">
-      <view class="page-title-row">
-        <view>
-          <text class="kicker">FIND ARTISTS</text>
-          <view class="page-heading">找化妆师</view>
-        </view>
-      </view>
-
-      <view class="search-field">
-        <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
-        <input
-          class="search-input"
-          placeholder="搜索风格/城市/化妆师"
-          placeholder-class="input-placeholder"
-          disabled
-        />
+  <view class="hall-top">
+    <view class="page-title-row">
+      <view>
+        <text class="kicker">OPPORTUNITIES</text>
+        <view class="page-heading">需求大厅</view>
       </view>
     </view>
+    <view class="hall-sub">同城客户发布的妆造需求，响应后等待客户确认</view>
 
-    <view class="hall-content">
-      <empty-state
-        title="找化妆师功能即将开放"
-        description="按风格、档期、距离筛选化妆师将在 E8 接入"
-        action="去工作台看看"
-        bind:action="goHome"
+    <view class="search-field">
+      <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
+      <input
+        class="search-input"
+        value="{{keyword}}"
+        placeholder="搜索区域 / 备注关键词"
+        placeholder-class="input-placeholder"
+        confirm-type="search"
+        bindinput="onQueryInput"
       />
-    </view>
-  </block>
-
-  <block wx:else>
-    <view class="hall-top">
-      <view class="page-title-row">
-        <view>
-          <text class="kicker">OPPORTUNITIES</text>
-          <view class="page-heading">需求大厅</view>
-        </view>
-        <view class="filter-icon" bindtap="onSmartFilter">
-          <image class="icon icon--md" src="/assets/icons/filter.svg" mode="aspectFit" />
-        </view>
-      </view>
-
-      <view class="search-field">
-        <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
-        <input
-          class="search-input"
-          value="{{query}}"
-          placeholder="搜索需求/场合/商家"
-          placeholder-class="input-placeholder"
-          confirm-type="search"
-          bindinput="onQueryInput"
-        />
-        <view wx:if="{{query}}" class="search-clear" bindtap="onClearQuery">×</view>
-      </view>
-
-      <scroll-view class="filter-strip" scroll-x show-scrollbar="{{false}}">
-        <view
-          class="filter-pill {{occasion !== '全部场合' ? 'filter-pill--selected' : ''}}"
-          bindtap="onCycleOccasion"
-        >
-          <text>{{occasion}}</text>
-          <image class="icon icon--xs" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
-        </view>
-        <view
-          wx:for="{{filters}}"
-          wx:key="*this"
-          class="filter-pill {{activeFilter === item ? 'filter-pill--selected' : ''}}"
-          data-name="{{item}}"
-          bindtap="onToggleFilter"
-        >
-          <text>{{item}}</text>
-          <image class="icon icon--xs" src="/assets/icons/chevron-down.svg" mode="aspectFit" />
-        </view>
-        <view
-          class="filter-pill {{availableOnly ? 'filter-pill--selected' : ''}}"
-          bindtap="onToggleAvailable"
-        >
-          <text>仅看可约</text>
-        </view>
-      </scroll-view>
+      <view wx:if="{{keyword}}" class="search-clear" bindtap="onClearQuery">×</view>
     </view>
 
-    <view class="hall-content">
-      <view class="result-count">
-        <text>为你找到 {{list.length}} 个机会</text>
-        <text class="result-count__tag">智能匹配</text>
-      </view>
+    <scroll-view class="filter-strip" scroll-x show-scrollbar="{{false}}">
+      <view
+        wx:for="{{serviceTypes}}"
+        wx:key="code"
+        class="filter-pill {{activeType === item.code ? 'filter-pill--selected' : ''}}"
+        data-code="{{item.code}}"
+        bindtap="onTypeTap"
+      >{{item.label}}</view>
+    </scroll-view>
+  </view>
 
-      <view wx:if="{{list.length}}" class="card-list">
-        <view class="card-item" wx:for="{{list}}" wx:key="id">
+  <view class="hall-content">
+    <view class="result-count">
+      <text>共 {{total}} 条待响应需求</text>
+      <text wx:if="{{keyword}}" class="result-count__tag">筛选出 {{visibleList.length}} 条</text>
+    </view>
+
+    <view wx:if="{{loading}}" class="empty">加载中…</view>
+
+    <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+    <block wx:elif="{{visibleList.length}}">
+      <view class="card-list">
+        <view class="card-item" wx:for="{{visibleList}}" wx:key="id">
           <demand-card demand="{{item}}" bind:open="onDemandOpen" />
         </view>
       </view>
+      <view wx:if="{{loadingMore}}" class="hall-more">加载中…</view>
+      <view wx:elif="{{!hasMore}}" class="hall-more">没有更多需求了</view>
+    </block>
 
-      <empty-state
-        wx:else
-        title="当前城市暂无匹配需求"
-        description="换个筛选条件，或开启新需求提醒"
-        action="放宽筛选条件"
-        bind:action="onResetFilter"
-      />
-    </view>
-  </block>
+    <empty-state
+      wx:else
+      title="当前筛选下暂无需求"
+      description="放宽筛选条件，或稍后再来看看"
+      action="重置筛选"
+      bind:action="onResetFilter"
+    />
+  </view>
 </view>

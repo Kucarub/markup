@@ -25,6 +25,12 @@
   background: var(--color-bg-muted);
 }
 
+.hall-sub {
+  padding: 0 32rpx 24rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
 .search-field {
   display: flex;
   align-items: center;
@@ -110,4 +116,11 @@
 
 .card-item {
   display: block;
+}
+
+.hall-more {
+  padding: 28rpx 0 8rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
 }

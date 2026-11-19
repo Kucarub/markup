@@ -11,14 +11,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// 微信用户与登录态（M/B 共用）
+/// 微信用户与登录态（M/C 共用）
 model UserAuth {
   id          Int       @id @default(autoincrement())
   openid      String    @unique @db.VarChar(64)
   unionid     String?   @db.VarChar(64)
   /// AES-256-GCM 密文，禁止明文落库
   phoneCipher String?   @map("phone_cipher") @db.VarChar(255)
-  /// artist | merchant，未选角色时为 null
+  /// artist | customer，未选角色时为 null
   role        String?   @db.VarChar(16)
   /// active | disabled
   status      String    @default("active") @db.VarChar(16)
@@ -29,7 +29,7 @@ model UserAuth {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   artist        Artist?
-  merchant      Merchant?
+  customer      Customer?
   notifications Notification[]
   reports       Report[]
 
@@ -62,8 +62,9 @@ model Artist {
   portfolios  ArtistPortfolio[]
   schedules   ArtistSchedule[]
   visits      ArtistVisit[]
-  invitations Invitation[]
-  orders      TradeOrder[]
+  responses   DemandResponse[]
+  targetedDemands Demand[]    @relation("DemandTarget")
+  serviceOrders ServiceOrder[]
 
   @@index([status, city])
   @@map("artist")
@@ -128,92 +129,113 @@ model ArtistVisit {
   @@map("artist_visit")
 }
 
-/// 商家入驻资料
-model Merchant {
-  id            Int       @id @default(autoincrement())
-  userId        Int       @unique @map("user_id")
-  shopName      String    @map("shop_name") @db.VarChar(64)
-  /// studio | wedding | photo | other
-  type          String?   @db.VarChar(16)
-  address       String?   @db.VarChar(255)
-  lat           Float?
-  lng           Float?
-  /// AES-256-GCM 密文
-  licenseCipher String?   @map("license_cipher") @db.VarChar(255)
-  /// pending | approved | rejected | disabled
-  status        String    @default("pending") @db.VarChar(16)
-  rejectReason  String?   @map("reject_reason") @db.VarChar(255)
-  auditAt       DateTime? @map("audit_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+/// 客户资料（无资质审核：选择客户角色即自动创建）
+model Customer {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  nickname  String?  @db.VarChar(32)
+  city      String?  @db.VarChar(32)
+  district  String?  @db.VarChar(32)
+  /// active | disabled
+  status    String   @default("active") @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  user        UserAuth     @relation(fields: [userId], references: [id])
-  invitations Invitation[]
-  orders      TradeOrder[]
+  user    UserAuth @relation(fields: [userId], references: [id])
+  demands Demand[]
+  serviceOrders ServiceOrder[]
 
-  @@index([status])
-  @@map("merchant")
+  @@index([city])
+  @@map("customer")
 }
 
-/// 商家发起的邀约
-model Invitation {
-  id            Int      @id @default(autoincrement())
-  merchantId    Int      @map("merchant_id")
-  artistId      Int      @map("artist_id")
-  /// bridal | daily | event | photo（服务类型）
-  serviceType   String   @map("service_type") @db.VarChar(16)
-  serviceDate   DateTime @map("service_date") @db.Date
-  address       String   @db.VarChar(255)
-  headcount     Int      @default(1)
-  budgetMin     Int      @map("budget_min")
-  budgetMax     Int      @map("budget_max")
-  remark        String?  @db.Text
-  /// pending | accepted | declined | expired | cancelled
-  status        String   @default("pending") @db.VarChar(16)
-  declineReason String?  @map("decline_reason") @db.VarChar(255)
-  /// user | admin
-  source        String   @default("user") @db.VarChar(8)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+/// 客户需求（同城撮合起点；定向预约时 target_artist_id 非空）
+model Demand {
+  id             Int      @id @default(autoincrement())
+  customerId     Int      @map("customer_id")
+  targetArtistId Int?     @map("target_artist_id")
+  city           String   @db.VarChar(32)
+  district       String   @db.VarChar(32)
+  serviceDate    DateTime @map("service_date") @db.Date
+  /// bridal | daily | event | photo
+  serviceType    String   @map("service_type") @db.VarChar(16)
+  headcount      Int      @default(1)
+  budgetMin      Int      @map("budget_min")
+  budgetMax      Int      @map("budget_max")
+  /// 风格偏好 code 数组
+  stylePrefs     Json?    @map("style_prefs")
+  remark         String?  @db.Text
+  /// pending | selected | closed（「已响应」由响应数派生，不单独落库）
+  status         String   @default("pending") @db.VarChar(16)
+  /// customer | ops（运营代发布标记）
+  source         String   @default("customer") @db.VarChar(8)
+  /// 服务日次日零点，过期后不再进入需求大厅
+  expireAt       DateTime? @map("expire_at")
+  closedAt       DateTime? @map("closed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  merchant Merchant    @relation(fields: [merchantId], references: [id])
-  artist   Artist      @relation(fields: [artistId], references: [id])
-  order    TradeOrder?
+  customer     Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  targetArtist Artist?          @relation("DemandTarget", fields: [targetArtistId], references: [id])
+  responses    DemandResponse[]
+  serviceOrder ServiceOrder?
 
-  @@index([artistId, status])
-  @@index([merchantId, status])
-  @@map("invitation")
+  @@index([status, city, serviceDate])
+  @@index([customerId, status])
+  @@map("demand")
 }
 
-/// 订单状态机（原 order 为 MySQL 保留字，统一改名 trade_order）
-model TradeOrder {
-  id                Int       @id @default(autoincrement())
-  invitationId      Int       @unique @map("invitation_id")
-  artistId          Int       @map("artist_id")
-  merchantId        Int       @map("merchant_id")
-  /// pending | accepted | in_service | finished | cancelled
-  status            String    @default("pending") @db.VarChar(16)
-  artistConfirmed   Boolean   @default(false) @map("artist_confirmed")
-  merchantConfirmed Boolean   @default(false) @map("merchant_confirmed")
-  finishTime        DateTime? @map("finish_time")
-  cancelReason      String?   @map("cancel_reason") @db.VarChar(255)
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+/// 化妆师对需求的报名响应（E8-03 写入；E7 仅用于统计响应数）
+model DemandResponse {
+  id        Int      @id @default(autoincrement())
+  demandId  Int      @map("demand_id")
+  artistId  Int      @map("artist_id")
+  note      String?  @db.VarChar(255)
+  /// pending | selected | rejected | withdrawn
+  status    String   @default("pending") @db.VarChar(16)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  invitation Invitation @relation(fields: [invitationId], references: [id])
-  artist     Artist     @relation(fields: [artistId], references: [id])
-  merchant   Merchant   @relation(fields: [merchantId], references: [id])
+  demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id])
 
-  @@index([status])
+  @@unique([demandId, artistId], map: "uniq_demand_artist")
   @@index([artistId, status])
-  @@index([merchantId, status])
-  @@map("trade_order")
+  @@map("demand_response")
+}
+
+/// 服务记录（E8-04 择一确认时生成；状态机在 E10-01 扩展）
+/// 不含成交金额，仅记录服务日期、区域、类型、人数与双方确认状态
+model ServiceOrder {
+  id          Int      @id @default(autoincrement())
+  demandId    Int      @unique @map("demand_id")
+  customerId  Int      @map("customer_id")
+  artistId    Int      @map("artist_id")
+  serviceDate DateTime @map("service_date") @db.Date
+  /// bridal | daily | event | photo
+  serviceType String   @map("service_type") @db.VarChar(16)
+  headcount   Int      @default(1)
+  city        String   @db.VarChar(32)
+  district    String   @db.VarChar(32)
+  remark      String?  @db.Text
+  /// pending | confirmed | finished | cancelled
+  status      String   @default("pending") @db.VarChar(16)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  demand   Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+  artist   Artist   @relation(fields: [artistId], references: [id])
+
+  @@index([artistId, status])
+  @@index([customerId, status])
+  @@map("service_order")
 }
 
 /// 审核操作流水
 model AuditLog {
   id         Int      @id @default(autoincrement())
-  /// artist | merchant | portfolio | report
+  /// artist | portfolio | report
   targetType String   @map("target_type") @db.VarChar(16)
   targetId   Int      @map("target_id")
   /// approve | reject | offline | restore
@@ -252,7 +274,7 @@ model AdminUser {
 model Notification {
   id         Int       @id @default(autoincrement())
   userId     Int       @map("user_id")
-  /// invitation | order_result | ...
+  /// demand | response | report_result | ...
   type       String    @db.VarChar(32)
   payload    Json?
   /// pending | sent | failed
@@ -270,7 +292,7 @@ model Notification {
 /// 举报
 model Report {
   id             Int      @id @default(autoincrement())
-  /// portfolio | artist | merchant
+  /// portfolio | artist | user
   targetType     String   @map("target_type") @db.VarChar(16)
   targetId       Int      @map("target_id")
   reason         String   @db.VarChar(255)
@@ -295,7 +317,7 @@ model Report {
 model EventLog {
   id        Int      @id @default(autoincrement())
   userId    Int?     @map("user_id")
-  /// artist | merchant | admin
+  /// artist | customer | admin
   role      String?  @db.VarChar(16)
   event     String   @db.VarChar(64)
   props     Json?
@@ -344,7 +366,7 @@ model FileObject {
 /// 字典（风格 / 城市等），E2-02 种子写入
 model DictItem {
   id        Int      @id @default(autoincrement())
-  /// style | city | service_type | merchant_type
+  /// style | city | service_type
   type      String   @db.VarChar(32)
   code      String   @db.VarChar(64)
   label     String   @db.VarChar(64)

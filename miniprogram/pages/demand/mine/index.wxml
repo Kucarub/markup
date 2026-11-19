@@ -1,0 +1,77 @@
+<view class="screen screen--with-tab demand-mine">
+  <view class="demand-mine__head">
+    <text class="kicker">MY REQUESTS</text>
+    <view class="page-heading">我的需求</view>
+    <view class="demand-mine__sub">发布后等待同城化妆师响应，价格与履约线下确认</view>
+  </view>
+
+  <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab {{activeTab === item.key ? 'tab--active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onTabTap"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <view wx:if="{{error}}" class="card demand-mine__notice">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">{{errorDesc}}</view>
+    <button class="btn btn--primary btn--block demand-mine__notice-btn" bindtap="onPrimaryAction">
+      {{primaryAction}}
+    </button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <view wx:if="{{list.length}}" class="demand-list">
+      <view class="demand" wx:for="{{list}}" wx:key="id">
+        <view class="demand__head">
+          <view class="demand__date">{{item.dateText}}</view>
+          <view class="tag tag--{{item.tone}}">{{item.statusLabel}}</view>
+        </view>
+
+        <view class="demand__title">{{item.typeLabel}} · {{item.headcount}} 人</view>
+
+        <view class="demand__meta">
+          <text>{{item.city}} · {{item.district}}</text>
+          <view class="demand__dot"></view>
+          <text class="demand__budget">¥{{item.budgetText}}</text>
+        </view>
+
+        <view wx:if="{{item.styles.length}}" class="demand__styles">
+          <text wx:for="{{item.styles}}" wx:for-item="style" wx:key="*this" class="tag tag--neutral">{{style}}</text>
+        </view>
+
+        <view wx:if="{{item.remark}}" class="demand__remark">{{item.remark}}</view>
+
+        <view class="demand__foot">
+          <text class="demand__responses">
+            {{item.responseCount ? '已有 ' + item.responseCount + ' 位化妆师响应' : '等待化妆师响应'}}
+          </text>
+          <button
+            wx:if="{{item.canClose}}"
+            class="btn btn--ghost btn--sm"
+            data-id="{{item.id}}"
+            bindtap="onClose"
+          >关闭需求</button>
+        </view>
+      </view>
+
+      <view wx:if="{{loadingMore}}" class="demand-mine__more">加载中…</view>
+      <view wx:elif="{{!hasMore && list.length}}" class="demand-mine__more">没有更多了</view>
+    </view>
+
+    <empty-state
+      wx:else
+      title="还没有需求"
+      description="发布一条妆造需求，同城化妆师会主动响应"
+      action="发布需求"
+      bind:action="onPublish"
+    />
+  </block>
+
+  <view wx:if="{{!error}}" class="publish-fab" bindtap="onPublish">+ 发布需求</view>
+</view>

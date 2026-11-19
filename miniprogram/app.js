@@ -7,7 +7,7 @@ App({
     /** 登录态由 E3 接管，此处仅透出当前缓存 */
     token: getToken(),
     userInfo: null,
-    /** 'artist' | 'merchant' | '' ，由 /api/auth/me 决定 */
+    /** 'artist' | 'customer' | '' ，由 /api/auth/me 决定 */
     role: '',
   },
 

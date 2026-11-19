@@ -1,0 +1,18 @@
+<view class="page">
+  <view class="page-title">找化妆师</view>
+  <view class="page-subtitle">化妆师搜索与筛选在 E8 接入</view>
+
+  <view class="card">
+    <view class="card__title">筛选维度</view>
+    <view class="filters">
+      <text wx:for="{{filters}}" wx:key="*this" class="tag">{{item}}</text>
+    </view>
+    <view class="card__desc">
+      列表按「档期可约 → 城市区域 → 综合」排序；作品集与档期数据将在 E8 接入后开放。
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="empty">列表占位</view>
+  </view>
+</view>

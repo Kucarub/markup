@@ -1,29 +1,24 @@
 const { getRole } = require('../utils/auth')
 
 /**
- * TabBar 按角色动态渲染（E3-03）：
- * - 化妆师（M）5 项：工作台 / 需求大厅 / 作品集 / 订单 / 我的
- * - 商家（B）4 项：工作台 / 找化妆师 / 订单 / 我的
- * 小程序 tabBar 最多 5 项，B 端复用「需求大厅」槽位承载「找化妆师」（页面按角色渲染）。
+ * TabBar 按角色动态渲染（E3-03 / E7-01）：
+ * - 化妆师（M）4 项：工作台 / 需求大厅 / 作品集 / 我的
+ * - 客户（C）3 项：我的需求 / 我的（找化妆师随 E8 接入后再补）
+ * 小程序 tabBar 最多 5 项，C 端不复用需求大厅槽位。
  */
 const TABS = {
   home: { pagePath: '/pages/home/index', text: '工作台', icon: 'home' },
   hall: { pagePath: '/pages/demand/hall/index', text: '需求大厅', icon: 'hall' },
   portfolio: { pagePath: '/pages/portfolio/list/index', text: '作品集', icon: 'portfolio' },
-  order: { pagePath: '/pages/order/list/index', text: '订单', icon: 'order' },
+  demandMine: { pagePath: '/pages/demand/mine/index', text: '我的需求', icon: 'order' },
   me: { pagePath: '/pages/mine/index', text: '我的', icon: 'me' },
 }
 
 function listFor(role) {
-  if (role === 'merchant') {
-    return [
-      TABS.home,
-      { ...TABS.hall, text: '找化妆师', icon: 'search' },
-      TABS.order,
-      TABS.me,
-    ]
+  if (role === 'customer') {
+    return [TABS.demandMine, TABS.me]
   }
-  return [TABS.home, TABS.hall, TABS.portfolio, TABS.order, TABS.me]
+  return [TABS.home, TABS.hall, TABS.portfolio, TABS.me]
 }
 
 Component({

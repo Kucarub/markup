@@ -1,0 +1,171 @@
+/* 发布需求表单（E7-02） */
+.create {
+  padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
+}
+
+.create__card {
+  margin-top: var(--space-md);
+}
+
+.create__notice {
+  margin-top: var(--space-md);
+  border-color: #f3ddb5;
+  background: #fff3dd;
+}
+
+.create__notice-btn {
+  margin-top: var(--space-sm);
+}
+
+/* 分组标题 */
+.form-section {
+  margin: 40rpx 0 0;
+  padding-top: 32rpx;
+  border-top: 2rpx solid var(--color-divider);
+  font-size: 30rpx;
+  font-weight: 650;
+}
+
+.form-section--first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* 字段 */
+.field {
+  margin-top: 30rpx;
+}
+
+.field__label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+  color: var(--color-text-regular);
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.field__required {
+  margin-left: 4rpx;
+  color: var(--color-danger);
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.field__label-note {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+  font-weight: 400;
+}
+
+.field__hint {
+  margin-top: 10rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.field__error {
+  margin-top: 8rpx;
+  color: var(--color-danger);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.field__counter {
+  margin-top: 6rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: right;
+}
+
+.field__picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field__picker-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.field__picker-text.is-placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* 选项芯片 */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 64rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-card);
+  color: var(--color-text-regular);
+  font-size: 26rpx;
+}
+
+.chip--on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 预算区间 */
+.budget-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.budget-row__input {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-row__sep {
+  color: var(--color-text-placeholder);
+  font-size: 26rpx;
+}
+
+/* 底部提交 */
+.create__footer {
+  position: fixed;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: #ffffff;
+  box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+.create__submit {
+  height: 96rpx;
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  box-shadow: 0 14rpx 32rpx rgba(180, 86, 110, 0.18);
+}
+
+.create__tip {
+  margin-top: 12rpx;
+  color: var(--color-text-placeholder);
+  font-size: 20rpx;
+  text-align: center;
+}
