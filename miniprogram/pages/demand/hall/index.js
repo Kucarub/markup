@@ -42,10 +42,15 @@ function toCard(item) {
   const typeLabel = TYPE_LABEL[item.serviceType] || item.serviceType
   const responded = Boolean(item.myResponseId)
   const dateText = monthDay(item.serviceDate)
+  const remarkText = (item.remark || '').trim()
   return {
     id: item.id,
     eyebrow: `${typeLabel} · ${item.city}`,
-    title: `预算 ¥${budgetText(item.budgetMin, item.budgetMax)}`,
+    title: remarkText
+      ? remarkText.length > 16
+        ? `${remarkText.slice(0, 16)}…`
+        : remarkText
+      : `${typeLabel}需求`,
     occasion: typeLabel,
     people: item.headcount,
     duration: '当天服务',
@@ -110,7 +115,12 @@ Page({
       const { activeType } = this.data
       const data = await request.get(
         '/api/demands',
-        { scope: 'hall', page, size: PAGE_SIZE, ...(activeType ? { serviceType: activeType } : {}) },
+        {
+          scope: 'hall',
+          page,
+          size: PAGE_SIZE,
+          ...(activeType ? { serviceType: activeType } : {}),
+        },
         { showError: false },
       )
       const mapped = (data.list || []).map(toCard)

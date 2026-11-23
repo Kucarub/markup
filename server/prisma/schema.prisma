@@ -32,6 +32,9 @@ model UserAuth {
   customer      Customer?
   notifications Notification[]
   reports       Report[]
+  reviewsFrom   Review[]      @relation("ReviewFrom")
+  reviewsTo     Review[]      @relation("ReviewTo")
+  credit        CreditScore?
 
   @@map("user_auth")
 }
@@ -101,8 +104,8 @@ model ArtistSchedule {
   date      DateTime @db.Date
   /// available | booked | rest
   state     String   @default("available") @db.VarChar(16)
-  /// 被哪笔订单占用（booked 时回填）
-  orderId   Int?     @map("order_id")
+  /// 被哪笔服务记录占用（booked 时回填）
+  serviceOrderId Int? @map("service_order_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -172,8 +175,11 @@ model Demand {
   /// 服务日次日零点，过期后不再进入需求大厅
   expireAt       DateTime? @map("expire_at")
   closedAt       DateTime? @map("closed_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  /// 定向预约被化妆师婉拒时的原因（E9-05）
+  declineReason  String?   @map("decline_reason") @db.VarChar(255)
+  declinedAt     DateTime? @map("declined_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   customer     Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
   targetArtist Artist?          @relation("DemandTarget", fields: [targetArtistId], references: [id])
@@ -182,6 +188,7 @@ model Demand {
 
   @@index([status, city, serviceDate])
   @@index([customerId, status])
+  @@index([targetArtistId, status])
   @@map("demand")
 }
 
@@ -220,16 +227,78 @@ model ServiceOrder {
   remark      String?  @db.Text
   /// pending | confirmed | finished | cancelled
   status      String   @default("pending") @db.VarChar(16)
+  /// customer | artist：服务记录发起方（客户择一 / 化妆师接受），由对方确认接单
+  initiatorRole     String    @default("customer") @map("initiator_role") @db.VarChar(16)
+  confirmedAt       DateTime? @map("confirmed_at")
+  /// 完工确认（E10-04）：任一方发起、另一方确认
+  artistConfirmed   Boolean   @default(false) @map("artist_confirmed")
+  customerConfirmed Boolean   @default(false) @map("customer_confirmed")
+  /// 谁发起完工确认 / 何时发起（发起后 7 天未确认自动完成）
+  finishRequestBy   String?   @map("finish_request_by") @db.VarChar(16)
+  finishRequestAt   DateTime? @map("finish_request_at")
+  finishTime        DateTime? @map("finish_time")
+  /// 取消（E10-05）：记录取消方与原因，释放档期
+  cancelReason      String?   @map("cancel_reason") @db.VarChar(255)
+  cancelBy          String?   @map("cancel_by") @db.VarChar(16)
+  cancelledAt       DateTime? @map("cancelled_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   demand   Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id])
   artist   Artist   @relation(fields: [artistId], references: [id])
+  reviews  Review[]
 
   @@index([artistId, status])
   @@index([customerId, status])
+  @@index([status, finishRequestAt])
   @@map("service_order")
+}
+
+/// 双向评价（E10-06）：仅已完成服务记录、一单一评
+model Review {
+  id             Int      @id @default(autoincrement())
+  serviceOrderId Int      @map("service_order_id")
+  fromUserId     Int      @map("from_user_id")
+  /// artist | customer
+  fromRole       String   @map("from_role") @db.VarChar(16)
+  toUserId       Int      @map("to_user_id")
+  /// artist | customer
+  toRole         String   @map("to_role") @db.VarChar(16)
+  rating         Int
+  tags           Json?
+  content        String?  @db.VarChar(500)
+  /// pending | visible | hidden（内容安全命中时先待审，通过后可见）
+  status         String   @default("visible") @db.VarChar(16)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  fromUser     UserAuth     @relation("ReviewFrom", fields: [fromUserId], references: [id])
+  toUser       UserAuth     @relation("ReviewTo", fields: [toUserId], references: [id])
+
+  @@unique([serviceOrderId, fromUserId], map: "uniq_order_from_user")
+  @@index([toUserId, status])
+  @@map("review")
+}
+
+/// 信用分（E10-07）：初始 60，完成 +2 / 取消 -5，按事件累加
+model CreditScore {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  /// artist | customer
+  role      String   @db.VarChar(16)
+  score     Int      @default(60)
+  level     String   @default("一般") @db.VarChar(16)
+  /// 变动流水 [{ at, type, delta, orderId }]，保留最近 50 条
+  events    Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([score])
+  @@map("credit_score")
 }
 
 /// 审核操作流水

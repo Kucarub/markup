@@ -195,6 +195,22 @@ async function main() {
   })
   check('定向预约不存在 / 未过审化妆师 → 400/40001', badTarget.status === 400 && badTarget.data.code === 40001)
 
+  // E9-03 起定向预约要求目标化妆师当日可接：显式造一个可约档期
+  const targetDay = new Date(`${dayKey(5)}T00:00:00.000Z`)
+  const targetSlot = await prisma.artistSchedule.findUnique({
+    where: { artistId_date: { artistId: seededArtist.id, date: targetDay } },
+  })
+  if (!targetSlot) {
+    await prisma.artistSchedule.create({
+      data: { artistId: seededArtist.id, date: targetDay, state: 'available' },
+    })
+  } else if (targetSlot.state !== 'available') {
+    await prisma.artistSchedule.update({
+      where: { id: targetSlot.id },
+      data: { state: 'available', serviceOrderId: null },
+    })
+  }
+
   const targeted = await request('POST', '/api/demands', {
     token: customerA.token,
     body: demandBody({ serviceDate: dayKey(5), targetArtistId: seededArtist.id }),

@@ -1,20 +1,28 @@
-<view wx:if="{{demand}}" class="detail-page">
+<view wx:if="{{loading}}" class="empty">加载中…</view>
+
+<view wx:elif="{{error}}" class="detail-page">
+  <view class="empty">{{error}}</view>
+</view>
+
+<view wx:elif="{{detail}}" class="detail-page">
   <view class="detail-hero">
     <view class="detail-label-row">
-      <view class="tag tag--{{demand.statusTone}}">{{demand.status}}</view>
-      <text>{{demand.deadline}}</text>
+      <view class="tag tag--{{statusTone}}">{{detail.statusLabel}}</view>
+      <text class="hero-deadline">{{expireText}}</text>
     </view>
-    <view class="detail-title">{{demand.title}}</view>
-    <view class="merchant-row">
-      <view class="merchant-logo">客</view>
-      <text>{{demand.eyebrow}}</text>
-      <image class="icon icon--xs merchant-check" src="/assets/icons/check-info.svg" mode="aspectFit" />
-      <text class="merchant-verified">已实名</text>
+
+    <view class="detail-title">{{typeLabel}} · {{dateText}}</view>
+
+    <view class="hero-meta">
+      <image class="icon icon--xs" src="/assets/icons/location-gray.svg" mode="aspectFit" />
+      <text>{{detail.city}} · {{detail.district}}</text>
+      <text wx:if="{{detail.isTargeted}}" class="tag tag--brand hero-tag">定向预约</text>
     </view>
+
     <view class="detail-pay">
       <text class="detail-pay__unit">¥</text>
-      <text>{{demand.pay}}</text>
-      <text class="detail-pay__suffix">/{{demand.payUnit}} · {{demand.duration}}</text>
+      <text>{{budgetText}}</text>
+      <text class="detail-pay__suffix">预算区间 · {{detail.headcount}} 人</text>
     </view>
   </view>
 
@@ -31,16 +39,7 @@
         </view>
         <view class="fact-copy">
           <view class="fact-label">服务日期</view>
-          <view class="fact-value">{{demand.dateFull}}</view>
-        </view>
-      </view>
-      <view class="fact">
-        <view class="fact-icon">
-          <image class="icon icon--sm" src="/assets/icons/clock.svg" mode="aspectFit" />
-        </view>
-        <view class="fact-copy">
-          <view class="fact-label">服务时段</view>
-          <view class="fact-value">{{demand.time}}</view>
+          <view class="fact-value">{{detail.serviceDate}}</view>
         </view>
       </view>
       <view class="fact">
@@ -48,39 +47,35 @@
           <image class="icon icon--sm" src="/assets/icons/users.svg" mode="aspectFit" />
         </view>
         <view class="fact-copy">
-          <view class="fact-label">需求人数</view>
-          <view class="fact-value">{{demand.people}} 人</view>
+          <view class="fact-label">服务人数</view>
+          <view class="fact-value">{{detail.headcount}} 人</view>
         </view>
       </view>
       <view class="fact">
-        <view class="fact-icon fact-icon--text">M</view>
+        <view class="fact-icon fact-icon--text">¥</view>
         <view class="fact-copy">
-          <view class="fact-label">妆容类型</view>
-          <view class="fact-value">{{demand.makeupType}}</view>
+          <view class="fact-label">预算区间</view>
+          <view class="fact-value">¥{{budgetText}}</view>
+        </view>
+      </view>
+      <view class="fact">
+        <view class="fact-icon">
+          <image class="icon icon--sm" src="/assets/icons/clock.svg" mode="aspectFit" />
+        </view>
+        <view class="fact-copy">
+          <view class="fact-label">响应状态</view>
+          <view class="fact-value">{{expireText}}</view>
         </view>
       </view>
     </view>
 
-    <view class="address-row" bindtap="onNavigate">
-      <image class="icon icon--sm address-pin" src="/assets/icons/location.svg" mode="aspectFit" />
-      <view class="address-copy">
-        <view class="address-label">服务地点</view>
-        <view class="address-value">{{demand.address}}</view>
+    <view class="customer-row">
+      <view class="customer-logo">客</view>
+      <view class="customer-copy">
+        <view class="customer-label">需求发布者</view>
+        <view class="customer-value">{{detail.customer.nickname}}</view>
       </view>
-      <view class="address-nav">
-        <image class="icon icon--xs" src="/assets/icons/nav.svg" mode="aspectFit" />
-      </view>
-    </view>
-
-    <view class="key-values">
-      <view class="key-row">
-        <text>化妆箱</text>
-        <text class="key-row__value">{{demand.kit}}</text>
-      </view>
-      <view class="key-row">
-        <text>结算方式</text>
-        <text class="key-row__value">{{demand.settlement}}</text>
-      </view>
+      <text class="customer-cities">{{detail.customer.city}}{{detail.customer.district}}</text>
     </view>
   </view>
 
@@ -89,8 +84,15 @@
       <text class="detail-section-no">02</text>
       <text class="detail-section-name">需求说明</text>
     </view>
-    <view class="requirements {{expanded ? 'requirements--expanded' : ''}}">{{demand.requirements}}</view>
-    <view class="expand-btn" bindtap="onToggleExpand">
+
+    <view wx:if="{{styles.length}}" class="style-list">
+      <text wx:for="{{styles}}" wx:key="*this" class="tag tag--brand">{{item}}</text>
+    </view>
+
+    <view class="requirements {{expanded ? 'requirements--expanded' : ''}}">
+      {{detail.remark || '客户未填写更多说明，可在确认后与客户沟通细节。'}}
+    </view>
+    <view wx:if="{{remarkLong}}" class="expand-btn" bindtap="onToggleExpand">
       <text>{{expanded ? '收起' : '展开全部'}}</text>
       <image
         class="icon icon--xs"
@@ -100,43 +102,146 @@
     </view>
   </view>
 
-  <view class="match-card">
-    <view class="match-top">
-      <view class="match-info">
-        <text>与你的匹配度</text>
-        <text class="match-value">{{demand.match}}%</text>
-      </view>
-      <view class="match-ring" style="--match: {{demand.match * 3.6}}deg">
-        <text class="match-ring__text">{{demand.match}}</text>
-      </view>
+  <view wx:if="{{isOwner && detail.declineReason}}" id="alternatives" class="detail-section">
+    <view class="detail-section-title">
+      <text class="detail-section-name">预约未成功</text>
     </view>
-    <view class="skill-list">
-      <view
-        wx:for="{{demand.skills}}"
-        wx:key="name"
-        class="skill {{item.matched ? 'skill--matched' : ''}}"
-      >
-        <image
-          class="icon icon--xs"
-          src="/assets/icons/{{item.matched ? 'check' : 'close'}}.svg"
-          mode="aspectFit"
-        />
-        <text>{{item.name}}</text>
+
+    <view class="decline-card">
+      <view class="decline-card__title">
+        {{detail.targetArtist ? detail.targetArtist.name : '化妆师'}} 婉拒了本次定向预约
+      </view>
+      <view class="decline-card__reason">“{{detail.declineReason}}”</view>
+      <view class="decline-card__hint">可以换一位同城化妆师，或修改日期后重新预约。</view>
+    </view>
+
+    <view class="detail-section-title detail-section-title--sub">
+      <text class="detail-section-name">同城可约的备选化妆师</text>
+    </view>
+
+    <view wx:if="{{alternativesLoading}}" class="empty">备选加载中…</view>
+    <view wx:elif="{{!alternatives.length}}" class="empty">暂无同城可约化妆师，可稍后再试</view>
+
+    <view wx:else class="response-list">
+      <view wx:for="{{alternatives}}" wx:key="id" class="response-card">
+        <view class="response-top" data-id="{{item.id}}" bindtap="onArtistTap">
+          <view class="avatar avatar--md">
+            <image
+              wx:if="{{item.avatar}}"
+              class="avatar__img"
+              src="{{item.avatar}}"
+              mode="aspectFill"
+            />
+            <view wx:else class="avatar__img avatar__img--text">妆</view>
+          </view>
+          <view class="response-info">
+            <view class="response-name-row">
+              <text class="response-name">{{item.name}}</text>
+              <text class="tag tag--brand">可预约</text>
+            </view>
+            <view class="response-meta">
+              {{item.years}} 年经验 · {{item.city}}{{item.district}} · 作品 {{item.worksTotal}}
+            </view>
+            <view wx:if="{{item.styles.length}}" class="response-styles">
+              <text
+                wx:for="{{item.styles}}"
+                wx:for-item="style"
+                wx:key="*this"
+                class="tag tag--neutral"
+              >{{style}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="response-foot">
+          <text class="response-avail">
+            {{item.nextAvailableDate ? '最早可约 ' + item.nextAvailableDate : '暂未设置档期'}}
+          </text>
+          <button class="btn btn--primary btn--sm" data-id="{{item.id}}" bindtap="onArtistTap">
+            查看主页
+          </button>
+        </view>
       </view>
     </view>
   </view>
 
-  <view class="detail-action-bar">
-    <view class="favorite-btn {{isFavorite ? 'favorite-btn--active' : ''}}" bindtap="onToggleFavorite">
-      <image
-        class="icon icon--md"
-        src="/assets/icons/{{isFavorite ? 'heart-fill' : 'heart-gray'}}.svg"
-        mode="aspectFit"
-      />
-      <text>{{isFavorite ? '已收藏' : '收藏'}}</text>
+  <view wx:if="{{isOwner}}" id="responses" class="detail-section">
+    <view class="detail-section-title">
+      <text class="detail-section-no">03</text>
+      <text class="detail-section-name">化妆师响应（{{detail.responseCount}}）</text>
     </view>
-    <button class="btn btn--primary" disabled="{{isFull}}" bindtap="onApply">
-      {{isFull ? '该需求已招满' : isApplied ? '已投递，查看进度' : '投递作品集'}}
-    </button>
+
+    <view wx:if="{{responsesLoading}}" class="empty">响应者加载中…</view>
+    <view wx:elif="{{!responses.length}}" class="empty">还没有化妆师响应，稍后再来看看</view>
+
+    <view wx:else class="response-list">
+      <view wx:for="{{responses}}" wx:key="id" class="response-card">
+        <view class="response-top" data-id="{{item.artistId}}" bindtap="onArtistTap">
+          <view class="avatar avatar--md">
+            <image
+              wx:if="{{item.avatar}}"
+              class="avatar__img"
+              src="{{item.avatar}}"
+              mode="aspectFill"
+            />
+            <view wx:else class="avatar__img avatar__img--text">妆</view>
+          </view>
+          <view class="response-info">
+            <view class="response-name-row">
+              <text class="response-name">{{item.name}}</text>
+              <text class="tag tag--{{item.statusTone}}">{{item.statusLabel}}</text>
+            </view>
+            <view class="response-meta">
+              {{item.years}} 年经验 · {{item.city}}{{item.district}} · 作品 {{item.worksTotal}}
+            </view>
+            <view wx:if="{{item.styles.length}}" class="response-styles">
+              <text
+                wx:for="{{item.styles}}"
+                wx:for-item="style"
+                wx:key="*this"
+                class="tag tag--neutral"
+              >{{style}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{item.note}}" class="response-note">{{item.note}}</view>
+
+        <view class="response-foot">
+          <text class="response-avail">
+            {{item.nextAvailableDate ? '最早可约 ' + item.nextAvailableDate : '暂未设置档期'}}
+          </text>
+          <button
+            wx:if="{{item.selectable}}"
+            class="btn btn--primary btn--sm"
+            data-id="{{item.id}}"
+            loading="{{selectingId === item.id}}"
+            bindtap="onSelect"
+          >选择 TA</button>
+          <text wx:elif="{{item.status === 'selected'}}" class="response-selected">已选定</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{myResponse}}" class="my-response">
+    <view class="my-response__head">
+      <text class="my-response__label">你的响应</text>
+      <text class="tag tag--{{myResponse.status === 'selected' ? 'success' : myResponse.status === 'pending' ? 'warning' : 'neutral'}}">
+        {{myResponse.statusLabel}}
+      </text>
+    </view>
+    <view wx:if="{{myResponse.note}}" class="my-response__note">“{{myResponse.note}}”</view>
+    <view class="my-response__hint">
+      {{myResponse.status === 'selected' ? '客户已选定你，服务记录待双方确认' : myResponse.status === 'rejected' ? '客户已选择其他化妆师，可继续浏览其他需求' : '等待客户确认，确认后将生成待确认服务记录'}}
+    </view>
+  </view>
+
+  <view class="detail-action-bar">
+    <button
+      class="btn btn--primary"
+      disabled="{{actionDisabled}}"
+      loading="{{submitting}}"
+      bindtap="onAction"
+    >{{actionLabel}}</button>
   </view>
 </view>

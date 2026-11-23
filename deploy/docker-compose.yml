@@ -1,0 +1,81 @@
+# 2C2G 单机编排：只跑 MySQL + API 两个容器
+# Nginx 装在宿主机（省 30M 内存），admin 静态文件由宿主机 Nginx 托管
+# 启动：docker compose --env-file .env up -d
+
+name: wechat-markup
+
+services:
+  db:
+    # 国内环境请把 mysql:5.7 也推到自己的 ACR，再用 MYSQL_IMAGE 指向它（ECS 直连 Docker Hub 通常不可用）
+    image: ${MYSQL_IMAGE:-mysql:5.7}
+    restart: unless-stopped
+    # 2G 内存专用参数：buffer pool 256M、关闭 performance_schema、binlog 只留 3 天
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+      - --innodb-buffer-pool-instances=1
+      - --innodb-log-file-size=64M
+      - --innodb-flush-log-at-trx-commit=2
+      - --innodb-flush-method=O_DIRECT
+      - --performance-schema=OFF
+      - --max-connections=50
+      - --thread-cache-size=8
+      - --table-open-cache=200
+      - --tmp-table-size=16M
+      - --max-heap-table-size=16M
+      - --skip-name-resolve
+      # MySQL 5.7 用 expire_logs_days（天）；binlog-expire-logs-seconds 是 8.0 才有的变量
+      - --expire-logs-days=3
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?请在 .env 中设置 DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-wechat_markup}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - "${DATA_DIR:-/srv/wechat}/mysql:/var/lib/mysql"
+    # 不发布 3306：只在 compose 内网可达，公网端口仅靠安全组兜底
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "2"
+
+  api:
+    image: ${IMAGE:-wechat-markup-api:latest}
+    build:
+      context: ../server
+      args:
+        # Docker Hub 不可达时改成 public.ecr.aws/docker/library/node:20-slim
+        NODE_IMAGE: ${NODE_IMAGE:-node:20-slim}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    # 只绑本机回环，外部流量统一走宿主机 Nginx
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # 未配置 OSS 时的本地私有桶（配置 OSS 后该目录不再增长）
+      - "${DATA_DIR:-/srv/wechat}/storage:/app/storage"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ping').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    mem_limit: 512m
+    stop_grace_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "2"

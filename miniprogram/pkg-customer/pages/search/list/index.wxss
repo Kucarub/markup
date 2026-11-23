@@ -1,6 +1,306 @@
-.filters {
+/* 找化妆师列表（E8-05 / E8-06 / E8-07） */
+.search-page {
+  min-height: 100vh;
+  background: var(--color-bg-page);
+}
+
+/* ---------- 顶部筛选条 ---------- */
+.search-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 24rpx 0 0;
+  border-bottom: 2rpx solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.search-head__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+}
+
+.search-count {
+  padding-bottom: 6rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 20rpx var(--space-md);
+}
+
+.filter-trigger {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 60rpx;
+  padding: 0 20rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-regular);
+  font-size: 22rpx;
+}
+
+.filter-trigger--active {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.chip-scroll {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.chip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 56rpx;
+  padding: 0 16rpx;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 20rpx;
+}
+
+.chip-empty {
+  color: var(--color-text-placeholder);
+  font-size: 20rpx;
+}
+
+.chip-reset {
+  flex: 0 0 auto;
+  padding: 0 6rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+/* ---------- 筛选面板 ---------- */
+.filter-panel {
+  padding: var(--space-md);
+  border-bottom: 2rpx solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.filter-group + .filter-group {
+  margin-top: 28rpx;
+}
+
+.filter-group__title {
+  margin-bottom: 16rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.pill-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
+  gap: 14rpx;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 60rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-regular);
+  font-size: 22rpx;
+}
+
+.pill--active {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pill--clear {
+  border-color: transparent;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 32rpx;
+}
+
+.filter-actions__btn {
+  flex: 1;
+}
+
+/* ---------- 列表 ---------- */
+.search-content {
+  padding: var(--space-md);
+}
+
+.artist-card {
+  overflow: hidden;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.artist-card + .artist-card {
   margin-top: var(--space-sm);
+}
+
+.artist-card--active {
+  opacity: 0.92;
+}
+
+.artist-cover-wrap {
+  position: relative;
+}
+
+.artist-cover {
+  display: block;
+  width: 100%;
+  height: 320rpx;
+  background: var(--color-bg-muted);
+}
+
+.artist-cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-placeholder);
+  font-size: 24rpx;
+}
+
+.artist-distance {
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
+  padding: 6rpx 16rpx;
+  border-radius: var(--radius-pill);
+  background: rgba(26, 26, 26, 0.62);
+  color: #ffffff;
+  font-size: 20rpx;
+}
+
+.artist-body {
+  padding: 24rpx 26rpx 26rpx;
+}
+
+.artist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.artist-name {
+  overflow: hidden;
+  font-size: 32rpx;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-works {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 20rpx;
+}
+
+.artist-meta {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 22rpx;
+}
+
+.artist-styles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.artist-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid var(--color-divider);
+}
+
+.artist-avail {
+  color: var(--color-success);
+  font-size: 22rpx;
+}
+
+.artist-more {
+  color: var(--color-primary);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.list-more {
+  padding: 28rpx 0 12rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
+}
+
+/* ---------- 空态与降级建议 ---------- */
+.empty-block {
+  padding: 72rpx 24rpx;
+  text-align: center;
+}
+
+.empty-block__title {
+  font-size: 30rpx;
+  font-weight: 650;
+}
+
+.empty-block__desc {
+  margin-top: 12rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+.suggestion-list {
+  margin: 28rpx auto 0;
+  padding: 24rpx 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  text-align: left;
+}
+
+.suggestion {
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  line-height: 1.9;
+}
+
+.suggestion-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+  margin-top: 32rpx;
+}
+
+.suggestion-actions .btn {
+  width: 240rpx;
 }

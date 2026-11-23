@@ -41,6 +41,12 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#FFFFFF"
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于按距离为你筛选附近的化妆师"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"],
   "tabBar": {
     "custom": true,
     "color": "#8C8C8C",

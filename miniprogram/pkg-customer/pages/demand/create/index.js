@@ -36,7 +36,8 @@ function toast(title) {
 }
 
 /**
- * 发布需求（E7-02）。
+ * 发布需求（E7-02）/ 定向预约（E9-02）。
+ * - 带 artistId 时复用同一套需求字段，仅额外提交 targetArtistId；
  * - 必填校验完整，失败时定位首个错误字段；
  * - 预算下限不得高于上限，服务日期最早今天、最远 180 天；
  * - 未绑定手机号不可发布，可就地拉起手机号授权。
@@ -53,6 +54,9 @@ Page({
     today: '',
     maxDate: '',
     maxStyles: MAX_STYLES,
+    /** 定向预约（E9-02）：目标化妆师 ID 与昵称 */
+    targetArtistId: 0,
+    targetName: '',
     form: {
       city: '',
       district: '',
@@ -67,11 +71,24 @@ Page({
     errors: {},
   },
 
-  onLoad() {
+  onLoad(query) {
     const now = new Date()
     const max = new Date(now.getTime())
     max.setDate(max.getDate() + MAX_AHEAD_DAYS)
     this.setData({ today: dateKey(now), maxDate: dateKey(max) })
+
+    const artistId = query && query.artistId ? Number(query.artistId) : 0
+    if (artistId > 0) {
+      const patch = {
+        targetArtistId: artistId,
+        targetName: query.artistName ? decodeURIComponent(query.artistName) : '化妆师',
+      }
+      if (query.date && /^\d{4}-\d{2}-\d{2}$/.test(query.date)) {
+        patch['form.serviceDate'] = query.date
+      }
+      this.setData(patch)
+      wx.setNavigationBarTitle({ title: '定向预约' })
+    }
 
     if (!getToken()) {
       redirectToLogin()
@@ -92,6 +109,39 @@ Page({
       })
       .catch(() => {})
       .then(() => this.setData({ checking: false }))
+
+    if (artistId > 0) this.loadTargetArtist(artistId)
+  },
+
+  /** 用化妆师主页信息预填城市 / 区域 / 风格，减少客户填写成本 */
+  loadTargetArtist(artistId) {
+    request
+      .get(`/api/artist/${artistId}`, null, { showError: false })
+      .then((profile) => {
+        if (!profile) return
+        const patch = {}
+        const cityIndex = CITIES.indexOf(profile.city)
+        if (cityIndex > -1 && !this.data.form.city) {
+          patch.cityIndex = cityIndex
+          patch['form.city'] = profile.city
+        }
+        if (profile.district && !this.data.form.district) {
+          patch['form.district'] = profile.district
+        }
+        const codes = (profile.styles || [])
+          .filter((code) => STYLE_OPTIONS.some((item) => item.code === code))
+          .slice(0, MAX_STYLES)
+        if (codes.length && !this.data.form.stylePrefs.length) {
+          patch.styles = this.data.styles.map((item) => ({
+            ...item,
+            checked: codes.indexOf(item.code) > -1,
+          }))
+          patch['form.stylePrefs'] = codes
+        }
+        patch.targetName = this.data.targetName || profile.name
+        this.setData(patch)
+      })
+      .catch(() => {})
   },
 
   onFieldInput(event) {
@@ -200,7 +250,7 @@ Page({
     if (this.data.submitting || this.data.checking) return
     if (!this.validate()) return
 
-    const { form } = this.data
+    const { form, targetArtistId } = this.data
     const payload = {
       city: form.city,
       district: form.district.trim(),
@@ -211,12 +261,21 @@ Page({
       budgetMax: Number(form.budgetMax),
       stylePrefs: form.stylePrefs,
       ...(form.remark.trim() ? { remark: form.remark.trim() } : {}),
+      ...(targetArtistId ? { targetArtistId } : {}),
     }
 
     this.setData({ submitting: true })
     request
       .post('/api/demands', payload, { showError: false })
       .then((result) => {
+        if (targetArtistId) {
+          // 定向预约：直接进详情看接单进度（E9-02）
+          wx.showToast({ title: '已推送给该化妆师', icon: 'success' })
+          setTimeout(() => {
+            wx.redirectTo({ url: `/pages/demand/detail/index?id=${result.id}` })
+          }, 600)
+          return
+        }
         if (result.duplicated) {
           wx.showModal({
             title: '已提交过相同需求',
@@ -242,6 +301,14 @@ Page({
           wx.showModal({
             title: '今日发布已达上限',
             content: (error && error.message) || '请明天再试',
+            showCancel: false,
+          })
+          return
+        }
+        if (code === 40900 && targetArtistId) {
+          wx.showModal({
+            title: '该日期暂不可预约',
+            content: (error && error.message) || '该化妆师当日不可接，请换个日期',
             showCancel: false,
           })
           return

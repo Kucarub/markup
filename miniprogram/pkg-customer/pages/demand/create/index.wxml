@@ -1,6 +1,13 @@
 <view class="page create">
-  <view class="page-title">发布需求</view>
-  <view class="page-subtitle">填写服务信息，同城化妆师会主动联系你</view>
+  <view class="page-title">{{targetArtistId ? '定向预约' : '发布需求'}}</view>
+  <view class="page-subtitle">
+    {{targetArtistId ? '向 ' + targetName + ' 发起预约，TA 确认后会生成服务记录' : '填写服务信息，同城化妆师会主动联系你'}}
+  </view>
+
+  <view wx:if="{{targetArtistId}}" class="card create__target" id="field-target">
+    <view class="card__title">已指定化妆师</view>
+    <view class="card__desc">本条需求仅推送给 {{targetName}}，不会出现在需求大厅。</view>
+  </view>
 
   <view wx:if="{{!checking && !phoneBound}}" class="card create__notice" id="field-phone">
     <view class="card__title">先绑定手机号</view>
@@ -148,7 +155,7 @@
       loading="{{submitting}}"
       disabled="{{submitting || checking}}"
       bindtap="submit"
-    >发布需求</button>
+    >{{targetArtistId ? '发送预约' : '发布需求'}}</button>
     <view class="create__tip">平台不参与交易与收款，价格与履约请线下确认。</view>
   </view>
 </view>

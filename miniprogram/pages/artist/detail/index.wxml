@@ -57,7 +57,7 @@
 
       <view class="hero__actions">
         <view class="btn btn--primary hero__contact" hover-class="hero__action--hover" bindtap="onContact">
-          联系 TA
+          预约 TA
         </view>
         <button class="btn btn--secondary hero__action" open-type="share">分享</button>
         <view
@@ -83,11 +83,15 @@
           wx:for="{{scheduleDays}}"
           wx:key="date"
           class="schedule-day schedule-day--{{item.state}}"
+          data-date="{{item.date}}"
+          data-state="{{item.state}}"
+          bindtap="onDayTap"
         >
           <text class="schedule-day__date">{{item.month}}/{{item.day}}</text>
           <text class="schedule-day__state">{{item.stateLabel}}</text>
         </view>
       </scroll-view>
+      <view class="muted schedule-hint">点击可约日期，直接向 TA 发起定向预约</view>
     </view>
 
     <!-- 作品集 -->

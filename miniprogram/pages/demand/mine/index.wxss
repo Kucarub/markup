@@ -14,6 +14,24 @@
   line-height: 1.6;
 }
 
+/* 找化妆师入口（E8-05）：分包页不能进 tabBar，由客户落地页进入 */
+.demand-mine__search {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: var(--space-md);
+  padding: 22rpx 24rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 24rpx;
+}
+
+.demand-mine__search text {
+  flex: 1;
+  min-width: 0;
+}
+
 /* 状态筛选 */
 .tabs {
   display: flex;

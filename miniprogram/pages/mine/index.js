@@ -44,7 +44,7 @@ Page({
       return
     }
     if (key === 'deliveries') {
-      wx.switchTab({ url: '/pages/order/list/index' })
+      wx.navigateTo({ url: '/pages/order/list/index' })
       return
     }
     if (key === 'schedule') {

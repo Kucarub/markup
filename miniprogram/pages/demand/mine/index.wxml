@@ -3,6 +3,11 @@
     <text class="kicker">MY REQUESTS</text>
     <view class="page-heading">我的需求</view>
     <view class="demand-mine__sub">发布后等待同城化妆师响应，价格与履约线下确认</view>
+    <view class="demand-mine__search" bindtap="onSearch">
+      <image class="icon icon--sm" src="/assets/icons/search.svg" mode="aspectFit" />
+      <text>找化妆师 · 按风格、档期、距离筛选</text>
+      <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+    </view>
   </view>
 
   <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
@@ -27,7 +32,7 @@
 
   <block wx:else>
     <view wx:if="{{list.length}}" class="demand-list">
-      <view class="demand" wx:for="{{list}}" wx:key="id">
+      <view class="demand" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
         <view class="demand__head">
           <view class="demand__date">{{item.dateText}}</view>
           <view class="tag tag--{{item.tone}}">{{item.statusLabel}}</view>
@@ -55,7 +60,7 @@
             wx:if="{{item.canClose}}"
             class="btn btn--ghost btn--sm"
             data-id="{{item.id}}"
-            bindtap="onClose"
+            catchtap="onClose"
           >关闭需求</button>
         </view>
       </view>

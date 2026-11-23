@@ -13,6 +13,8 @@ export function createApp() {
   const app = express()
 
   app.disable('x-powered-by')
+  // 生产部署在 Nginx 之后：信任一层代理，才能用 X-Forwarded-Proto 还原 https 与客户端 IP
+  app.set('trust proxy', 1)
   app.use(helmet())
   app.use(
     cors({

@@ -1,5 +1,10 @@
 const request = require('../../../utils/request')
-const { getToken, getRole } = require('../../../utils/auth')
+const {
+  getToken,
+  getRole,
+  redirectToLogin,
+  setLoginRedirect,
+} = require('../../../utils/auth')
 const { fetchProfile } = require('../../../utils/guard')
 const { absoluteUrl } = require('../../../utils/upload')
 const { styleLabels } = require('../../../utils/dict')
@@ -161,11 +166,44 @@ Page({
       wx.showToast({ title: '这是你的主页', icon: 'none' })
       return
     }
-    if (getRole() === 'customer') {
-      wx.showToast({ title: '定向预约将在下一版本开放', icon: 'none' })
+    if (getRole() === 'artist') {
+      wx.showToast({ title: '请切换为客户身份后再预约', icon: 'none' })
       return
     }
-    wx.showToast({ title: '登录后可预约该化妆师', icon: 'none' })
+    this.goBooking('')
+  },
+
+  /** 点选某天档期（E9-01）：仅可接日期可发起预约 */
+  onDayTap(event) {
+    const { date, state } = event.currentTarget.dataset
+    if (state !== 'available') {
+      wx.showToast({ title: '该日期不可预约，请选择绿色可约日期', icon: 'none' })
+      return
+    }
+    this.goBooking(date || '')
+  },
+
+  /** 进入定向预约页；未登录先登录，登录后回到本页（E9-01 / E9-02） */
+  goBooking(date) {
+    const artistId = this.data.artistId
+    if (!getToken()) {
+      setLoginRedirect(`/pages/artist/detail/index?id=${artistId}`)
+      redirectToLogin()
+      return
+    }
+    if (getRole() !== 'customer') {
+      wx.showToast({ title: '请切换为客户身份后再预约', icon: 'none' })
+      return
+    }
+    const name = (this.data.profile && this.data.profile.name) || ''
+    const query = [
+      `artistId=${artistId}`,
+      `artistName=${encodeURIComponent(name)}`,
+      date ? `date=${date}` : '',
+    ]
+      .filter(Boolean)
+      .join('&')
+    wx.navigateTo({ url: `/pkg-customer/pages/demand/create/index?${query}` })
   },
 
   onShowQrcode() {

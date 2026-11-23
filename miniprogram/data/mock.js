@@ -289,7 +289,7 @@ const portfolios = [
 ]
 
 const mineMenu = [
-  { key: 'deliveries', label: '我的投递', icon: 'send', badge: '2' },
+  { key: 'deliveries', label: '接单中心', icon: 'send' },
   { key: 'favorites', label: '我的收藏', icon: 'bookmark' },
   { key: 'schedule', label: '档期管理', icon: 'calendar' },
   { key: 'skills', label: '技能认证', icon: 'file-check', note: '2 项待认证' },

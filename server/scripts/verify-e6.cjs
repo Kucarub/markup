@@ -360,8 +360,13 @@ async function main() {
   const bookedDay = dayKey(3)
   await prisma.artistSchedule.upsert({
     where: { artistId_date: { artistId: accountA.artistId, date: dateOf(bookedDay) } },
-    create: { artistId: accountA.artistId, date: dateOf(bookedDay), state: 'booked', orderId: 999901 },
-    update: { state: 'booked', orderId: 999901 },
+    create: {
+      artistId: accountA.artistId,
+      date: dateOf(bookedDay),
+      state: 'booked',
+      serviceOrderId: 999901,
+    },
+    update: { state: 'booked', serviceOrderId: 999901 },
   })
 
   const editBooked = await request('PUT', '/api/schedule', {
@@ -389,7 +394,7 @@ async function main() {
       batchSkip.data.data.skipped === 1 &&
       batchSkip.data.data.updated === 1 &&
       bookedAfterBatch.state === 'booked' &&
-      bookedAfterBatch.orderId === 999901,
+      bookedAfterBatch.serviceOrderId === 999901,
     JSON.stringify({ result: batchSkip.data.data, row: bookedAfterBatch }),
   )
 

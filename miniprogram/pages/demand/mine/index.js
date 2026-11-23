@@ -196,7 +196,13 @@ Page({
     }
     const next = list.map((item) =>
       item.id === id
-        ? { ...item, status: 'closed', statusLabel: updated.statusLabel, tone: 'neutral', canClose: false }
+        ? {
+            ...item,
+            status: 'closed',
+            statusLabel: updated.statusLabel,
+            tone: 'neutral',
+            canClose: false,
+          }
         : item,
     )
     this.setData({ list: next })
@@ -204,6 +210,16 @@ Page({
 
   onPublish() {
     wx.navigateTo({ url: '/pkg-customer/pages/demand/create/index' })
+  },
+
+  onOpen(event) {
+    const id = Number(event.currentTarget.dataset.id)
+    if (!id) return
+    wx.navigateTo({ url: `/pages/demand/detail/index?id=${id}` })
+  },
+
+  onSearch() {
+    wx.navigateTo({ url: '/pkg-customer/pages/search/list/index' })
   },
 
   onPrimaryAction() {

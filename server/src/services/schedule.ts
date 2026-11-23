@@ -66,7 +66,7 @@ type Client = Prisma.TransactionClient | ReturnType<typeof getPrisma>
 export async function claimDay(
   artistId: number,
   date: Date,
-  orderId: number,
+  serviceOrderId: number,
   client?: Prisma.TransactionClient,
 ): Promise<void> {
   const db: Client = client ?? getPrisma()
@@ -74,20 +74,22 @@ export async function claimDay(
   const existing = await db.artistSchedule.findUnique({
     where: { artistId_date: { artistId, date } },
   })
-  // 同一订单重复占用视为幂等，避免重试路径报错
-  if (existing?.state === 'booked' && existing.orderId === orderId) return
+  // 同一服务记录重复占用视为幂等，避免重试路径报错
+  if (existing?.state === 'booked' && existing.serviceOrderId === serviceOrderId) return
   if (existing && existing.state !== 'available') {
     throw AppError.conflict('该日期档期已被占用或设为休息')
   }
 
   const updated = await db.artistSchedule.updateMany({
     where: { artistId, date, state: 'available' },
-    data: { state: 'booked', orderId },
+    data: { state: 'booked', serviceOrderId },
   })
   if (updated.count > 0) return
 
   try {
-    await db.artistSchedule.create({ data: { artistId, date, state: 'booked', orderId } })
+    await db.artistSchedule.create({
+      data: { artistId, date, state: 'booked', serviceOrderId },
+    })
   } catch (error) {
     // 并发下另一个请求已插入 → 唯一索引冲突即视为档期被抢占
     if ((error as { code?: string }).code === 'P2002') {
@@ -97,17 +99,17 @@ export async function claimDay(
   }
 }
 
-/** 释放订单占用的档期：只释放本订单占用的那天，避免误放他人 */
+/** 释放服务记录占用的档期：只释放本记录占用的那天，避免误放他人 */
 export async function releaseDay(
   artistId: number,
   date: Date,
-  orderId: number,
+  serviceOrderId: number,
   client?: Prisma.TransactionClient,
 ): Promise<boolean> {
   const db: Client = client ?? getPrisma()
   const result = await db.artistSchedule.updateMany({
-    where: { artistId, date, orderId, state: 'booked' },
-    data: { state: 'available', orderId: null },
+    where: { artistId, date, serviceOrderId, state: 'booked' },
+    data: { state: 'available', serviceOrderId: null },
   })
   return result.count > 0
 }

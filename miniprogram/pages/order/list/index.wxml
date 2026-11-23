@@ -1,8 +1,147 @@
-<view class="page screen--with-tab">
-  <view class="card">
-    <view class="card__title">我的订单</view>
-    <view class="card__desc">订单列表与状态流转在 E10 接入（待确认 → 已接受 → 已完成 / 已取消）。</view>
-    <view class="empty">暂无订单</view>
-    <button class="btn btn--primary btn--block" bindtap="goHome">去首页看看</button>
+<view class="screen inbox">
+  <view class="inbox__head">
+    <text class="kicker">ARTIST INBOX</text>
+    <view class="page-heading">接单中心</view>
+    <view class="inbox__sub">定向预约请及时处理，接受后自动生成服务记录并占用档期</view>
   </view>
+
+  <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab {{activeTab === item.key ? 'tab--active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onTabTap"
+    >
+      {{item.label}}
+      <text wx:if="{{item.key === 'pending' && unread > 0}}" class="tab__badge">{{unread}}</text>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{error}}" class="card inbox__notice">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">{{error === '接单中心仅对化妆师开放' ? '请切换到化妆师身份后再进入' : '请检查网络后重试'}}</view>
+    <button class="btn btn--primary btn--block inbox__notice-btn" bindtap="onRetry">
+      {{error === '接单中心仅对化妆师开放' ? '返回我的' : '重新加载'}}
+    </button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <!-- 待处理：定向预约，可就地接受 / 婉拒 -->
+    <view wx:if="{{activeTab === 'pending'}}" class="inbox__body">
+      <block wx:if="{{pending.length}}">
+        <view wx:for="{{pending}}" wx:key="id" class="inbox-card">
+          <view class="inbox-card__head" data-id="{{item.id}}" bindtap="onOpenDemand">
+            <view class="inbox-card__date">{{item.dateText}}</view>
+            <text class="tag tag--warning">{{item.statusLabel}}</text>
+          </view>
+
+          <view class="inbox-card__title" data-id="{{item.id}}" bindtap="onOpenDemand">
+            {{item.typeLabel}} · {{item.headcount}} 人
+          </view>
+
+          <view class="inbox-card__meta">
+            <text>{{item.city}} · {{item.district}}</text>
+            <view class="inbox-card__dot"></view>
+            <text class="inbox-card__budget">¥{{item.budgetText}}</text>
+          </view>
+
+          <view wx:if="{{item.styles.length}}" class="inbox-card__styles">
+            <text wx:for="{{item.styles}}" wx:for-item="style" wx:key="*this" class="tag tag--neutral">{{style}}</text>
+          </view>
+
+          <view wx:if="{{item.remark}}" class="inbox-card__remark">{{item.remark}}</view>
+
+          <view class="inbox-card__customer">
+            客户：{{item.customer.nickname}} · {{item.customer.city}}{{item.customer.district}}
+          </view>
+
+          <view class="inbox-card__actions">
+            <button
+              class="btn btn--ghost btn--sm"
+              data-id="{{item.id}}"
+              loading="{{submittingId === item.id}}"
+              bindtap="onDecline"
+            >婉拒</button>
+            <button
+              class="btn btn--primary btn--sm"
+              data-id="{{item.id}}"
+              loading="{{submittingId === item.id}}"
+              bindtap="onAccept"
+            >接受</button>
+          </view>
+        </view>
+      </block>
+      <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+    </view>
+
+    <!-- 已处理：已接受 / 已婉拒的定向预约 -->
+    <view wx:elif="{{activeTab === 'handled'}}" class="inbox__body">
+      <block wx:if="{{handled.length}}">
+        <view wx:for="{{handled}}" wx:key="id" class="inbox-card" data-id="{{item.id}}" bindtap="onOpenDemand">
+          <view class="inbox-card__head">
+            <view class="inbox-card__date">{{item.dateText}}</view>
+            <text class="tag tag--{{item.tone}}">{{item.statusLabel}}</text>
+          </view>
+          <view class="inbox-card__title">{{item.typeLabel}} · {{item.headcount}} 人</view>
+          <view class="inbox-card__meta">
+            <text>{{item.city}} · {{item.district}}</text>
+            <view class="inbox-card__dot"></view>
+            <text class="inbox-card__budget">¥{{item.budgetText}}</text>
+          </view>
+          <view wx:if="{{item.declineReason}}" class="inbox-card__remark">婉拒原因：{{item.declineReason}}</view>
+          <view class="inbox-card__customer">
+            客户：{{item.customer.nickname}} · {{item.customer.city}}{{item.customer.district}}
+          </view>
+        </view>
+      </block>
+      <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+    </view>
+
+    <!-- 我的响应：需求大厅报名状态 -->
+    <view wx:elif="{{activeTab === 'responses'}}" class="inbox__body">
+      <block wx:if="{{responses.length}}">
+        <view wx:for="{{responses}}" wx:key="id" class="inbox-card" data-id="{{item.demand.id}}" bindtap="onOpenDemand">
+          <view class="inbox-card__head">
+            <view class="inbox-card__date">{{item.demand.dateText}}</view>
+            <text class="tag tag--{{item.status === 'selected' ? 'success' : item.status === 'pending' ? 'warning' : 'neutral'}}">
+              {{item.statusLabel}}
+            </text>
+          </view>
+          <view class="inbox-card__title">
+            {{item.demand.typeLabel}} · {{item.demand.headcount}} 人
+          </view>
+          <view class="inbox-card__meta">
+            <text>{{item.demand.city}} · {{item.demand.district}}</text>
+            <view class="inbox-card__dot"></view>
+            <text class="inbox-card__budget">¥{{item.demand.budgetText}}</text>
+          </view>
+          <view wx:if="{{item.note}}" class="inbox-card__remark">我的说明：{{item.note}}</view>
+        </view>
+      </block>
+      <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+    </view>
+
+    <!-- 服务记录：待确认 / 已确认 -->
+    <view wx:else class="inbox__body">
+      <block wx:if="{{orders.length}}">
+        <view wx:for="{{orders}}" wx:key="id" class="inbox-card" data-id="{{item.demandId}}" bindtap="onOpenDemand">
+          <view class="inbox-card__head">
+            <view class="inbox-card__date">{{item.dateText}}</view>
+            <text class="tag tag--{{item.status === 'confirmed' ? 'success' : 'warning'}}">{{item.statusLabel}}</text>
+          </view>
+          <view class="inbox-card__title">{{item.typeLabel}} · {{item.headcount}} 人</view>
+          <view class="inbox-card__meta">
+            <text>{{item.city}} · {{item.district}}</text>
+            <view class="inbox-card__dot"></view>
+            <text class="inbox-card__budget">服务记录 #{{item.id}}</text>
+          </view>
+          <view wx:if="{{item.remark}}" class="inbox-card__remark">{{item.remark}}</view>
+        </view>
+      </block>
+      <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+    </view>
+  </block>
 </view>

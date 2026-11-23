@@ -29,7 +29,9 @@ const signSchema = z.object({
   size: z.coerce.number().int().positive('文件大小不合法'),
 })
 
+/** OSS 模式下签名地址本身是绝对 URL，直接透传 */
 function absoluteUrl(req: express.Request, pathname: string): string {
+  if (/^https?:\/\//.test(pathname)) return pathname
   return `${req.protocol}://${req.get('host')}${pathname}`
 }
 
@@ -103,7 +105,7 @@ fileRouter.put(
     if (buffer.length === 0) throw AppError.badRequest('上传内容为空')
     if (buffer.length > MAX_FILE_SIZE) throw AppError.fileTooLarge('文件超过大小限制')
 
-    writeObject(key, buffer)
+    await writeObject(key, buffer)
     await prisma.fileObject.update({
       where: { objectKey: key },
       data: { size: buffer.length, status: 'uploaded' },
@@ -145,13 +147,13 @@ fileRouter.get(
     if (!verifySignature(key, exp, sig)) throw AppError.forbidden('访问签名无效或已过期')
 
     const file = await getPrisma().fileObject.findUnique({ where: { objectKey: key } })
-    if (!file || file.status !== 'uploaded' || !objectExists(key)) {
+    if (!file || file.status !== 'uploaded' || !(await objectExists(key))) {
       throw AppError.notFound('文件不存在')
     }
 
     res.setHeader('Content-Type', file.mimeType)
     res.setHeader('Content-Length', String(file.size))
     res.setHeader('Cache-Control', 'private, max-age=300')
-    res.send(readObject(key))
+    res.send(await readObject(key))
   }),
 )

@@ -550,7 +550,15 @@ async function main() {
     expectedPaths.every((path) => !!docData.paths[path]),
     JSON.stringify(Object.keys(docData.paths || {}).filter((key) => !expectedPaths.includes(key))),
   )
-  check('OpenAPI 版本升至 0.6.0', docData.info && docData.info.version === '0.6.0', docData.info && docData.info.version)
+  check(
+    'OpenAPI 版本不低于 0.6.0',
+    Boolean(
+      docData.info &&
+        /^\d+\.\d+\.\d+$/.test(docData.info.version) &&
+        docData.info.version.localeCompare('0.6.0', undefined, { numeric: true }) >= 0,
+    ),
+    docData.info && docData.info.version,
+  )
 
   // ---------- 清理 ----------
   await prisma.eventLog.deleteMany({ where: { id: { in: created.eventIds } } })

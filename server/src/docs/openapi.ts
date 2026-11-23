@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.6.0',
+    version: '0.8.0',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -33,6 +33,8 @@ export const openApiDocument = {
     { name: '入驻' },
     { name: '客户' },
     { name: '需求' },
+    { name: '服务记录' },
+    { name: '评价' },
     { name: '搜索' },
     { name: '埋点' },
     { name: '后台' },
@@ -213,12 +215,17 @@ export const openApiDocument = {
           stylePrefs: { type: 'array', items: { type: 'string' } },
           remark: { type: 'string', nullable: true },
           status: { type: 'string', enum: ['pending', 'selected', 'closed'] },
-          statusLabel: { type: 'string', enum: ['待响应', '已响应', '已选定', '已关闭'] },
+          statusLabel: {
+            type: 'string',
+            enum: ['待响应', '已响应', '已选定', '已关闭', '已被婉拒'],
+          },
           source: { type: 'string', enum: ['customer', 'ops'] },
           targetArtistId: { type: 'integer', nullable: true, description: '定向预约的目标化妆师' },
           responseCount: { type: 'integer', description: '化妆师响应数，「已响应」由该值派生' },
           expireAt: { type: 'string', format: 'date-time', nullable: true },
           closedAt: { type: 'string', format: 'date-time', nullable: true },
+          declineReason: { type: 'string', nullable: true, description: '定向预约被婉拒的原因（E9-05）' },
+          declinedAt: { type: 'string', format: 'date-time', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
           duplicated: { type: 'boolean', description: '仅 POST 返回：命中 5 分钟幂等窗口' },
           isTargeted: { type: 'boolean', description: '仅需求大厅返回：是否定向预约' },
@@ -284,8 +291,6 @@ export const openApiDocument = {
         properties: {
           id: { type: 'integer' },
           demandId: { type: 'integer' },
-          customerId: { type: 'integer' },
-          artistId: { type: 'integer' },
           serviceDate: { type: 'string', example: '2026-12-01' },
           serviceType: { type: 'string', enum: ['bridal', 'daily', 'event', 'photo'] },
           headcount: { type: 'integer' },
@@ -293,7 +298,114 @@ export const openApiDocument = {
           district: { type: 'string' },
           remark: { type: 'string', nullable: true },
           status: { type: 'string', enum: ['pending', 'confirmed', 'finished', 'cancelled'] },
+          statusLabel: { type: 'string', example: '待确认' },
+          tone: { type: 'string', enum: ['warning', 'brand', 'success', 'neutral'] },
+          initiatorRole: {
+            type: 'string',
+            enum: ['customer', 'artist'],
+            description: '服务记录发起方：客户择一 / 化妆师接受定向预约',
+          },
+          artistName: { type: 'string', nullable: true },
+          customerName: { type: 'string', nullable: true },
+          artistConfirmed: { type: 'boolean', description: '化妆师是否已确认完成' },
+          customerConfirmed: { type: 'boolean', description: '客户是否已确认完成' },
+          finishState: {
+            type: 'string',
+            enum: ['none', 'requestable', 'confirmable', 'waiting'],
+            description: '当前视角的完工确认按钮态',
+          },
+          canConfirm: { type: 'boolean' },
+          canCancel: { type: 'boolean' },
+          canReview: { type: 'boolean' },
+          confirmedAt: { type: 'string', format: 'date-time', nullable: true },
+          finishRequestBy: { type: 'string', enum: ['artist', 'customer'], nullable: true },
+          finishRequestAt: { type: 'string', format: 'date-time', nullable: true },
+          autoFinishAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: '发起完工确认后 7 天自动完成的时间点',
+          },
+          finishTime: { type: 'string', format: 'date-time', nullable: true },
+          cancelReason: { type: 'string', nullable: true },
+          cancelBy: { type: 'string', enum: ['artist', 'customer'], nullable: true },
+          cancelByLabel: { type: 'string', nullable: true, example: '客户取消' },
+          cancelledAt: { type: 'string', format: 'date-time', nullable: true },
+          myReview: { $ref: '#/components/schemas/OrderReview' },
           createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      OrderReview: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          id: { type: 'integer' },
+          rating: { type: 'integer', minimum: 1, maximum: 5 },
+          tags: { type: 'array', items: { type: 'string' } },
+          content: { type: 'string', nullable: true },
+          status: { type: 'string', enum: ['visible', 'pending', 'hidden'] },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      ReviewItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          serviceOrderId: { type: 'integer' },
+          rating: { type: 'integer', minimum: 1, maximum: 5 },
+          tags: { type: 'array', items: { type: 'string' } },
+          content: { type: 'string', nullable: true },
+          fromRole: { type: 'string', enum: ['artist', 'customer'] },
+          fromRoleLabel: { type: 'string' },
+          fromName: { type: 'string' },
+          fromAvatar: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      Credit: {
+        type: 'object',
+        properties: {
+          userId: { type: 'integer' },
+          role: { type: 'string', enum: ['artist', 'customer'] },
+          score: { type: 'integer', example: 60 },
+          level: { type: 'string', example: '一般' },
+          initial: { type: 'boolean', description: '尚未产生变动时返回初始分' },
+        },
+      },
+      Inbox: {
+        type: 'object',
+        properties: {
+          unread: { type: 'integer', description: '待处理定向预约数，用作角标' },
+          pending: { type: 'array', items: { $ref: '#/components/schemas/Demand' } },
+          handled: {
+            type: 'array',
+            items: {
+              allOf: [
+                { $ref: '#/components/schemas/Demand' },
+                {
+                  type: 'object',
+                  properties: {
+                    handledStatus: { type: 'string', enum: ['accepted', 'declined'] },
+                  },
+                },
+              ],
+            },
+          },
+          responses: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer' },
+                status: { type: 'string', enum: ['selected', 'rejected', 'withdrawn'] },
+                note: { type: 'string', nullable: true },
+                createdAt: { type: 'string', format: 'date-time' },
+                demand: { $ref: '#/components/schemas/Demand' },
+              },
+            },
+          },
+          orders: { type: 'array', items: { $ref: '#/components/schemas/ServiceOrder' } },
         },
       },
       DemandDetail: {
@@ -312,6 +424,16 @@ export const openApiDocument = {
               },
               expired: { type: 'boolean' },
               isOwner: { type: 'boolean' },
+              isTargeted: { type: 'boolean', description: '是否为定向预约（E9）' },
+              targetArtist: {
+                type: 'object',
+                nullable: true,
+                description: '被预约的化妆师（定向预约时有值）',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                },
+              },
               canRespond: { type: 'boolean' },
               respondBlockedReason: { type: 'string', nullable: true },
               canSelect: { type: 'boolean', description: '需求所属客户在有响应时可择一确认' },
@@ -319,6 +441,14 @@ export const openApiDocument = {
             },
           },
         ],
+      },
+      Page: {
+        type: 'object',
+        properties: {
+          total: { type: 'integer', example: 42 },
+          page: { type: 'integer', example: 1 },
+          size: { type: 'integer', example: 20 },
+        },
       },
       EventRequest: {
         type: 'object',
@@ -826,6 +956,110 @@ export const openApiDocument = {
           403: errorResponse,
           404: errorResponse,
           409: { description: '重复择一 / 需求已处理 / 响应已处理 / 已过期（code=40900）' },
+        },
+      },
+    },
+    '/api/demands/{id}/accept': {
+      post: {
+        tags: ['需求'],
+        summary: '接受定向预约（E9-05）：生成待确认服务记录并占用档期',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '接受结果：需求已选定 + 服务记录待确认 + 档期变已排',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    demand: { $ref: '#/components/schemas/Demand' },
+                    serviceOrder: { $ref: '#/components/schemas/ServiceOrder' },
+                  },
+                },
+              },
+            },
+          },
+          401: errorResponse,
+          403: { description: '非目标化妆师 / 未通过审核（code=40300）' },
+          404: errorResponse,
+          409: { description: '需求已处理 / 已过期 / 档期冲突（code=40900）' },
+        },
+      },
+    },
+    '/api/demands/{id}/decline': {
+      post: {
+        tags: ['需求'],
+        summary: '婉拒定向预约（E9-05）：原因必填，需求置已关闭',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['reason'],
+                properties: {
+                  reason: { type: 'string', maxLength: 255, example: '该日已有档期，建议换一天' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '婉拒后的需求（status=closed，含 declineReason）',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Demand' } } },
+          },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/demands/{id}/alternatives': {
+      get: {
+        tags: ['需求'],
+        summary: '婉拒后备选推荐（E9-06）：同城、同风格、同日期可接的 3 人',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '备选化妆师卡片',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    total: { type: 'integer' },
+                    list: { type: 'array', items: { $ref: '#/components/schemas/ArtistCard' } },
+                  },
+                },
+              },
+            },
+          },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: { description: '需求未被婉拒（code=40900）' },
+        },
+      },
+    },
+    '/api/inbox': {
+      get: {
+        tags: ['需求'],
+        summary: '化妆师接单中心（E9-04）：待处理 / 已处理 / 我的响应 / 服务记录',
+        security: bearer,
+        responses: {
+          200: {
+            description: '接单中心聚合数据，unread 为角标数',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Inbox' } } },
+          },
+          401: errorResponse,
+          403: errorResponse,
         },
       },
     },
@@ -1448,6 +1682,235 @@ export const openApiDocument = {
           400: errorResponse,
           401: errorResponse,
           403: errorResponse,
+        },
+      },
+    },
+    '/api/service-orders': {
+      get: {
+        tags: ['服务记录'],
+        summary: '我的服务记录列表（客户 / 化妆师共用，四态筛选 + 各状态计数）',
+        security: bearer,
+        parameters: [
+          {
+            name: 'status',
+            in: 'query',
+            schema: { type: 'string', enum: ['pending', 'confirmed', 'finished', 'cancelled'] },
+          },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20, maximum: 100 } },
+        ],
+        responses: {
+          200: {
+            description: '分页列表 + counts（all / 四态）',
+            content: {
+              'application/json': {
+                schema: {
+                  allOf: [
+                    { $ref: '#/components/schemas/Page' },
+                    {
+                      type: 'object',
+                      properties: {
+                        list: {
+                          type: 'array',
+                          items: { $ref: '#/components/schemas/ServiceOrder' },
+                        },
+                        counts: {
+                          type: 'object',
+                          properties: {
+                            all: { type: 'integer' },
+                            pending: { type: 'integer' },
+                            confirmed: { type: 'integer' },
+                            finished: { type: 'integer' },
+                            cancelled: { type: 'integer' },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/service-orders/{id}': {
+      get: {
+        tags: ['服务记录'],
+        summary: '服务记录详情（当事人可见，含双方确认状态与按钮态）',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '服务记录详情',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ServiceOrder' },
+              },
+            },
+          },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/service-orders/{id}/confirm': {
+      post: {
+        tags: ['服务记录'],
+        summary: '确认接单（待确认 → 已确认，仅非发起方）',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '更新后的服务记录',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ServiceOrder' } } },
+          },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/service-orders/{id}/finish': {
+      post: {
+        tags: ['服务记录'],
+        summary: '完工确认（任一方发起 → 对方确认闭单；发起后 7 天自动完成）',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '更新后的服务记录（finishState 标识等待 / 已完成）',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ServiceOrder' } } },
+          },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/service-orders/{id}/cancel': {
+      post: {
+        tags: ['服务记录'],
+        summary: '取消服务记录（原因必填，同事务释放档期，取消方信用 -5）',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['reason'],
+                properties: { reason: { type: 'string', maxLength: 255, example: '临时有事，无法前往' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '更新后的服务记录',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ServiceOrder' } } },
+          },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/reviews': {
+      post: {
+        tags: ['评价'],
+        summary: '提交评价（仅已完成记录、一单一评；命中敏感词先待审）',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['serviceOrderId', 'rating'],
+                properties: {
+                  serviceOrderId: { type: 'integer' },
+                  rating: { type: 'integer', minimum: 1, maximum: 5 },
+                  tags: { type: 'array', maxItems: 6, items: { type: 'string' } },
+                  content: { type: 'string', maxLength: 500 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '评价状态（visible 立即展示 / pending 待审核）',
+            content: {
+              'application/json': {
+                example: { id: 1, status: 'visible', visible: true, message: '评价已发布' },
+              },
+            },
+          },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+      get: {
+        tags: ['评价'],
+        summary: '评价列表（按 artistId / userId / serviceOrderId 查询，仅展示可见评价）',
+        parameters: [
+          { name: 'artistId', in: 'query', schema: { type: 'integer' } },
+          { name: 'userId', in: 'query', schema: { type: 'integer' } },
+          { name: 'serviceOrderId', in: 'query', schema: { type: 'integer' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20, maximum: 100 } },
+        ],
+        responses: {
+          200: {
+            description: '分页列表 + 平均分',
+            content: {
+              'application/json': {
+                schema: {
+                  allOf: [
+                    { $ref: '#/components/schemas/Page' },
+                    {
+                      type: 'object',
+                      properties: {
+                        list: {
+                          type: 'array',
+                          items: { $ref: '#/components/schemas/ReviewItem' },
+                        },
+                        avgRating: { type: 'number', nullable: true },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          400: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/credit/{userId}': {
+      get: {
+        tags: ['评价'],
+        summary: '信用分与等级（公开只读）',
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: {
+            description: '信用分',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Credit' } } },
+          },
+          404: errorResponse,
         },
       },
     },

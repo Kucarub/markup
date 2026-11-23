@@ -34,7 +34,8 @@ Page({
   },
 
   onBellTap() {
-    this.toast('你有 2 条新消息')
+    // 接单中心（E9-04）：待处理定向预约与未读提示集中在这里
+    wx.navigateTo({ url: '/pages/order/list/index' })
   },
 
   onEditProfile() {

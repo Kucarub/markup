@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "订单"
+  "navigationBarTitleText": "接单中心",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index"
+  }
 }

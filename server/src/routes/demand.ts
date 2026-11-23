@@ -4,7 +4,8 @@ import type { Artist, Demand, Prisma } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { currentCustomer } from '../services/customer'
-import { addDays, dayOnly, formatDay, parseDay } from '../services/schedule'
+import { addDays, claimDay, dayOnly, formatDay, parseDay } from '../services/schedule'
+import { toOrderDto } from '../services/serviceOrder'
 import { buildSignedPath } from '../services/storage'
 import { asyncHandler } from '../utils/asyncHandler'
 import { AppError } from '../utils/errors'
@@ -64,10 +65,18 @@ const selectBody = z.object({
   responseId: z.coerce.number().int().positive('请选择要确认的响应'),
 })
 
+const declineBody = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(1, '请填写婉拒原因')
+    .max(255, '婉拒原因不超过 255 字'),
+})
+
 type DemandWithCount = Demand & { _count: { responses: number } }
 
 function statusLabel(demand: Demand, responseCount: number): string {
-  if (demand.status === 'closed') return '已关闭'
+  if (demand.status === 'closed') return demand.declineReason ? '已被婉拒' : '已关闭'
   if (demand.status === 'selected') return '已选定'
   return responseCount > 0 ? '已响应' : '待响应'
 }
@@ -92,6 +101,8 @@ function toDto(demand: DemandWithCount) {
     responseCount,
     expireAt: demand.expireAt ? demand.expireAt.toISOString() : null,
     closedAt: demand.closedAt ? demand.closedAt.toISOString() : null,
+    declineReason: demand.declineReason,
+    declinedAt: demand.declinedAt ? demand.declinedAt.toISOString() : null,
     createdAt: demand.createdAt.toISOString(),
   }
 }
@@ -235,6 +246,32 @@ demandRouter.post(
 
     const serviceDate = resolveServiceDate(input.serviceDate)
     const prisma = getPrisma()
+
+    if (input.targetArtistId) {
+      // 定向预约：同客户 + 同化妆师 + 同服务日只保留 1 条待响应需求（E9-03）
+      const targeted = await prisma.demand.findFirst({
+        where: {
+          customerId: customer.id,
+          targetArtistId: input.targetArtistId,
+          serviceDate,
+          status: 'pending',
+        },
+        include: { _count: { select: { responses: true } } },
+        orderBy: { id: 'desc' },
+      })
+      if (targeted) {
+        res.ok({ ...toDto(targeted), duplicated: true })
+        return
+      }
+
+      // 档期预校验：仅化妆师标记为可接的日期可预约，接受时还会再事务内校验一次
+      const slot = await prisma.artistSchedule.findUnique({
+        where: { artistId_date: { artistId: input.targetArtistId, date: serviceDate } },
+      })
+      if (!slot || slot.state !== 'available') {
+        throw AppError.conflict('该化妆师当日不可接，请换个日期')
+      }
+    }
 
     const existing = await prisma.demand.findFirst({
       where: {
@@ -479,6 +516,14 @@ demandRouter.get(
     const isOwner = Boolean(customer && customer.id === demand.customerId)
     const expired = isExpired(demand)
 
+    // 定向预约：客户侧展示被预约的化妆师（婉拒后可据此提示并推荐备选，E9-06）
+    const targetArtist = demand.targetArtistId
+      ? await prisma.artist.findUnique({
+          where: { id: demand.targetArtistId },
+          select: { id: true, name: true },
+        })
+      : null
+
     if (!isOwner && claims?.role !== 'admin') {
       const artistVisible = Boolean(
         artist &&
@@ -528,6 +573,8 @@ demandRouter.get(
       },
       expired,
       isOwner,
+      isTargeted: Boolean(demand.targetArtistId),
+      targetArtist,
       canRespond: !respondBlockedReason,
       respondBlockedReason,
       canSelect: isOwner && demand.status === 'pending' && !expired && responseCount > 0,
@@ -667,6 +714,8 @@ demandRouter.post(
           district: demand.district,
           remark: demand.remark,
           status: 'pending',
+          // 客户择一确认发起，待化妆师确认接单（E10-01）
+          initiatorRole: 'customer',
         },
       })
     })
@@ -679,6 +728,260 @@ demandRouter.post(
       demand: toDto(latest!),
       responseId: response.id,
       serviceOrder: { id: serviceOrder.id, status: serviceOrder.status },
+    })
+  }),
+)
+
+/* ------------------------------------------------------------------ */
+/* 接单中心与定向预约处理（E9-04 / E9-05 / E9-06）                     */
+/* ------------------------------------------------------------------ */
+
+/** 当前登录化妆师（接单中心仅对已通过审核者开放） */
+async function currentInboxArtist(userId: number): Promise<Artist> {
+  const artist = await getPrisma().artist.findUnique({ where: { userId } })
+  if (!artist) throw AppError.forbidden('请先完成化妆师入驻')
+  if (artist.status === 'disabled') throw AppError.forbidden('账号已停用，请联系平台')
+  if (artist.status !== 'approved') throw AppError.forbidden('入驻审核通过后才能接单')
+  return artist
+}
+
+/**
+ * 化妆师接单中心（E9-04）：
+ * - pending 待处理：发给我的定向预约（待响应且未过期，按时间倒序）；
+ * - handled 已处理：已接受 / 已婉拒的定向预约；
+ * - responses 我的响应：对需求大厅需求的报名状态；
+ * - orders 服务记录：待确认 / 已确认，按服务日期升序。
+ * unread 作为接单中心角标数。
+ */
+demandRouter.get(
+  '/inbox',
+  requireAuth('artist'),
+  asyncHandler(async (req, res) => {
+    const artist = await currentInboxArtist(req.auth!.uid)
+    const prisma = getPrisma()
+    const now = new Date()
+
+    const [pending, handled, responses, orders] = await Promise.all([
+      prisma.demand.findMany({
+        where: {
+          targetArtistId: artist.id,
+          status: 'pending',
+          OR: [{ expireAt: null }, { expireAt: { gt: now } }],
+        },
+        include: {
+          _count: { select: { responses: true } },
+          customer: { select: { nickname: true, city: true, district: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      prisma.demand.findMany({
+        where: {
+          targetArtistId: artist.id,
+          OR: [{ status: 'selected' }, { declineReason: { not: null } }],
+        },
+        include: {
+          _count: { select: { responses: true } },
+          customer: { select: { nickname: true, city: true, district: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      }),
+      prisma.demandResponse.findMany({
+        where: { artistId: artist.id, status: { in: ['selected', 'rejected', 'withdrawn'] } },
+        include: {
+          demand: { include: { _count: { select: { responses: true } } } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      }),
+      prisma.serviceOrder.findMany({
+        where: { artistId: artist.id, status: { in: ['pending', 'confirmed'] } },
+        orderBy: [{ serviceDate: 'asc' }, { id: 'asc' }],
+        take: 20,
+      }),
+    ])
+
+    res.ok({
+      unread: pending.length,
+      pending: pending.map((item) => ({
+        ...toDto(item),
+        customer: {
+          nickname: item.customer.nickname || '客户',
+          city: item.customer.city,
+          district: item.customer.district,
+        },
+      })),
+      handled: handled.map((item) => ({
+        ...toDto(item),
+        handledStatus: item.status === 'selected' ? 'accepted' : 'declined',
+        customer: {
+          nickname: item.customer.nickname || '客户',
+          city: item.customer.city,
+          district: item.customer.district,
+        },
+      })),
+      responses: responses.map((item) => ({
+        id: item.id,
+        status: item.status,
+        note: item.note,
+        createdAt: item.createdAt.toISOString(),
+        demand: toDto(item.demand),
+      })),
+      orders: orders.map((order) => toOrderDto(order, 'artist')),
+    })
+  }),
+)
+
+/**
+ * 接受定向预约（E9-05）：需求置已选定、生成待确认服务记录，并在同一事务占用档期。
+ * 并发两次接受只有一次成功，另一次因状态已变更返回 409。
+ */
+demandRouter.post(
+  '/demands/:id/accept',
+  requireAuth('artist'),
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) throw AppError.notFound('需求不存在')
+    const artist = await currentApprovedArtist(req.auth!.uid)
+    const prisma = getPrisma()
+
+    const demand = await prisma.demand.findUnique({ where: { id } })
+    if (!demand) throw AppError.notFound('需求不存在')
+    if (demand.targetArtistId !== artist.id) {
+      throw AppError.forbidden('该需求不是发给你的定向预约')
+    }
+    if (demand.status !== 'pending') throw AppError.conflict('该需求已被处理，请刷新后重试')
+    if (isExpired(demand)) throw AppError.conflict('该需求已过期，无法接受')
+
+    const order = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.demand.updateMany({
+        where: { id, status: 'pending' },
+        data: { status: 'selected' },
+      })
+      if (claimed.count === 0) throw AppError.conflict('该需求已被处理，请刷新后重试')
+
+      const created = await tx.serviceOrder.create({
+        data: {
+          demandId: id,
+          customerId: demand.customerId,
+          artistId: artist.id,
+          serviceDate: demand.serviceDate,
+          serviceType: demand.serviceType,
+          headcount: demand.headcount,
+          city: demand.city,
+          district: demand.district,
+          remark: demand.remark,
+          status: 'pending',
+          // 化妆师接受定向预约发起，待客户确认接单（E10-01）
+          initiatorRole: 'artist',
+        },
+      })
+      // 档期被占用 / 休息时抛 409，事务整体回滚
+      await claimDay(artist.id, demand.serviceDate, created.id, tx)
+
+      await tx.demandResponse.upsert({
+        where: { demandId_artistId: { demandId: id, artistId: artist.id } },
+        create: { demandId: id, artistId: artist.id, status: 'selected', note: '定向预约已接受' },
+        update: { status: 'selected' },
+      })
+      return created
+    })
+
+    const latest = await prisma.demand.findUnique({
+      where: { id },
+      include: { _count: { select: { responses: true } } },
+    })
+    res.ok({
+      demand: toDto(latest!),
+      serviceOrder: toOrderDto(order),
+    })
+  }),
+)
+
+/** 婉拒定向预约（E9-05）：原因必填，需求置已关闭并记录原因，客户侧可看备选（E9-06） */
+demandRouter.post(
+  '/demands/:id/decline',
+  requireAuth('artist'),
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) throw AppError.notFound('需求不存在')
+    const input = declineBody.parse(req.body)
+    const artist = await currentApprovedArtist(req.auth!.uid)
+    const prisma = getPrisma()
+
+    const demand = await prisma.demand.findUnique({ where: { id } })
+    if (!demand) throw AppError.notFound('需求不存在')
+    if (demand.targetArtistId !== artist.id) {
+      throw AppError.forbidden('该需求不是发给你的定向预约')
+    }
+    if (demand.status !== 'pending') throw AppError.conflict('该需求已被处理，请刷新后重试')
+
+    const now = new Date()
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.demand.updateMany({
+        where: { id, status: 'pending' },
+        data: {
+          status: 'closed',
+          closedAt: now,
+          declineReason: input.reason,
+          declinedAt: now,
+        },
+      })
+      if (updated.count === 0) throw AppError.conflict('该需求已被处理，请刷新后重试')
+      await tx.demandResponse.updateMany({
+        where: { demandId: id, artistId: artist.id, status: 'pending' },
+        data: { status: 'rejected' },
+      })
+    })
+
+    const latest = await prisma.demand.findUnique({
+      where: { id },
+      include: { _count: { select: { responses: true } } },
+    })
+    res.ok(toDto(latest!))
+  }),
+)
+
+/**
+ * 婉拒后备选推荐（E9-06）：同城、风格有交集、服务日可接的 3 位化妆师，
+ * 排除被婉拒的那位；客户可直接进入其主页发起新的定向预约。
+ */
+demandRouter.get(
+  '/demands/:id/alternatives',
+  requireAuth('customer'),
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) throw AppError.notFound('需求不存在')
+    const customer = await currentCustomer(req.auth!.uid)
+    const prisma = getPrisma()
+
+    const demand = await prisma.demand.findFirst({ where: { id, customerId: customer.id } })
+    if (!demand) throw AppError.notFound('需求不存在')
+    if (!demand.targetArtistId || !demand.declineReason) {
+      throw AppError.conflict('该需求未被婉拒，暂无备选推荐')
+    }
+
+    const stylePrefs = (demand.stylePrefs as string[] | null) ?? []
+    const artists = await prisma.artist.findMany({
+      where: {
+        status: 'approved',
+        city: demand.city,
+        id: { not: demand.targetArtistId },
+        ...(stylePrefs.length
+          ? { OR: stylePrefs.map((style) => ({ styles: { array_contains: style } })) }
+          : {}),
+        schedules: { some: { date: demand.serviceDate, state: 'available' } },
+      },
+      select: { id: true },
+      orderBy: [{ years: 'desc' }, { id: 'asc' }],
+      take: 3,
+    })
+
+    const cards = await loadArtistCards(artists.map((item) => item.id))
+    res.ok({
+      total: artists.length,
+      list: artists.map((item) => cards.get(item.id)).filter(Boolean),
     })
   }),
 )

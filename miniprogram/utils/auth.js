@@ -65,6 +65,19 @@ function redirectToLogin() {
   wx.reLaunch({ url: '/pages/auth/login/index' })
 }
 
+/** 登录后回跳地址（E9-01）：仅显式设置的场景生效，其余仍走默认分流 */
+const LOGIN_REDIRECT_KEY = 'login_redirect'
+
+function setLoginRedirect(url) {
+  if (url) wx.setStorageSync(LOGIN_REDIRECT_KEY, url)
+}
+
+function takeLoginRedirect() {
+  const url = wx.getStorageSync(LOGIN_REDIRECT_KEY) || ''
+  if (url) wx.removeStorageSync(LOGIN_REDIRECT_KEY)
+  return url
+}
+
 module.exports = {
   getToken,
   isGuestBrowse,
@@ -77,4 +90,6 @@ module.exports = {
   setSession,
   clearAuth,
   redirectToLogin,
+  setLoginRedirect,
+  takeLoginRedirect,
 }

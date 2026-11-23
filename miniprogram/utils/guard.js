@@ -1,4 +1,4 @@
-const { getToken } = require('./auth')
+const { getToken, takeLoginRedirect } = require('./auth')
 const request = require('./request')
 
 /**
@@ -88,6 +88,12 @@ function routeAfterAuth(profile) {
   const route = profile ? targetRoute(profile) : ''
   if (route) {
     go(route)
+    return
+  }
+  // 预约等场景要求在登录后回到原页面（E9-01）
+  const redirect = takeLoginRedirect()
+  if (redirect) {
+    wx.reLaunch({ url: redirect })
     return
   }
   go(profile && profile.role === 'customer' ? '/pages/demand/mine/index' : '/pages/home/index')

@@ -1,3 +1,4 @@
 {
-  "navigationBarTitleText": "找化妆师"
+  "navigationBarTitleText": "找化妆师",
+  "enablePullDownRefresh": true
 }

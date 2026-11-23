@@ -1,18 +1,182 @@
-<view class="page">
-  <view class="page-title">找化妆师</view>
-  <view class="page-subtitle">化妆师搜索与筛选在 E8 接入</view>
-
-  <view class="card">
-    <view class="card__title">筛选维度</view>
-    <view class="filters">
-      <text wx:for="{{filters}}" wx:key="*this" class="tag">{{item}}</text>
+<view class="search-page">
+  <view class="search-head">
+    <view class="search-head__row">
+      <view>
+        <text class="kicker">FIND ARTIST</text>
+        <view class="page-heading">找化妆师</view>
+      </view>
+      <text class="search-count">共 {{total}} 位</text>
     </view>
-    <view class="card__desc">
-      列表按「档期可约 → 城市区域 → 综合」排序；作品集与档期数据将在 E8 接入后开放。
+
+    <view class="filter-bar">
+      <view
+        class="filter-trigger {{chips.length ? 'filter-trigger--active' : ''}}"
+        bindtap="onTogglePanel"
+      >
+        <image class="icon icon--sm" src="/assets/icons/filter.svg" mode="aspectFit" />
+        <text>{{chips.length ? '筛选 · ' + chips.length : '筛选'}}</text>
+        <image
+          class="icon icon--xs"
+          src="/assets/icons/chevron-{{panelOpen ? 'up' : 'down'}}.svg"
+          mode="aspectFit"
+        />
+      </view>
+
+      <scroll-view class="chip-scroll" scroll-x show-scrollbar="{{false}}">
+        <view class="chip-row">
+          <view
+            wx:for="{{chips}}"
+            wx:key="key"
+            class="chip"
+            data-key="{{item.key}}"
+            bindtap="onRemoveChip"
+          >
+            <text>{{item.label}}</text>
+            <image class="icon icon--xs" src="/assets/icons/close.svg" mode="aspectFit" />
+          </view>
+          <text wx:if="{{!chips.length}}" class="chip-empty">未设置筛选条件</text>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{chips.length}}" class="chip-reset" bindtap="onReset">重置</view>
     </view>
   </view>
 
-  <view class="card">
-    <view class="empty">列表占位</view>
+  <view wx:if="{{panelOpen}}" class="filter-panel">
+    <view class="filter-group">
+      <view class="filter-group__title">城市</view>
+      <view class="pill-wrap">
+        <view
+          wx:for="{{cityOptions}}"
+          wx:key="label"
+          class="pill {{item.active ? 'pill--active' : ''}}"
+          data-city="{{item.label}}"
+          bindtap="onDraftCity"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-group__title">风格（可多选，最多 5 个）</view>
+      <view class="pill-wrap">
+        <view
+          wx:for="{{styleOptions}}"
+          wx:key="code"
+          class="pill {{item.active ? 'pill--active' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="onDraftStyle"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-group__title">档期日期</view>
+      <view class="pill-wrap">
+        <picker mode="date" value="{{draft.date}}" start="{{today}}" bindchange="onDraftDate">
+          <view class="pill {{draft.date ? 'pill--active' : ''}}">
+            {{draft.date || '指定日期可接'}}
+          </view>
+        </picker>
+        <view wx:if="{{draft.date}}" class="pill pill--clear" catchtap="onClearDraftDate">清除日期</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-group__title">距离（需授权定位）</view>
+      <view class="pill-wrap">
+        <view
+          wx:for="{{radiusOptions}}"
+          wx:key="value"
+          class="pill {{item.active ? 'pill--active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onDraftRadius"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="filter-group">
+      <view class="filter-group__title">从业年限</view>
+      <view class="pill-wrap">
+        <view
+          wx:for="{{yearsOptions}}"
+          wx:key="value"
+          class="pill {{item.active ? 'pill--active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="onDraftYears"
+        >{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="filter-actions">
+      <button class="btn btn--secondary btn--sm filter-actions__btn" bindtap="onReset">全部重置</button>
+      <button class="btn btn--primary btn--sm filter-actions__btn" bindtap="onApply">查看结果</button>
+    </view>
+  </view>
+
+  <view class="search-content">
+    <view wx:if="{{loading}}" class="empty">加载中…</view>
+
+    <view wx:elif="{{error}}" class="empty">{{error}}</view>
+
+    <block wx:elif="{{list.length}}">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="artist-card"
+        hover-class="artist-card--active"
+        hover-stay-time="80"
+        data-id="{{item.id}}"
+        bindtap="onArtistTap"
+      >
+        <view class="artist-cover-wrap">
+          <image
+            wx:if="{{item.cover}}"
+            class="artist-cover"
+            src="{{item.cover}}"
+            mode="aspectFill"
+          />
+          <view wx:else class="artist-cover artist-cover--empty">暂无作品图</view>
+          <view wx:if="{{item.distanceText}}" class="artist-distance">{{item.distanceText}}</view>
+        </view>
+
+        <view class="artist-body">
+          <view class="artist-head">
+            <text class="artist-name">{{item.name}}</text>
+            <text class="artist-works">{{item.worksTotal}} 件作品</text>
+          </view>
+
+          <view class="artist-meta">{{item.city}}{{item.district}} · {{item.years}} 年经验</view>
+
+          <view wx:if="{{item.styles.length}}" class="artist-styles">
+            <text
+              wx:for="{{item.styles}}"
+              wx:for-item="style"
+              wx:key="*this"
+              class="tag tag--neutral"
+            >{{style}}</text>
+          </view>
+
+          <view class="artist-foot">
+            <text class="artist-avail">{{item.availText}}</text>
+            <text class="artist-more">查看主页</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{loadingMore}}" class="list-more">加载中…</view>
+      <view wx:elif="{{!hasMore}}" class="list-more">没有更多化妆师了</view>
+    </block>
+
+    <view wx:else class="empty-block">
+      <view class="empty-block__title">没有找到符合条件的化妆师</view>
+      <view class="empty-block__desc">试试这些放宽条件的方式：</view>
+      <view class="suggestion-list">
+        <view wx:for="{{suggestions}}" wx:key="*this" class="suggestion">{{index + 1}}. {{item}}</view>
+      </view>
+      <view class="suggestion-actions">
+        <button class="btn btn--secondary btn--sm" bindtap="onTogglePanel">调整筛选</button>
+        <button class="btn btn--ghost btn--sm" bindtap="onCopyOps">复制运营微信</button>
+      </view>
+    </view>
   </view>
 </view>

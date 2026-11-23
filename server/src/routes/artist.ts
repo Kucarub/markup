@@ -3,6 +3,7 @@ import { Router, type Request } from 'express'
 import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { getCredit } from '../services/credit'
 import { buildSignedPath } from '../services/storage'
 import { getUnlimitedQrCode } from '../services/wechat'
 import { asyncHandler } from '../utils/asyncHandler'
@@ -359,6 +360,30 @@ async function buildPublicProfile(artistId: number) {
   const worksTotal = await prisma.artistPortfolio.count({ where: { artistId } })
   const schedule = await buildScheduleSummary(artistId)
 
+  // 信用分与客户评价（E10-06 / E10-07）：主页展示口碑，仅统计可见评价
+  const [credit, reviewAgg, latestReviews] = await Promise.all([
+    getCredit(artist.userId),
+    prisma.review.aggregate({
+      where: { toUserId: artist.userId, status: 'visible' },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    prisma.review.findMany({
+      where: { toUserId: artist.userId, status: 'visible' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 3,
+      select: {
+        id: true,
+        rating: true,
+        tags: true,
+        content: true,
+        fromRole: true,
+        createdAt: true,
+        fromUser: { select: { nickname: true, avatarUrl: true } },
+      },
+    }),
+  ])
+
   return {
     id: artist.id,
     name: artist.name,
@@ -372,6 +397,21 @@ async function buildPublicProfile(artistId: number) {
     worksTotal,
     coverPath: artist.portfolios[0] ? buildSignedPath('/api/files/raw', artist.portfolios[0].url) : null,
     schedule,
+    credit: { score: credit.score, level: credit.level },
+    reviews: {
+      count: reviewAgg._count._all,
+      avgRating: reviewAgg._avg.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : null,
+      latest: latestReviews.map((item) => ({
+        id: item.id,
+        rating: item.rating,
+        tags: Array.isArray(item.tags) ? (item.tags as string[]) : [],
+        content: item.content,
+        fromRole: item.fromRole,
+        fromName: item.fromUser.nickname || (item.fromRole === 'artist' ? '化妆师' : '客户'),
+        fromAvatar: item.fromUser.avatarUrl || null,
+        createdAt: item.createdAt.toISOString(),
+      })),
+    },
   }
 }
 
