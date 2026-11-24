@@ -1,0 +1,58 @@
+<view class="screen notification">
+  <view class="notification__head">
+    <text class="kicker">MESSAGES</text>
+    <view class="page-heading">消息通知</view>
+    <view class="notification__sub">需求响应、定向预约与服务进度提醒；未授权订阅时仅在这里展示</view>
+  </view>
+
+  <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab {{activeStatus === item.key ? 'tab--active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onTabTap"
+    >
+      {{item.label}}
+      <text wx:if="{{item.count > 0}}" class="tab__count">{{item.count}}</text>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{error}}" class="card notification__notice">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">请检查网络后重试</view>
+    <button class="btn btn--primary btn--block notification__notice-btn" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <view wx:if="{{list.length}}" class="notification__body">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="message"
+        data-page="{{item.page}}"
+        bindtap="onOpen"
+      >
+        <view class="message__head">
+          <view class="message__icon">
+            <image class="icon icon--sm" src="/assets/icons/bell.svg" mode="aspectFit" />
+          </view>
+          <view class="message__title">{{item.title}}</view>
+          <text class="tag tag--{{item.tone}}">{{item.statusLabel}}</text>
+        </view>
+        <view class="message__content">{{item.content}}</view>
+        <view class="message__foot">
+          <text>{{item.timeText}}</text>
+          <text wx:if="{{item.failReason}}" class="message__reason">{{item.failReason}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{loadingMore}}" class="notification__more">加载中…</view>
+      <view wx:elif="{{!hasMore && list.length}}" class="notification__more">没有更多了</view>
+    </view>
+
+    <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+  </block>
+</view>

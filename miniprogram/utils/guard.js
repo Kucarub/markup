@@ -1,4 +1,4 @@
-const { getToken, takeLoginRedirect } = require('./auth')
+const { getToken, takeLoginRedirect, setUserId } = require('./auth')
 const request = require('./request')
 
 /**
@@ -27,6 +27,7 @@ function fetchProfile(force) {
     return Promise.resolve(cache.profile)
   }
   return request.get('/api/auth/me', null, { showError: false }).then((profile) => {
+    setUserId(profile.userId)
     cache = { at: Date.now(), profile }
     return profile
   })

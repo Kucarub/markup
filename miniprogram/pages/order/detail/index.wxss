@@ -1,0 +1,200 @@
+/* 服务记录详情（E10-03 / E10-04 / E10-05） */
+.detail {
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.detail__notice {
+  margin: var(--space-md);
+}
+
+.detail__notice-btn {
+  margin-top: var(--space-sm);
+}
+
+.detail__hero {
+  padding: var(--space-md);
+  background: linear-gradient(135deg, var(--color-primary-tint), var(--color-bg-card));
+}
+
+.detail__hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail__date {
+  color: var(--color-primary);
+  font-size: 34rpx;
+  font-weight: 650;
+}
+
+.detail__title {
+  margin-top: 12rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.detail__sub {
+  margin-top: 10rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.detail__body {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.detail__card {
+  margin-top: var(--space-sm);
+  padding: 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.detail__card--danger {
+  background: #fcecea;
+}
+
+.detail__card-title {
+  margin-bottom: 18rpx;
+  font-size: 26rpx;
+  font-weight: 650;
+}
+
+.detail__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10rpx 0;
+  font-size: 26rpx;
+}
+
+.detail__label {
+  flex: 0 0 auto;
+  margin-right: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.detail__value {
+  flex: 1;
+  text-align: right;
+  color: var(--color-text-primary);
+}
+
+.detail__remark {
+  color: var(--color-text-regular);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.detail__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.detail__cancel-by {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.detail__cancel-reason {
+  margin-top: 8rpx;
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.detail__stars {
+  color: #f0a500;
+  font-size: 32rpx;
+  letter-spacing: 4rpx;
+}
+
+.detail__review-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+.detail__review-content {
+  margin-top: 14rpx;
+  color: var(--color-text-regular);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.detail__review-tip {
+  margin-top: 12rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+}
+
+/* ---------- 时间线 ---------- */
+.timeline {
+  position: relative;
+  display: flex;
+  gap: 18rpx;
+  padding-bottom: 22rpx;
+}
+
+.timeline:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__dot {
+  flex: 0 0 auto;
+  width: 14rpx;
+  height: 14rpx;
+  margin-top: 10rpx;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.timeline__dot--brand {
+  background: var(--color-primary);
+}
+
+.timeline__dot--success {
+  background: var(--color-success);
+}
+
+.timeline__dot--warning {
+  background: #bd7200;
+}
+
+.timeline__dot--danger {
+  background: var(--color-danger);
+}
+
+.timeline__label {
+  font-size: 26rpx;
+  color: var(--color-text-regular);
+}
+
+.timeline__time {
+  margin-top: 4rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+}
+
+/* ---------- 底部操作 ---------- */
+.detail__actions {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx var(--space-md) calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--color-bg-card);
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.detail__action {
+  flex: 1;
+}

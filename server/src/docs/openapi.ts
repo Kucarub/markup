@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.8.0',
+    version: '0.9.0',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -35,6 +35,7 @@ export const openApiDocument = {
     { name: '需求' },
     { name: '服务记录' },
     { name: '评价' },
+    { name: '通知' },
     { name: '搜索' },
     { name: '埋点' },
     { name: '后台' },
@@ -371,6 +372,47 @@ export const openApiDocument = {
           score: { type: 'integer', example: 60 },
           level: { type: 'string', example: '一般' },
           initial: { type: 'boolean', description: '尚未产生变动时返回初始分' },
+        },
+      },
+      SubscribeTemplate: {
+        type: 'object',
+        description: '订阅消息模板与当前用户的授权状态（E11-01）',
+        properties: {
+          key: { type: 'string', enum: ['invitation', 'result'] },
+          title: { type: 'string', example: '预约与响应通知' },
+          description: { type: 'string' },
+          templateId: { type: 'string', nullable: true, description: '服务端配置的微信模板 ID' },
+          configured: { type: 'boolean', description: '是否已配置模板 ID' },
+          accepted: { type: 'boolean', description: '用户是否已授权' },
+          shouldPrompt: {
+            type: 'boolean',
+            description: '是否应弹窗引导；主动拒绝后 7 天内为 false',
+          },
+          lastPromptAt: { type: 'string', format: 'date-time', nullable: true },
+          lastRejectedAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+      },
+      NotificationItem: {
+        type: 'object',
+        description: '站内消息 / 订阅消息发送记录（E11-02）',
+        properties: {
+          id: { type: 'integer' },
+          type: {
+            type: 'string',
+            example: 'demand_response',
+            description:
+              'demand_targeted | demand_response | demand_accepted | order_confirmed | order_finish_requested | order_finished | order_cancelled | order_auto_finished',
+          },
+          title: { type: 'string' },
+          content: { type: 'string' },
+          page: { type: 'string', description: '点击跳转的小程序页面路径' },
+          status: {
+            type: 'string',
+            enum: ['pending', 'sent', 'skipped', 'failed'],
+            description: 'skipped 表示未授权 / 未配置，已降级为站内消息',
+          },
+          failReason: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
         },
       },
       Inbox: {
@@ -1911,6 +1953,133 @@ export const openApiDocument = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Credit' } } },
           },
           404: errorResponse,
+        },
+      },
+    },
+    '/api/subscriptions': {
+      get: {
+        tags: ['通知'],
+        summary: '订阅授权概览（E11-01）：模板配置与当前用户授权状态',
+        security: bearer,
+        responses: {
+          200: {
+            description: '模板列表；shouldPrompt=false 表示已授权或 7 天静默期内',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    templates: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/SubscribeTemplate' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: errorResponse,
+        },
+      },
+      post: {
+        tags: ['通知'],
+        summary: '回写小程序订阅授权结果（E11-01）：拒绝后 7 天内不再弹窗',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['results'],
+                properties: {
+                  results: {
+                    type: 'array',
+                    minItems: 1,
+                    maxItems: 2,
+                    items: {
+                      type: 'object',
+                      required: ['key', 'status'],
+                      properties: {
+                        key: { type: 'string', enum: ['invitation', 'result'] },
+                        status: { type: 'string', enum: ['accepted', 'rejected'] },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '回写后的授权概览',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    templates: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/SubscribeTemplate' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: errorResponse,
+          401: errorResponse,
+        },
+      },
+    },
+    '/api/notifications': {
+      get: {
+        tags: ['通知'],
+        summary: '站内消息列表（E11-02 降级通道，分页 + 各状态计数）',
+        security: bearer,
+        parameters: [
+          {
+            name: 'status',
+            in: 'query',
+            schema: { type: 'string', enum: ['pending', 'sent', 'skipped', 'failed'] },
+          },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20, maximum: 100 } },
+        ],
+        responses: {
+          200: {
+            description: '分页列表 + counts（all / 四态）',
+            content: {
+              'application/json': {
+                schema: {
+                  allOf: [
+                    { $ref: '#/components/schemas/Page' },
+                    {
+                      type: 'object',
+                      properties: {
+                        list: {
+                          type: 'array',
+                          items: { $ref: '#/components/schemas/NotificationItem' },
+                        },
+                        counts: {
+                          type: 'object',
+                          properties: {
+                            all: { type: 'integer' },
+                            pending: { type: 'integer' },
+                            sent: { type: 'integer' },
+                            skipped: { type: 'integer' },
+                            failed: { type: 'integer' },
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          401: errorResponse,
         },
       },
     },

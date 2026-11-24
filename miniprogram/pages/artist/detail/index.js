@@ -48,6 +48,7 @@ Page({
     hasMore: false,
     loadingMore: false,
     isOwner: false,
+    reviewCards: [],
     qrcodeUrl: '',
     qrcodeError: false,
     showQrcode: false,
@@ -79,9 +80,15 @@ Page({
       .get(`/api/artist/${this.data.artistId}`, null, { showError: false })
       .then((profile) => {
         const days = (profile.schedule && profile.schedule.days) || []
+        const latest = (profile.reviews && profile.reviews.latest) || []
         this.setData({
           profile,
           labels: styleLabels(profile.styles),
+          reviewCards: latest.map((item) => ({
+            ...item,
+            stars: '★★★★★'.slice(0, item.rating),
+            dateText: String(item.createdAt || '').slice(0, 10),
+          })),
           scheduleDays: days.map((day) => ({
             date: day.date,
             month: day.date.slice(5, 7),

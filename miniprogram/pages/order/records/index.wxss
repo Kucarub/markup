@@ -1,0 +1,157 @@
+/* 我的服务记录（E10-02）：四态筛选 + 状态卡片 */
+.records {
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.records__head {
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+.records__sub {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  margin-top: var(--space-md);
+  padding: 0 var(--space-md);
+  white-space: nowrap;
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  margin-right: 32rpx;
+  padding-bottom: 18rpx;
+  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
+.tab--active {
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
+.tab--active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--color-primary);
+  content: '';
+}
+
+.tab__count {
+  display: inline-block;
+  min-width: 32rpx;
+  margin-left: 6rpx;
+  padding: 0 8rpx;
+  border-radius: 16rpx;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 30rpx;
+  text-align: center;
+}
+
+/* ---------- 列表 ---------- */
+.records__notice {
+  margin: var(--space-md);
+}
+
+.records__notice-btn {
+  margin-top: var(--space-sm);
+}
+
+.records__body {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.record {
+  margin-top: var(--space-sm);
+  padding: 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.record__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record__date {
+  color: var(--color-primary);
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+.record__title {
+  margin-top: 12rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.record__meta {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 10rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+.record__dot {
+  width: 6rpx;
+  height: 6rpx;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.record__parties {
+  margin-top: 14rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+.record__cancel {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--radius-sm);
+  background: #fcecea;
+  color: var(--color-danger);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.record__review {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted, #f7f7f8);
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.record__hint {
+  margin-top: 14rpx;
+  color: var(--color-primary);
+  font-size: 22rpx;
+}
+
+.records__more {
+  padding: 24rpx 0;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
+}

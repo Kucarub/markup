@@ -1,0 +1,78 @@
+<view class="screen review">
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
+
+  <view wx:elif="{{error}}" class="card review__notice">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">只能对已完成且未评价过的服务记录发表评价。</view>
+    <button class="btn btn--secondary btn--block review__notice-btn" bindtap="onBack">返回</button>
+  </view>
+
+  <block wx:else>
+    <view class="review__hero">
+      <text class="kicker">REVIEW</text>
+      <view class="page-heading">评价本次服务</view>
+      <view class="review__sub">{{order.dateText}} · {{order.typeLabel}}</view>
+    </view>
+
+    <view class="review__body">
+      <view class="card review__target">
+        <view class="review__target-name">评价对象：{{targetLabel}}</view>
+        <view class="review__target-meta">{{order.dateText}} · {{order.typeLabel}}{{order.headcount ? ' · ' + order.headcount + ' 人' : ''}} · {{order.city}}{{order.district}}</view>
+      </view>
+
+      <view class="card">
+        <view class="review__label">整体评分</view>
+        <view class="review__stars">
+          <text
+            wx:for="{{stars}}"
+            wx:key="*this"
+            class="review__star {{item <= rating ? 'review__star--on' : ''}}"
+            data-value="{{item}}"
+            bindtap="onRate"
+          >★</text>
+        </view>
+        <view class="review__rating-text">{{rating ? rating + ' 分' : '点击星星打分'}}</view>
+      </view>
+
+      <view class="card">
+        <view class="review__label">
+          印象标签
+          <text class="review__optional">（选填，最多 6 个）</text>
+        </view>
+        <view class="review__tags">
+          <view
+            wx:for="{{tags}}"
+            wx:key="label"
+            class="review__tag {{item.selected ? 'review__tag--on' : ''}}"
+            data-index="{{index}}"
+            bindtap="onToggleTag"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="review__label">
+          补充说明
+          <text class="review__optional">（选填，最多 500 字）</text>
+        </view>
+        <textarea
+          class="review__textarea"
+          value="{{content}}"
+          maxlength="500"
+          placeholder="说说这次服务的体验，帮助其他用户参考"
+          placeholder-class="review__placeholder"
+          bindinput="onContentInput"
+        />
+        <view class="review__count">{{content.length}}/500</view>
+      </view>
+
+      <button
+        class="btn btn--primary btn--block review__submit"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+        bindtap="onSubmit"
+      >提交评价</button>
+      <view class="review__tip">评价提交后不可修改；命中敏感词的内容将进入人工审核后展示。</view>
+    </view>
+  </block>
+</view>

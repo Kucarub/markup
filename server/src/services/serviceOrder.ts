@@ -1,6 +1,7 @@
 import type { Prisma, ServiceOrder } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
 import { adjustCredit, CREDIT_FINISH_DELTA } from './credit'
+import { notifyUser, orderNotifyContent } from './notification'
 import { formatDay } from './schedule'
 
 /**
@@ -152,6 +153,8 @@ export async function settleExpiredFinishes(): Promise<number> {
     select: {
       id: true,
       finishRequestAt: true,
+      serviceType: true,
+      serviceDate: true,
       customer: { select: { userId: true } },
       artist: { select: { userId: true } },
     },
@@ -190,7 +193,22 @@ export async function settleExpiredFinishes(): Promise<number> {
       })
       return true
     })
-    if (done) settled += 1
+    if (done) {
+      settled += 1
+      // 自动完成通知（E11-03）：双方各收一条站内消息
+      const content = orderNotifyContent(order)
+      for (const userId of [order.customer.userId, order.artist.userId]) {
+        await notifyUser({
+          userId,
+          type: 'order_auto_finished',
+          templateKey: 'result',
+          title: '服务记录已自动完成',
+          content,
+          page: `pages/order/detail/index?id=${order.id}`,
+          orderId: order.id,
+        })
+      }
+    }
   }
   return settled
 }

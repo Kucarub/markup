@@ -2,6 +2,7 @@ const request = require('../../../../utils/request')
 const { CITIES, STYLE_OPTIONS } = require('../../../../utils/dict')
 const { getToken, redirectToLogin } = require('../../../../utils/auth')
 const { businessGuard } = require('../../../../utils/guard')
+const subscribe = require('../../../../utils/subscribe')
 
 const MAX_AHEAD_DAYS = 180
 const MAX_STYLES = 5
@@ -94,6 +95,9 @@ Page({
       redirectToLogin()
       return
     }
+
+    // 首次发布需求 / 定向预约前预热订阅模板（E11-01）
+    subscribe.prefetch()
 
     businessGuard()
       .then((ok) => (ok ? request.get('/api/customer/me', null, { showError: false }) : null))
@@ -267,6 +271,8 @@ Page({
     this.setData({ submitting: true })
     request
       .post('/api/demands', payload, { showError: false })
+      // 发布/预约成功后引导订阅通知（E11-01）：拒绝后 7 天内不再弹窗
+      .then((result) => subscribe.ensure(['invitation', 'result']).then(() => result))
       .then((result) => {
         if (targetArtistId) {
           // 定向预约：直接进详情看接单进度（E9-02）

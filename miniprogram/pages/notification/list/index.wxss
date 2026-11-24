@@ -1,0 +1,137 @@
+/* 站内消息（E11-02）：四态筛选 + 消息卡片 */
+.notification {
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.notification__head {
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+.notification__sub {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  margin-top: var(--space-md);
+  padding: 0 var(--space-md);
+  white-space: nowrap;
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  margin-right: 32rpx;
+  padding-bottom: 18rpx;
+  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  line-height: 1.4;
+}
+
+.tab--active {
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
+.tab--active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: var(--color-primary);
+  content: '';
+}
+
+.tab__count {
+  display: inline-block;
+  min-width: 32rpx;
+  margin-left: 6rpx;
+  padding: 0 8rpx;
+  border-radius: 16rpx;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 30rpx;
+  text-align: center;
+}
+
+/* ---------- 消息列表 ---------- */
+.notification__notice {
+  margin: var(--space-md);
+}
+
+.notification__notice-btn {
+  margin-top: var(--space-sm);
+}
+
+.notification__body {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.message {
+  margin-top: var(--space-sm);
+  padding: 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.message__head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.message__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: var(--color-primary-tint);
+}
+
+.message__title {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.message__content {
+  margin-top: 14rpx;
+  color: var(--color-text-regular);
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.message__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 14rpx;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+}
+
+.message__reason {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification__more {
+  padding: 24rpx 0;
+  color: var(--color-text-placeholder);
+  font-size: 22rpx;
+  text-align: center;
+}

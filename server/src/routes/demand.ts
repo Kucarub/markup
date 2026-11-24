@@ -4,6 +4,7 @@ import type { Artist, Demand, Prisma } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { currentCustomer } from '../services/customer'
+import { notifyUser, orderNotifyContent } from '../services/notification'
 import { addDays, claimDay, dayOnly, formatDay, parseDay } from '../services/schedule'
 import { toOrderDto } from '../services/serviceOrder'
 import { buildSignedPath } from '../services/storage'
@@ -129,9 +130,10 @@ async function assertPhoneBound(userId: number): Promise<void> {
 }
 
 /** 定向预约：目标化妆师必须存在且已通过审核（档期冲突预校验在 E9-03） */
-async function assertTargetArtist(artistId: number): Promise<void> {
+async function assertTargetArtist(artistId: number): Promise<Artist> {
   const artist = await getPrisma().artist.findUnique({ where: { id: artistId } })
   if (!artist || artist.status !== 'approved') throw AppError.badRequest('该化妆师暂不可预约')
+  return artist
 }
 
 /** 服务日次日零点已过即视为不可响应 */
@@ -242,7 +244,9 @@ demandRouter.post(
     const input = demandBody.parse(req.body)
     const customer = await currentCustomer(req.auth!.uid)
     await assertPhoneBound(req.auth!.uid)
-    if (input.targetArtistId) await assertTargetArtist(input.targetArtistId)
+    const targetArtist = input.targetArtistId
+      ? await assertTargetArtist(input.targetArtistId)
+      : null
 
     const serviceDate = resolveServiceDate(input.serviceDate)
     const prisma = getPrisma()
@@ -319,6 +323,20 @@ demandRouter.post(
       },
       include: { _count: { select: { responses: true } } },
     })
+
+    // 定向预约到达提醒（E11-02）：通知被预约的化妆师，站内消息同步落库
+    if (targetArtist) {
+      await notifyUser({
+        userId: targetArtist.userId,
+        type: 'demand_targeted',
+        templateKey: 'invitation',
+        title: '收到新的定向预约',
+        content: `${customer.nickname || '客户'} · ${orderNotifyContent(created)}`,
+        page: `pages/demand/detail/index?id=${created.id}`,
+        demandId: created.id,
+      })
+    }
+
     res.ok(toDto(created))
   }),
 )
@@ -597,7 +615,10 @@ demandRouter.post(
     const artist = await currentApprovedArtist(req.auth!.uid)
     const prisma = getPrisma()
 
-    const demand = await prisma.demand.findUnique({ where: { id } })
+    const demand = await prisma.demand.findUnique({
+      where: { id },
+      include: { customer: { select: { userId: true } } },
+    })
     if (!demand) throw AppError.notFound('需求不存在')
     if (demand.status === 'closed') throw AppError.conflict('需求已关闭，无法响应')
     if (demand.status === 'selected') throw AppError.conflict('需求已选定化妆师，无法响应')
@@ -611,6 +632,18 @@ demandRouter.post(
         data: { demandId: id, artistId: artist.id, note: input.note || null },
       })
       const responseCount = await prisma.demandResponse.count({ where: { demandId: id } })
+
+      // 响应到达提醒（E11-02）：通知需求所属客户
+      await notifyUser({
+        userId: demand.customer.userId,
+        type: 'demand_response',
+        templateKey: 'invitation',
+        title: '有化妆师响应了你的需求',
+        content: `${artist.name} · ${orderNotifyContent(demand)}`,
+        page: `pages/demand/detail/index?id=${id}`,
+        demandId: id,
+      })
+
       res.ok({
         id: created.id,
         demandId: created.demandId,
@@ -846,7 +879,10 @@ demandRouter.post(
     const artist = await currentApprovedArtist(req.auth!.uid)
     const prisma = getPrisma()
 
-    const demand = await prisma.demand.findUnique({ where: { id } })
+    const demand = await prisma.demand.findUnique({
+      where: { id },
+      include: { customer: { select: { userId: true } } },
+    })
     if (!demand) throw AppError.notFound('需求不存在')
     if (demand.targetArtistId !== artist.id) {
       throw AppError.forbidden('该需求不是发给你的定向预约')
@@ -892,6 +928,19 @@ demandRouter.post(
       where: { id },
       include: { _count: { select: { responses: true } } },
     })
+
+    // 预约接受提醒（E11-02）：客户需继续确认这条服务记录
+    await notifyUser({
+      userId: demand.customer.userId,
+      type: 'demand_accepted',
+      templateKey: 'invitation',
+      title: '化妆师已接受你的预约',
+      content: `${artist.name} · ${orderNotifyContent(order)}`,
+      page: `pages/order/detail/index?id=${order.id}`,
+      orderId: order.id,
+      demandId: id,
+    })
+
     res.ok({
       demand: toDto(latest!),
       serviceOrder: toOrderDto(order),

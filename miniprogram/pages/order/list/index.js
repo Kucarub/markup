@@ -221,6 +221,13 @@ Page({
     wx.navigateTo({ url: `/pages/demand/detail/index?id=${id}` })
   },
 
+  /** 服务记录卡片跳记录详情（E10-03），不再跳需求详情 */
+  onOpenOrder(event) {
+    const id = Number(event.currentTarget.dataset.id)
+    if (!id) return
+    wx.navigateTo({ url: `/pages/order/detail/index?id=${id}` })
+  },
+
   onRetry() {
     if (this.data.error === '接单中心仅对化妆师开放') {
       wx.switchTab({ url: '/pages/mine/index' })

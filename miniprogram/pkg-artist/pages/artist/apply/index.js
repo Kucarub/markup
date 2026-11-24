@@ -2,6 +2,7 @@ const request = require('../../../../utils/request')
 const { fetchProfile, clearProfileCache } = require('../../../../utils/guard')
 const { uploadWorkFile, signWorkUrl, absoluteUrl } = require('../../../../utils/upload')
 const { CITIES, STYLE_OPTIONS } = require('../../../../utils/dict')
+const subscribe = require('../../../../utils/subscribe')
 
 const DRAFT_KEY = 'artist_apply_draft_v1'
 const MAX_STYLES = 3
@@ -52,6 +53,7 @@ Page({
   onLoad() {
     this.draftRestored = false
     this.restoreDraft()
+    subscribe.prefetch()
     fetchProfile()
       .then((profile) => {
         if (profile.role !== 'artist') {
@@ -354,10 +356,13 @@ Page({
       .then(() => {
         this.clearDraft()
         clearProfileCache()
-        wx.showToast({ title: mode === 'edit' ? '资料已更新' : '已提交审核' })
-        setTimeout(() => {
-          wx.reLaunch({ url: '/pages/apply/status/index' })
-        }, 600)
+        // 入驻完成引导订阅（E11-01）：拒绝后服务端 7 天内不再弹窗
+        return subscribe.ensure(['invitation', 'result']).then(() => {
+          wx.showToast({ title: mode === 'edit' ? '资料已更新' : '已提交审核' })
+          setTimeout(() => {
+            wx.reLaunch({ url: '/pages/apply/status/index' })
+          }, 600)
+        })
       })
       .catch(() => {})
       .then(() => this.setData({ submitting: false }))

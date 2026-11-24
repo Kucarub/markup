@@ -28,10 +28,11 @@ model UserAuth {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  artist        Artist?
-  customer      Customer?
-  notifications Notification[]
-  reports       Report[]
+  artist          Artist?
+  customer        Customer?
+  notifications   Notification[]
+  subscribeRecords SubscribeRecord[]
+  reports         Report[]
   reviewsFrom   Review[]      @relation("ReviewFrom")
   reviewsTo     Review[]      @relation("ReviewTo")
   credit        CreditScore?
@@ -339,14 +340,14 @@ model AdminUser {
   @@map("admin_user")
 }
 
-/// 订阅消息发送记录
+/// 订阅消息发送记录（E11-02）：无论订阅是否可用都落一条，站内消息由此读取
 model Notification {
   id         Int       @id @default(autoincrement())
   userId     Int       @map("user_id")
-  /// demand | response | report_result | ...
+  /// demand_targeted | demand_response | demand_accepted | order_confirmed | order_finish_requested | order_finished | order_cancelled | order_auto_finished
   type       String    @db.VarChar(32)
   payload    Json?
-  /// pending | sent | failed
+  /// pending | sent | skipped | failed（skipped = 未授权/未配置，已降级为站内消息）
   status     String    @default("pending") @db.VarChar(16)
   sentAt     DateTime? @map("sent_at")
   failReason String?   @map("fail_reason") @db.VarChar(255)
@@ -355,7 +356,29 @@ model Notification {
   user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([status, createdAt])
   @@map("notification")
+}
+
+/// 订阅消息授权记录（E11-01）：拒绝后 7 天内不再弹窗打扰
+model SubscribeRecord {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @map("user_id")
+  /// invitation | result
+  templateKey    String    @map("template_key") @db.VarChar(32)
+  /// accepted | rejected
+  status         String    @db.VarChar(16)
+  promptCount    Int       @default(0) @map("prompt_count")
+  lastPromptAt   DateTime? @map("last_prompt_at")
+  lastRejectedAt DateTime? @map("last_rejected_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templateKey], map: "uniq_user_template")
+  @@index([userId, status])
+  @@map("subscribe_record")
 }
 
 /// 举报

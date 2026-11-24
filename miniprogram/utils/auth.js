@@ -3,6 +3,7 @@ const env = require('../config/env')
 const TOKEN_KEY = env.storageKeys.TOKEN
 const REFRESH_TOKEN_KEY = env.storageKeys.REFRESH_TOKEN
 const ROLE_KEY = env.storageKeys.ROLE
+const USER_ID_KEY = env.storageKeys.USER_ID
 /** 游客浏览标记：点过「先随便看看」后，冷启动不再强制回欢迎页 */
 const GUEST_KEY = 'guest_browse'
 
@@ -38,21 +39,33 @@ function setRole(role) {
   wx.setStorageSync(ROLE_KEY, role)
 }
 
+/** 当前登录用户 id（信用分等公开接口按 userId 查询） */
+function getUserId() {
+  return Number(wx.getStorageSync(USER_ID_KEY)) || 0
+}
+
+function setUserId(userId) {
+  if (!userId) return
+  wx.setStorageSync(USER_ID_KEY, Number(userId))
+}
+
 /**
  * 写入一次登录态（登录 / 刷新 / 角色切换共用）。
- * @param {{ accessToken: string, refreshToken?: string, role?: string|null }} session
+ * @param {{ accessToken: string, refreshToken?: string, role?: string|null, userId?: number }} session
  */
 function setSession(session) {
   if (!session || !session.accessToken) return
   setToken(session.accessToken)
   if (session.refreshToken) setRefreshToken(session.refreshToken)
   if (session.role) setRole(session.role)
+  setUserId(session.userId)
 }
 
 function clearAuth() {
   wx.removeStorageSync(TOKEN_KEY)
   wx.removeStorageSync(REFRESH_TOKEN_KEY)
   wx.removeStorageSync(ROLE_KEY)
+  wx.removeStorageSync(USER_ID_KEY)
   wx.removeStorageSync(GUEST_KEY)
 }
 
@@ -87,6 +100,8 @@ module.exports = {
   setRefreshToken,
   getRole,
   setRole,
+  getUserId,
+  setUserId,
   setSession,
   clearAuth,
   redirectToLogin,

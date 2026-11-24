@@ -1,12 +1,13 @@
-import { env } from '../config/env'
+import { env, isProd } from '../config/env'
 import { AppError } from '../utils/errors'
 import { ErrorCode } from '../utils/response'
 
 /**
- * 微信开放能力封装（E3-01 / E3-02）。
+ * 微信开放能力封装（E3-01 / E3-02 / E11-02）。
  * - code2session：wx.login 的 code 换 openid
  * - getAccessToken：client_credential，内存缓存至过期前 5 分钟
  * - getPhoneNumber：getPhoneNumber 的 code 换手机号
+ * - sendSubscribeMessage：服务通知订阅消息（E11-02）
  * 未配置 WX_APPID / WX_SECRET 时走 dev 兜底，保证本地全链路可联调。
  */
 
@@ -25,12 +26,20 @@ const CODE2SESSION_URL = 'https://api.weixin.qq.com/sns/jscode2session'
 const ACCESS_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token'
 const PHONE_URL = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber'
 const WXACODE_URL = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit'
+const SUBSCRIBE_SEND_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send'
 const TIMEOUT_MS = 8000
+/** 订阅消息发送单次超时：配合重试控制在 10s 送达 SLA 内 */
+const SUBSCRIBE_TIMEOUT_MS = 3000
 
 let warnedDevFallback = false
 
 function hasWxConfig() {
   return Boolean(env.WX_APPID && env.WX_SECRET)
+}
+
+/** 是否已配置小程序 AppID / Secret（E11-02 降级判断） */
+export function hasWechatConfig() {
+  return hasWxConfig()
 }
 
 function warnDevFallback(scene: string) {
@@ -47,12 +56,16 @@ async function wxGet<T>(url: string): Promise<T & WechatErrorBody> {
   return (await res.json()) as T & WechatErrorBody
 }
 
-async function wxPost<T>(url: string, body: unknown): Promise<T & WechatErrorBody> {
+async function wxPost<T>(
+  url: string,
+  body: unknown,
+  timeoutMs: number = TIMEOUT_MS,
+): Promise<T & WechatErrorBody> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   })
   if (!res.ok) {
     throw new AppError(ErrorCode.INTERNAL_ERROR, `微信接口请求失败(${res.status})`)
@@ -154,4 +167,58 @@ export async function getUnlimitedQrCode(
     throw new AppError(ErrorCode.INTERNAL_ERROR, `生成小程序码失败：${body.errmsg || res.status}`)
   }
   return Buffer.from(await res.arrayBuffer())
+}
+
+/**
+ * 发送订阅消息（E11-02）。
+ * data 为模板字段键值对（thing1 / thing2 / time3，与微信后台模板保持一致）。
+ * access_token 失效时清缓存并重试一次；其余错误直接抛出，由通知服务记录失败并降级。
+ */
+export async function sendSubscribeMessage(input: {
+  openid: string
+  templateId: string
+  page?: string
+  data: Record<string, { value: string }>
+}): Promise<void> {
+  if (!hasWxConfig()) {
+    throw new AppError(ErrorCode.INTERNAL_ERROR, '未配置小程序凭证，无法发送订阅消息')
+  }
+
+  let lastError: unknown = null
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const token = await getAccessToken()
+      const body = await wxPost<Record<string, never>>(
+        `${SUBSCRIBE_SEND_URL}?access_token=${token}`,
+        {
+          touser: input.openid,
+          template_id: input.templateId,
+          page: input.page,
+          data: input.data,
+          miniprogram_state: isProd ? 'formal' : 'trial',
+          lang: 'zh_CN',
+        },
+        SUBSCRIBE_TIMEOUT_MS,
+      )
+      if (body.errcode) {
+        if ([40001, 42001, 40014].includes(body.errcode) && attempt === 0) {
+          accessTokenCache = null
+          lastError = new AppError(
+            ErrorCode.INTERNAL_ERROR,
+            `access_token 失效：${body.errmsg || body.errcode}`,
+          )
+          continue
+        }
+        throw new AppError(
+          ErrorCode.INTERNAL_ERROR,
+          `订阅消息发送失败：${body.errmsg || body.errcode}`,
+        )
+      }
+      return
+    } catch (error) {
+      lastError = error
+      break
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('订阅消息发送失败')
 }

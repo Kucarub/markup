@@ -1,11 +1,14 @@
 const { profile, mineMenu } = require('../../data/mock')
-const { clearAuth } = require('../../utils/auth')
+const { clearAuth, getUserId, getToken } = require('../../utils/auth')
 const { entryGuard, clearProfileCache } = require('../../utils/guard')
+const request = require('../../utils/request')
+const subscribe = require('../../utils/subscribe')
 
 Page({
   data: {
     profile,
     menu: mineMenu.concat([{ key: 'role', label: '切换身份', icon: 'users', separator: true }]),
+    credit: null,
     stats: [
       { key: 'works', value: '12', label: '作品' },
       { key: 'favorites', value: '8', label: '收藏' },
@@ -17,11 +20,28 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().syncSelected()
     }
-    entryGuard()
+    entryGuard().then(() => this.loadCredit())
+  },
+
+  /** 信用分（E10-07）：公开接口，按本地缓存的 userId 查询 */
+  loadCredit() {
+    const userId = getUserId()
+    if (!getToken() || !userId) return Promise.resolve(null)
+    return request
+      .get(`/api/credit/${userId}`, null, { showError: false })
+      .then((credit) => {
+        this.setData({ credit })
+        return credit
+      })
+      .catch(() => null)
   },
 
   onEditProfile() {
     this.toast('资料编辑功能将在下一版本开放')
+  },
+
+  onCreditTap() {
+    wx.navigateTo({ url: '/pages/order/records/index' })
   },
 
   onStatTap(event) {
@@ -47,6 +67,14 @@ Page({
       wx.navigateTo({ url: '/pages/order/list/index' })
       return
     }
+    if (key === 'records') {
+      wx.navigateTo({ url: '/pages/order/records/index' })
+      return
+    }
+    if (key === 'notifications') {
+      wx.navigateTo({ url: '/pages/notification/list/index' })
+      return
+    }
     if (key === 'schedule') {
       wx.navigateTo({ url: '/pkg-artist/pages/artist/schedule/index' })
       return
@@ -66,6 +94,7 @@ Page({
         if (!res.confirm) return
         clearAuth()
         clearProfileCache()
+        subscribe.reset()
         wx.reLaunch({ url: '/pages/auth/login/index' })
       },
     })

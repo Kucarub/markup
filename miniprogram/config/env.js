@@ -47,5 +47,6 @@ module.exports = {
     TOKEN: 'token',
     REFRESH_TOKEN: 'refreshToken',
     ROLE: 'role',
+    USER_ID: 'userId',
   },
 }

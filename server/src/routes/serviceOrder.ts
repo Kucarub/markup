@@ -5,6 +5,7 @@ import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { resolveActor, type Actor } from '../services/actor'
 import { adjustCredit, CREDIT_CANCEL_DELTA } from '../services/credit'
+import { notifyUser, orderNotifyContent } from '../services/notification'
 import { releaseDay } from '../services/schedule'
 import {
   finishOrderInTx,
@@ -48,6 +49,11 @@ async function loadOrder(id: number, actor: Actor, include?: typeof orderInclude
     actor.role === 'artist' ? order.artistId === actor.artistId : order.customerId === actor.customerId
   if (!mine) throw AppError.notFound('服务记录不存在')
   return order as OrderWithInclude
+}
+
+/** 与我相对的另一方 userId（用于给对方发通知） */
+function counterpartUserId(order: OrderWithInclude, actor: Actor): number {
+  return actor.role === 'artist' ? order.customer.userId : order.artist.userId
 }
 
 /** 我的服务记录列表（E10-02）：四态筛选 + 各状态计数 */
@@ -147,6 +153,17 @@ serviceOrderRouter.post(
     })
     if (updated.count === 0) throw AppError.conflict('服务记录状态已变化，请刷新后重试')
 
+    // 已确认通知（E11-03）：告知发起方对方已确认接单
+    await notifyUser({
+      userId: counterpartUserId(order, actor),
+      type: 'order_confirmed',
+      templateKey: 'result',
+      title: '服务记录已确认',
+      content: orderNotifyContent(order),
+      page: `pages/order/detail/index?id=${id}`,
+      orderId: id,
+    })
+
     res.ok(toOrderDto(await loadOrder(id, actor), actor.role))
   }),
 )
@@ -175,12 +192,13 @@ serviceOrderRouter.post(
     }
 
     const prisma = getPrisma()
-    if (!order.finishRequestBy) {
-      const requested = await prisma.serviceOrder.updateMany({
+    const firstRequest = !order.finishRequestBy
+    if (firstRequest) {
+      const marked = await prisma.serviceOrder.updateMany({
         where: { id, status: 'confirmed', finishRequestBy: null },
         data: { finishRequestBy: actor.role, finishRequestAt: new Date() },
       })
-      if (requested.count === 0) throw AppError.conflict('服务记录状态已变化，请刷新后重试')
+      if (marked.count === 0) throw AppError.conflict('服务记录状态已变化，请刷新后重试')
     } else {
       await prisma.$transaction(async (tx) => {
         const reloaded = await tx.serviceOrder.findUnique({
@@ -193,6 +211,17 @@ serviceOrderRouter.post(
         await finishOrderInTx(tx, order)
       })
     }
+
+    // 完工通知（E11-03）：首次发起提醒对方确认；双方确认完成提醒发起方
+    await notifyUser({
+      userId: counterpartUserId(order, actor),
+      type: firstRequest ? 'order_finish_requested' : 'order_finished',
+      templateKey: 'result',
+      title: firstRequest ? '对方已发起完工确认' : '服务记录已完成',
+      content: orderNotifyContent(order),
+      page: `pages/order/detail/index?id=${id}`,
+      orderId: id,
+    })
 
     res.ok(toOrderDto(await loadOrder(id, actor), actor.role))
   }),
@@ -236,6 +265,17 @@ serviceOrderRouter.post(
         type: 'cancel',
         orderId: order.id,
       })
+    })
+
+    // 取消通知（E11-03）：通知被取消的一方
+    await notifyUser({
+      userId: counterpartUserId(order, actor),
+      type: 'order_cancelled',
+      templateKey: 'result',
+      title: '服务记录已取消',
+      content: `${actor.role === 'artist' ? '化妆师' : '客户'}取消 · ${input.reason}`,
+      page: `pages/order/detail/index?id=${id}`,
+      orderId: id,
     })
 
     res.ok(toOrderDto(await loadOrder(id, actor), actor.role))

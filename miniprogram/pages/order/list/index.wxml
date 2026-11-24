@@ -127,10 +127,10 @@
     <!-- 服务记录：待确认 / 已确认 -->
     <view wx:else class="inbox__body">
       <block wx:if="{{orders.length}}">
-        <view wx:for="{{orders}}" wx:key="id" class="inbox-card" data-id="{{item.demandId}}" bindtap="onOpenDemand">
+        <view wx:for="{{orders}}" wx:key="id" class="inbox-card" data-id="{{item.id}}" bindtap="onOpenOrder">
           <view class="inbox-card__head">
             <view class="inbox-card__date">{{item.dateText}}</view>
-            <text class="tag tag--{{item.status === 'confirmed' ? 'success' : 'warning'}}">{{item.statusLabel}}</text>
+            <text class="tag tag--{{item.tone}}">{{item.statusLabel}}</text>
           </view>
           <view class="inbox-card__title">{{item.typeLabel}} · {{item.headcount}} 人</view>
           <view class="inbox-card__meta">

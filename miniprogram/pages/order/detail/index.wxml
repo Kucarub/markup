@@ -1,0 +1,114 @@
+<view class="screen detail">
+  <view wx:if="{{error}}" class="card detail__notice">
+    <view class="card__title">{{error}}</view>
+    <button class="btn btn--primary btn--block detail__notice-btn" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <view class="detail__hero">
+      <view class="detail__hero-row">
+        <view class="detail__date">{{order.dateText}}</view>
+        <text class="tag tag--{{order.tone}}">{{order.statusLabel}}</text>
+      </view>
+      <view class="detail__title">{{order.typeLabel}} · {{order.headcount}} 人</view>
+      <view class="detail__sub">{{order.hint}}</view>
+    </view>
+
+    <view class="detail__body">
+      <view class="detail__card">
+        <view class="detail__row">
+          <text class="detail__label">服务日期</text>
+          <text class="detail__value">{{order.serviceDate}}</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">服务区域</text>
+          <text class="detail__value">{{order.city}} · {{order.district}}</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">服务类型</text>
+          <text class="detail__value">{{order.typeLabel}}</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">人数</text>
+          <text class="detail__value">{{order.headcount}} 人</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">化妆师</text>
+          <text class="detail__value">{{order.artistName || '—'}}</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">客户</text>
+          <text class="detail__value">{{order.customerName}}</text>
+        </view>
+        <view class="detail__row">
+          <text class="detail__label">记录编号</text>
+          <text class="detail__value">#{{order.id}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{order.remark}}" class="detail__card">
+        <view class="detail__card-title">备注</view>
+        <view class="detail__remark">{{order.remark}}</view>
+      </view>
+
+      <view class="detail__card">
+        <view class="detail__card-title">双方确认</view>
+        <view class="detail__confirm">
+          <text class="tag tag--{{order.artistConfirmed ? 'success' : 'neutral'}}">
+            化妆师{{order.artistConfirmed ? '已确认' : '待确认'}}
+          </text>
+          <text class="tag tag--{{order.customerConfirmed ? 'success' : 'neutral'}}">
+            客户{{order.customerConfirmed ? '已确认' : '待确认'}}
+          </text>
+        </view>
+      </view>
+
+      <view wx:if="{{order.cancelByLabel}}" class="detail__card detail__card--danger">
+        <view class="detail__card-title">取消信息</view>
+        <view class="detail__cancel-by">{{order.cancelByLabel}}</view>
+        <view class="detail__cancel-reason">{{order.cancelReason || '未填写原因'}}</view>
+      </view>
+
+      <view wx:if="{{order.myReview}}" class="detail__card">
+        <view class="detail__card-title">我的评价</view>
+        <view class="detail__stars">{{order.reviewStars}}</view>
+        <view wx:if="{{order.myReview.tags.length}}" class="detail__review-tags">
+          <text wx:for="{{order.myReview.tags}}" wx:key="*this" class="tag tag--neutral">{{item}}</text>
+        </view>
+        <view wx:if="{{order.myReview.content}}" class="detail__review-content">{{order.myReview.content}}</view>
+        <view wx:if="{{order.myReview.status !== 'visible'}}" class="detail__review-tip">
+          评价审核通过后公开展示
+        </view>
+      </view>
+
+      <view class="detail__card">
+        <view class="detail__card-title">进度</view>
+        <view wx:for="{{order.timeline}}" wx:key="label" class="timeline">
+          <view class="timeline__dot timeline__dot--{{item.tone}}"></view>
+          <view class="timeline__copy">
+            <view class="timeline__label">{{item.label}}</view>
+            <view class="timeline__time">{{item.time}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{order.primary || order.canCancel}}" class="detail__actions">
+      <button
+        wx:if="{{order.canCancel}}"
+        class="btn btn--ghost detail__action"
+        disabled="{{submitting}}"
+        bindtap="onCancel"
+      >取消记录</button>
+      <button
+        wx:if="{{order.primary}}"
+        class="btn btn--primary detail__action"
+        data-action="{{order.primary.action}}"
+        disabled="{{submitting}}"
+        bindtap="onSubmit"
+      >{{order.primary.label}}</button>
+    </view>
+  </block>
+</view>

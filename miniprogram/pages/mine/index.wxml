@@ -31,6 +31,21 @@
   </view>
 
   <view class="mine-content">
+    <view wx:if="{{credit}}" class="credit-card" bindtap="onCreditTap">
+      <view class="credit-card__score">
+        <text class="credit-card__value">{{credit.score}}</text>
+        <text class="credit-card__unit">信用分</text>
+      </view>
+      <view class="credit-card__copy">
+        <view class="credit-card__level">{{credit.level}}</view>
+        <view class="credit-card__desc">按时完成 +2 · 取消 -5 · 满分 100</view>
+      </view>
+      <view class="credit-card__link">
+        <text>服务记录</text>
+        <image class="icon icon--xs" src="/assets/icons/chevron-right-light.svg" mode="aspectFit" />
+      </view>
+    </view>
+
     <view class="mine-stats">
       <view
         wx:for="{{stats}}"

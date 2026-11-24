@@ -1,0 +1,72 @@
+<view class="screen records">
+  <view class="records__head">
+    <text class="kicker">SERVICE RECORDS</text>
+    <view class="page-heading">服务记录</view>
+    <view class="records__sub">双方确认接单、完成闭单；取消会记录取消方与原因</view>
+  </view>
+
+  <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab {{activeStatus === item.key ? 'tab--active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onTabTap"
+    >
+      {{item.label}}
+      <text wx:if="{{item.count > 0}}" class="tab__count">{{item.count}}</text>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{error}}" class="card records__notice">
+    <view class="card__title">{{error}}</view>
+    <view class="card__desc">请检查网络后重试</view>
+    <button class="btn btn--primary btn--block records__notice-btn" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="empty">加载中…</view>
+
+  <block wx:else>
+    <view wx:if="{{list.length}}" class="records__body">
+      <view
+        wx:for="{{list}}"
+        wx:key="id"
+        class="record"
+        data-id="{{item.id}}"
+        bindtap="onOpen"
+      >
+        <view class="record__head">
+          <view class="record__date">{{item.dateText}}</view>
+          <text class="tag tag--{{item.tone}}">{{item.statusLabel}}</text>
+        </view>
+
+        <view class="record__title">{{item.typeLabel}} · {{item.headcount}} 人</view>
+
+        <view class="record__meta">
+          <text>{{item.city}} · {{item.district}}</text>
+          <view class="record__dot"></view>
+          <text>#{{item.id}}</text>
+        </view>
+
+        <view class="record__parties">
+          <text>{{item.counterpartLabel}}：{{item.counterpart}}</text>
+        </view>
+
+        <view wx:if="{{item.cancelText}}" class="record__cancel">{{item.cancelText}}</view>
+
+        <view wx:if="{{item.status === 'finished' && item.myReview}}" class="record__review">
+          我的评价：{{item.myReview.rating}} 星{{item.myReview.content ? ' · ' + item.myReview.content : ''}}
+        </view>
+
+        <view wx:if="{{item.status === 'finished' && item.canReview}}" class="record__hint">
+          服务已完成，去评价一下这次体验
+        </view>
+      </view>
+
+      <view wx:if="{{loadingMore}}" class="records__more">加载中…</view>
+      <view wx:elif="{{!hasMore && list.length}}" class="records__more">没有更多了</view>
+    </view>
+
+    <empty-state wx:else title="{{emptyTitle}}" description="{{emptyDesc}}" />
+  </block>
+</view>
