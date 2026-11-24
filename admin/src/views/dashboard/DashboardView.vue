@@ -1,10 +1,29 @@
 <script setup lang="ts">
-const metrics = [
-  { label: '待审核化妆师', value: '—', hint: 'E12-02 接入' },
-  { label: '待审核商家', value: '—', hint: 'E12-04 接入' },
-  { label: '进行中订单', value: '—', hint: 'E12-06 接入' },
+import { onMounted, ref } from 'vue'
+import { fetchArtistAudits, fetchServiceOrders, fetchUsers } from '@/api/admin'
+
+const metrics = ref([
+  { label: '待审核化妆师', value: '—', hint: 'E12-02' },
+  { label: '已禁用账号', value: '—', hint: 'E12-04' },
+  { label: '待确认服务记录', value: '—', hint: 'E12-06' },
   { label: '本月成功撮合', value: '—', hint: 'E13-03 接入' },
-]
+])
+
+async function load() {
+  const [audits, users, orders] = await Promise.all([
+    fetchArtistAudits({ page: 1, size: 1 }),
+    fetchUsers({ page: 1, size: 1 }),
+    fetchServiceOrders({ page: 1, size: 1 }),
+  ])
+  metrics.value = [
+    { label: '待审核化妆师', value: String(audits.counts?.pending ?? 0), hint: '点击「化妆师审核」处理' },
+    { label: '已禁用账号', value: String(users.counts?.disabled ?? 0), hint: '点击「用户管理」查看' },
+    { label: '待确认服务记录', value: String(orders.counts?.pending ?? 0), hint: '点击「服务记录」查看' },
+    { label: '本月成功撮合', value: '—', hint: 'E13-03 接入' },
+  ]
+}
+
+onMounted(load)
 </script>
 
 <template>
@@ -20,12 +39,12 @@ const metrics = [
     </el-row>
 
     <div class="page-card placeholder">
-      <h2 class="page-title">数据看板占位</h2>
+      <h2 class="page-title">运营后台</h2>
       <p class="text-secondary">
-        看板接口与图表在 E13-03 落地。当前页面用于验证后台框架布局、Element Plus 主题与路由守卫。
+        E12 已上线：化妆师审核（含身份证解密留痕与批量导出）、用户管理、需求代发布与代响应、服务记录完整链路、作品下架恢复与审核日志。
       </p>
       <el-space wrap>
-        <span class="tag">主色 #C08552</span>
+        <span class="tag">主色 #b4566e</span>
         <span class="tag tag--success">成功</span>
         <span class="tag tag--warning">警告</span>
         <span class="tag tag--danger">危险</span>

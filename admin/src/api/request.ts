@@ -39,7 +39,8 @@ instance.interceptors.response.use(
   (response) => {
     const body = response.data as ApiResponse<unknown>
     if (body && body.code === 0) {
-      return body.data
+      // 拦截器统一解包 data；调用方通过 http.* 的泛型声明还原真实类型
+      return body.data as unknown as typeof response
     }
     ElMessage.error(body?.message || '请求失败')
     return Promise.reject(new Error(body?.message || '请求失败'))

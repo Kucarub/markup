@@ -201,6 +201,8 @@ model DemandResponse {
   note      String?  @db.VarChar(255)
   /// pending | selected | rejected | withdrawn
   status    String   @default("pending") @db.VarChar(16)
+  /// artist | ops（运营代响应标记，E12-07）
+  source    String   @default("artist") @db.VarChar(8)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -209,6 +211,7 @@ model DemandResponse {
 
   @@unique([demandId, artistId], map: "uniq_demand_artist")
   @@index([artistId, status])
+  @@index([source, createdAt])
   @@map("demand_response")
 }
 

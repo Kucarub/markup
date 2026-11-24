@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.9.0',
+    version: '0.9.1',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -1322,6 +1322,395 @@ export const openApiDocument = {
         summary: '后台当前账号',
         security: bearer,
         responses: { 200: { description: '账号信息' }, 401: errorResponse, 403: errorResponse },
+      },
+    },
+    '/api/admin/audits/artists': {
+      get: {
+        tags: ['后台'],
+        summary: '化妆师审核列表（E12-02）：状态筛选 / 关键字 / 分页，待审核默认置顶',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          {
+            name: 'status',
+            in: 'query',
+            schema: { type: 'string', enum: ['pending', 'approved', 'rejected', 'disabled'] },
+          },
+          { name: 'keyword', in: 'query', schema: { type: 'string' }, example: '林小满' },
+          { name: 'city', in: 'query', schema: { type: 'string' }, example: '上海' },
+        ],
+        responses: {
+          200: {
+            description: '分页结果 + counts{all,pending,approved,rejected,disabled}',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Pagination' } } },
+          },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/audits/artists/export': {
+      get: {
+        tags: ['后台'],
+        summary: '导出化妆师审核列表 xlsx（E12-10，最多 2000 条，中文不乱码）',
+        security: bearer,
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string' } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: {
+            description: 'xlsx 二进制',
+            content: {
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/artists/options': {
+      get: {
+        tags: ['后台'],
+        summary: '已通过审核化妆师下拉（E12-07 代响应选人）',
+        security: bearer,
+        parameters: [{ name: 'keyword', in: 'query', schema: { type: 'string' } }],
+        responses: { 200: { description: 'list[]' }, 401: errorResponse, 403: errorResponse },
+      },
+    },
+    '/api/admin/audits/artists/{id}': {
+      get: {
+        tags: ['后台'],
+        summary: '化妆师审核详情（E12-03）：脱敏身份证 / 作品预览 / 操作流水',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: '详情' },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/admin/audits/artists/{id}/reveal': {
+      post: {
+        tags: ['后台'],
+        summary: '解密查看身份证明文（E12-03）：写 audit_log(action=reveal) 留痕',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: 'idCard 明文' },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/admin/audits/artists/batch': {
+      post: {
+        tags: ['后台'],
+        summary: '批量通过 / 驳回（E12-10）：逐条独立事务，返回成功与失败明细',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['ids', 'action'],
+                properties: {
+                  ids: { type: 'array', items: { type: 'integer' }, maxItems: 50 },
+                  action: { type: 'string', enum: ['approve', 'reject'] },
+                  reason: { type: 'string', description: '驳回时必填（≥2 字）' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'success[] / failed[] / total' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/users': {
+      get: {
+        tags: ['后台'],
+        summary: '用户列表（E12-04）：化妆师 / 客户统一视图，按角色与状态筛选',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'role', in: 'query', schema: { type: 'string', enum: ['artist', 'customer'] } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'disabled'] } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: '分页结果 + counts{all,artist,customer,disabled}' },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/customers/options': {
+      get: {
+        tags: ['后台'],
+        summary: '客户下拉（E12-07 代发布选人）',
+        security: bearer,
+        parameters: [{ name: 'keyword', in: 'query', schema: { type: 'string' } }],
+        responses: { 200: { description: 'list[]' }, 401: errorResponse, 403: errorResponse },
+      },
+    },
+    '/api/admin/users/{id}/status': {
+      post: {
+        tags: ['后台'],
+        summary: '封禁 / 解封（E12-04）：同步 artist / customer 档案并写 audit_log',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['status'],
+                properties: {
+                  status: { type: 'string', enum: ['active', 'disabled'] },
+                  reason: { type: 'string', description: '封禁时必填（≥2 字）' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '结果' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/admin/demands': {
+      get: {
+        tags: ['后台'],
+        summary: '需求列表（E12-05）：状态 / 城市 / 类型 / 来源 / 时间 / 关键字',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'status', in: 'query', schema: { type: 'string' } },
+          { name: 'city', in: 'query', schema: { type: 'string' } },
+          { name: 'serviceType', in: 'query', schema: { type: 'string' } },
+          { name: 'source', in: 'query', schema: { type: 'string', enum: ['customer', 'ops'] } },
+          { name: 'from', in: 'query', schema: { type: 'string', example: '2026-11-01' } },
+          { name: 'to', in: 'query', schema: { type: 'string', example: '2026-11-24' } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { 200: { description: '分页结果 + counts' }, 401: errorResponse, 403: errorResponse },
+      },
+      post: {
+        tags: ['后台'],
+        summary: '运营代发布需求（E12-07）：source=ops，可指定客户与定向化妆师',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: [
+                  'customerId',
+                  'city',
+                  'district',
+                  'serviceDate',
+                  'serviceType',
+                  'headcount',
+                  'budgetMin',
+                  'budgetMax',
+                ],
+                properties: {
+                  customerId: { type: 'integer', description: '需求所属客户 id（须为正常状态）' },
+                  city: { type: 'string' },
+                  district: { type: 'string' },
+                  serviceDate: { type: 'string', example: '2026-12-06', description: '不得早于今天，最多未来 180 天' },
+                  serviceType: { type: 'string', enum: ['bridal', 'daily', 'event', 'photo'] },
+                  headcount: { type: 'integer', minimum: 1, maximum: 50 },
+                  budgetMin: { type: 'integer', minimum: 0, maximum: 100000 },
+                  budgetMax: { type: 'integer', minimum: 0, maximum: 100000, description: '需 ≥ budgetMin' },
+                  stylePrefs: { type: 'array', items: { type: 'string' }, description: '最多 5 个风格' },
+                  remark: { type: 'string', description: '备注，最多 500 字' },
+                  targetArtistId: { type: 'integer', description: '可选：定向预约，须为已通过且当日可接的化妆师' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '创建结果（source=ops）' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/demands/{id}': {
+      get: {
+        tags: ['后台'],
+        summary: '需求详情（E12-05）：响应列表（含 source）/ 最终选定者 / 服务记录',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: '详情' },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/admin/demands/{id}/responses': {
+      post: {
+        tags: ['后台'],
+        summary: '运营代响应（E12-07）：写 demand_response.source=ops',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['artistId'],
+                properties: {
+                  artistId: { type: 'integer' },
+                  price: { type: 'integer' },
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '结果' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/admin/service-orders': {
+      get: {
+        tags: ['后台'],
+        summary: '服务记录列表（E12-06）：状态 / 城市 / 类型 / 时间 / 关键字',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'status', in: 'query', schema: { type: 'string' } },
+          { name: 'city', in: 'query', schema: { type: 'string' } },
+          { name: 'serviceType', in: 'query', schema: { type: 'string' } },
+          { name: 'from', in: 'query', schema: { type: 'string', example: '2026-11-01' } },
+          { name: 'to', in: 'query', schema: { type: 'string', example: '2026-11-24' } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { 200: { description: '分页结果 + counts' }, 401: errorResponse, 403: errorResponse },
+      },
+    },
+    '/api/admin/service-orders/{id}': {
+      get: {
+        tags: ['后台'],
+        summary: '服务记录完整链路（E12-06）：需求 → 响应 → 服务记录 → 评价',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        responses: {
+          200: { description: '链路详情' },
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+        },
+      },
+    },
+    '/api/admin/portfolios': {
+      get: {
+        tags: ['后台'],
+        summary: '作品列表（E12-08）：状态 / 化妆师 / 关键字筛选',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'status', in: 'query', schema: { type: 'string' } },
+          { name: 'artistId', in: 'query', schema: { type: 'integer' } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: '分页结果 + counts{all,pending,online,offline,rejected}' },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/portfolios/{id}/status': {
+      post: {
+        tags: ['后台'],
+        summary: '作品违规下架 / 恢复（E12-08）：写 audit_log',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: {
+                  action: { type: 'string', enum: ['offline', 'restore'] },
+                  reason: { type: 'string', description: '下架时必填（≥2 字）' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '结果' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/admin/audit-logs': {
+      get: {
+        tags: ['后台'],
+        summary: '审核日志（E12-09）：只读，targetType / action / 时间 / 关键字',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          {
+            name: 'targetType',
+            in: 'query',
+            schema: { type: 'string', enum: ['artist', 'portfolio', 'user', 'report'] },
+          },
+          { name: 'action', in: 'query', schema: { type: 'string' } },
+          { name: 'from', in: 'query', schema: { type: 'string', example: '2026-11-01' } },
+          { name: 'to', in: 'query', schema: { type: 'string', example: '2026-11-24' } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: '分页结果 + counts + operator{id,username,role}' },
+          401: errorResponse,
+          403: errorResponse,
+        },
       },
     },
     '/api/upload/sign': {

@@ -2,13 +2,27 @@
 import { ElMessageBox } from 'element-plus'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, type AdminRole } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const activeMenu = computed(() => route.path)
+const allRoles: AdminRole[] = ['super', 'admin', 'auditor']
+const menus = [
+  { path: '/dashboard', label: '数据看板', roles: allRoles },
+  { path: '/audit/artists', label: '化妆师审核', roles: allRoles },
+  { path: '/users', label: '用户管理', roles: allRoles },
+  { path: '/demands', label: '需求管理', roles: allRoles },
+  { path: '/orders', label: '服务记录', roles: allRoles },
+  { path: '/portfolios', label: '作品管理', roles: allRoles },
+  { path: '/logs', label: '审核日志', roles: allRoles },
+  { path: '/reports', label: '举报处理（E14）', roles: [] as AdminRole[] },
+]
+
+/** 按登录角色隐藏无权限菜单 */
+const visibleMenus = computed(() => menus.filter((item) => item.roles.includes(auth.role)))
+const activeMenu = computed(() => (route.meta.activeMenu as string) || route.path)
 const displayName = computed(() => auth.name || '运营同学')
 
 async function handleLogout() {
@@ -27,11 +41,9 @@ async function handleLogout() {
     <el-aside width="220px" class="layout__aside">
       <div class="layout__brand">化妆师接单门户</div>
       <el-menu :default-active="activeMenu" router class="layout__menu">
-        <el-menu-item index="/dashboard">数据看板</el-menu-item>
-        <el-menu-item index="/audit/artists" disabled>化妆师审核（E12）</el-menu-item>
-        <el-menu-item index="/audit/merchants" disabled>商家审核（E12）</el-menu-item>
-        <el-menu-item index="/orders" disabled>邀约与订单（E12）</el-menu-item>
-        <el-menu-item index="/reports" disabled>举报处理（E14）</el-menu-item>
+        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
+          {{ item.label }}
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -39,6 +51,7 @@ async function handleLogout() {
       <el-header class="layout__header">
         <span class="layout__header-title">{{ route.meta.title }}</span>
         <div class="layout__header-right">
+          <span class="layout__role">{{ auth.roleLabel }}</span>
           <span class="layout__user">{{ displayName }}</span>
           <el-button link type="primary" @click="handleLogout">退出登录</el-button>
         </div>
@@ -96,6 +109,14 @@ async function handleLogout() {
     display: flex;
     align-items: center;
     gap: var(--space-md);
+  }
+
+  &__role {
+    padding: 2px var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+    background: var(--color-primary-tint);
   }
 
   &__user {

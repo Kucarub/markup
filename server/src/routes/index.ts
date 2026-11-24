@@ -1,7 +1,12 @@
 import { Router } from 'express'
+import { adminAuditLogRouter } from './admin/auditLogs'
 import { adminAuditRouter } from './admin/audits'
 import { adminAuthRouter } from './admin/auth'
+import { adminDemandRouter } from './admin/demands'
+import { adminPortfolioRouter } from './admin/portfolios'
+import { adminServiceOrderRouter } from './admin/serviceOrders'
 import { adminStatsRouter } from './admin/stats'
+import { adminUserRouter } from './admin/users'
 import { artistRouter } from './artist'
 import { authRouter } from './auth'
 import { customerRouter } from './customer'
@@ -25,6 +30,11 @@ apiRouter.use(healthRouter)
 apiRouter.use(authRouter)
 apiRouter.use(adminAuthRouter)
 apiRouter.use(adminAuditRouter)
+apiRouter.use(adminUserRouter)
+apiRouter.use(adminDemandRouter)
+apiRouter.use(adminServiceOrderRouter)
+apiRouter.use(adminPortfolioRouter)
+apiRouter.use(adminAuditLogRouter)
 apiRouter.use(adminStatsRouter)
 apiRouter.use(artistRouter)
 apiRouter.use(portfolioRouter)
