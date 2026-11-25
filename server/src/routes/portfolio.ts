@@ -51,10 +51,10 @@ function optionalClaims(req: Request): { uid: number; role: TokenRole } | null {
   }
 }
 
-/** 当前登录化妆师的 artist 记录；未入驻 / 停用直接拒绝 */
+/** 当前登录化妆师的 artist 记录；未建档 / 停用直接拒绝 */
 async function currentArtist(userId: number) {
   const artist = await getPrisma().artist.findUnique({ where: { userId } })
-  if (!artist) throw AppError.notFound('尚未提交入驻申请')
+  if (!artist) throw AppError.notFound('请先完善个人信息')
   if (artist.status === 'disabled') throw AppError.forbidden('账号已停用，请联系平台')
   return artist
 }
@@ -111,7 +111,7 @@ portfolioRouter.get(
 
     const artist = await prisma.artist.findUnique({
       where: { id: artistId },
-      select: { userId: true, status: true },
+      select: { userId: true, status: true, profileCompleted: true },
     })
     if (!artist) throw AppError.notFound('化妆师不存在')
 
@@ -119,8 +119,8 @@ portfolioRouter.get(
     const canPreview =
       claims &&
       (claims.role === 'admin' || (claims.role === 'artist' && claims.uid === artist.userId))
-    if (artist.status !== 'approved' && !canPreview) {
-      throw AppError.notFound('化妆师不存在或尚未通过审核')
+    if ((artist.status !== 'approved' || !artist.profileCompleted) && !canPreview) {
+      throw AppError.notFound('化妆师不存在或尚未完善个人信息')
     }
 
     const [total, items, counts] = await Promise.all([

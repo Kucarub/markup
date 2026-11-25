@@ -8,18 +8,18 @@
     <view class="mine-profile">
       <view class="avatar avatar--lg">
         <image class="avatar__img" src="{{profile.avatar}}" mode="aspectFill" />
-        <view class="level-badge">{{profile.level}}</view>
+        <view wx:if="{{isArtist}}" class="level-badge">{{profile.level}}</view>
       </view>
       <view class="mine-profile__copy">
         <view class="mine-name">{{profile.name}}</view>
-        <view class="mine-desc">{{profile.city}} · 成长中的专业化妆师</view>
+        <view class="mine-desc">{{profile.city}} · {{isArtist ? '成长中的专业化妆师' : '正在寻找合适的化妆师'}}</view>
       </view>
       <view class="mine-edit" bindtap="onEditProfile">
         <image class="icon icon--xs" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
       </view>
     </view>
 
-    <view class="mine-progress">
+    <view wx:if="{{isArtist}}" class="mine-progress">
       <view class="mine-progress__row">
         <text>资料完整度</text>
         <text class="mine-progress__value">{{profile.completeness}}%</text>
@@ -38,7 +38,7 @@
       </view>
       <view class="credit-card__copy">
         <view class="credit-card__level">{{credit.level}}</view>
-        <view class="credit-card__desc">按时完成 +2 · 取消 -5 · 满分 100</view>
+        <view class="credit-card__desc">初始 0 分 · 完成 +2 · 取消 -5 · 满分 100</view>
       </view>
       <view class="credit-card__link">
         <text>服务记录</text>
@@ -46,7 +46,7 @@
       </view>
     </view>
 
-    <view class="mine-stats">
+    <view wx:if="{{stats.length}}" class="mine-stats">
       <view
         wx:for="{{stats}}"
         wx:key="key"
@@ -64,6 +64,8 @@
         wx:for="{{menu}}"
         wx:key="key"
         class="menu-item {{item.separator ? 'menu-item--separator' : ''}}"
+        hover-class="menu-item--hover"
+        hover-stay-time="80"
         data-key="{{item.key}}"
         data-label="{{item.label}}"
         bindtap="onMenuTap"
@@ -76,9 +78,24 @@
         <text wx:if="{{item.note}}" class="menu-note">{{item.note}}</text>
         <image class="icon icon--xs menu-arrow" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
       </view>
+
+      <!-- 分享行与普通菜单行同构，用透明原生 share 按钮覆盖整行 -->
+      <view class="menu-item menu-item--share">
+        <view class="menu-icon">
+          <image class="icon icon--sm" src="/assets/icons/send.svg" mode="aspectFit" />
+        </view>
+        <text class="menu-label">分享给好友</text>
+        <image class="icon icon--xs menu-arrow" src="/assets/icons/chevron-right.svg" mode="aspectFit" />
+        <button
+          class="menu-item__share-btn"
+          open-type="share"
+          hover-class="menu-item--hover"
+          hover-stay-time="80"
+        ></button>
+      </view>
     </view>
 
-    <view class="growth-note">
+    <view wx:if="{{isArtist}}" class="growth-note">
       <image class="icon icon--md growth-note__icon" src="/assets/icons/heart.svg" mode="aspectFit" />
       <view class="growth-note__copy">
         <text class="growth-note__title">每一次认真练习，都在积累专业</text>

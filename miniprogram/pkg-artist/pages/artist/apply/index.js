@@ -6,7 +6,6 @@ const subscribe = require('../../../../utils/subscribe')
 
 const DRAFT_KEY = 'artist_apply_draft_v1'
 const MAX_STYLES = 3
-const MIN_IMAGES = 6
 const MAX_WORKS = 9
 const ID_CARD_RE = /^\d{17}[\dXx]$/
 
@@ -27,6 +26,7 @@ Page({
     submitting: false,
     mode: 'create',
     status: '',
+    profileCompleted: false,
     rejectReason: '',
     idCardMasked: '',
     cities: CITIES,
@@ -46,7 +46,6 @@ Page({
     imageCount: 0,
     videoCount: 0,
     errors: {},
-    minImages: MIN_IMAGES,
     maxWorks: MAX_WORKS,
   },
 
@@ -70,7 +69,7 @@ Page({
     if (this.draftTimer) clearTimeout(this.draftTimer)
   },
 
-  /** 拉取已有入驻资料：有记录即编辑模式，驳回时展示原因并回填 */
+  /** 拉取已有个人信息：选角色时已自动建档，通常为编辑模式 */
   loadExisting() {
     return request
       .get('/api/artist/me', null, { showError: false })
@@ -79,6 +78,7 @@ Page({
         this.setData({
           mode: 'edit',
           status: artist.status,
+          profileCompleted: Boolean(artist.profileCompleted),
           rejectReason: artist.rejectReason || '',
           idCardMasked: artist.idCardMasked || '',
         })
@@ -296,24 +296,21 @@ Page({
   },
 
   validate() {
-    const { form, mode } = this.data
+    const { form } = this.data
     const errors = {}
     const years = Number(form.years)
 
     if (!form.name || form.name.trim().length < 2) errors.name = '请填写真实姓名（至少 2 个字）'
     if (!form.city) errors.city = '请选择所在城市'
-    if (form.years === '' || !Number.isInteger(years) || years < 0 || years > 60) {
+    if (form.years !== '' && (!Number.isInteger(years) || years < 0 || years > 60)) {
       errors.years = '请填写 0–60 的从业年限'
     }
-    if (!form.styles.length) errors.styles = '请至少选择 1 个擅长风格'
-    if (mode === 'create' && !form.idCard) errors.idCard = '请填写身份证号'
+    if (form.styles.length > MAX_STYLES) errors.styles = `最多选择 ${MAX_STYLES} 个擅长风格`
     if (form.idCard && !ID_CARD_RE.test(form.idCard)) errors.idCard = '身份证号需为 18 位'
     if (this.data.works.some((item) => item.status === 'uploading')) {
       errors.works = '作品仍在上传，请稍候再提交'
-    } else if (this.data.imageCount < MIN_IMAGES && this.data.videoCount < 1) {
-      errors.works = `请至少上传 ${MIN_IMAGES} 张图片或 1 个视频`
     }
-    if (!form.agreed) errors.agreed = '请先阅读并同意入驻协议'
+    if (!form.agreed) errors.agreed = '请先阅读并同意个人信息使用协议'
 
     const fields = Object.keys(errors)
     this.setData({ errors })
@@ -335,7 +332,6 @@ Page({
       name: form.name.trim(),
       city: form.city,
       district: form.district.trim(),
-      years: Number(form.years),
       styles: form.styles,
       intro: form.intro.trim(),
       works: this.data.works
@@ -347,6 +343,7 @@ Page({
         })),
       agreed: true,
     }
+    if (form.years !== '') payload.years = Number(form.years)
     if (form.idCard.trim()) payload.idCard = form.idCard.trim()
 
     this.setData({ submitting: true })
@@ -356,11 +353,15 @@ Page({
       .then(() => {
         this.clearDraft()
         clearProfileCache()
-        // 入驻完成引导订阅（E11-01）：拒绝后服务端 7 天内不再弹窗
+        // 完善信息后可获得信用分（初始 0 分），同时引导订阅（E11-01）
         return subscribe.ensure(['invitation', 'result']).then(() => {
-          wx.showToast({ title: mode === 'edit' ? '资料已更新' : '已提交审核' })
+          wx.showToast({ title: '个人信息已保存' })
           setTimeout(() => {
-            wx.reLaunch({ url: '/pages/apply/status/index' })
+            if (getCurrentPages().length > 1) {
+              wx.navigateBack()
+            } else {
+              wx.switchTab({ url: '/pages/home/index' })
+            }
           }, 600)
         })
       })
@@ -369,7 +370,7 @@ Page({
   },
 
   openAgreement() {
-    wx.showToast({ title: '入驻协议页面将在后续版本开放', icon: 'none' })
+    wx.showToast({ title: '个人信息使用协议页面将在后续版本开放', icon: 'none' })
   },
 
   previewWork(event) {

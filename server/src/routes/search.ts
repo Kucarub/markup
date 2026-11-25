@@ -10,7 +10,7 @@ import { pageResult, paginationSchema } from '../utils/pagination'
 
 /**
  * 找化妆师搜索（E8-05 / E8-06）。
- * - 仅返回 status=approved 的化妆师，待审核 / 驳回 / 封禁一律不出现；
+ * - 仅返回 status=approved 且已完善个人信息的化妆师，未完善 / 停用一律不出现；
  * - 距离按经纬度球面距离计算，未填写经纬度时不做半径过滤也不返回距离；
  * - 指定 date 时只返回该日 state=available 的化妆师。
  */
@@ -62,7 +62,7 @@ searchRouter.get(
       .map((item) => item.trim())
       .filter(Boolean)
 
-    const where: Prisma.ArtistWhereInput = { status: 'approved' }
+    const where: Prisma.ArtistWhereInput = { status: 'approved', profileCompleted: true }
     if (query.city) where.city = query.city
     if (query.district) where.district = query.district
     if (query.yearsMin !== undefined) where.years = { gte: query.yearsMin }

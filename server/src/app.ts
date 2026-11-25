@@ -15,7 +15,8 @@ export function createApp() {
   app.disable('x-powered-by')
   // 生产部署在 Nginx 之后：信任一层代理，才能用 X-Forwarded-Proto 还原 https 与客户端 IP
   app.set('trust proxy', 1)
-  app.use(helmet())
+  // 小程序 <image> 拉取 /api/files/raw 时会被默认的 CORP: same-origin 拦截（图片灰块），改为允许跨源读取
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
   app.use(
     cors({
       origin: corsOrigins,

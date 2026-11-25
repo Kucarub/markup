@@ -8,12 +8,12 @@
  * 注意：真机无法访问 127.0.0.1（指向手机自身），develop 必须用电脑的局域网 IP，
  * 且手机与电脑在同一 Wi-Fi。IP 变化时改这里（可用 ipconfig 查看）。
  */
-const DEV_LAN_HOST = '192.168.0.251'
+const DEV_LAN_HOST = '127.0.0.1:3000'
 
 const ENVS = {
   develop: {
     name: 'dev',
-    baseURL: `http://${DEV_LAN_HOST}:3000`,
+    baseURL: `http://${DEV_LAN_HOST}`,
     debug: true,
   },
   trial: {

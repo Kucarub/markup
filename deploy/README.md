@@ -51,36 +51,30 @@ sudo chown -R $USER:$USER /opt/wechat /srv/wechat
 
 ## 二、构建镜像（在本地做，服务器只 pull）
 
-服务器 2G 内存跑 `docker build` 会 OOM，所以镜像在本地或公司机器构建后推送 ACR。
+```bash
+docker build -t wechat-markup-api:1.0.1 ./server
+docker save wechat-markup-api:1.0.1 -o api-1.0.1.tar
+scp -i .\make-up.pem .\api-1.0.1.tar root@106.15.8.132:/tmp/
+
+```
 
 ```bash
-# 在仓库根目录（含 server/ admin/ 的那层）执行，构建上下文必须是 server/
-docker build -t registry.cn-hangzhou.aliyuncs.com/<命名空间>/wechat-markup-api:20261120 ./server
-
-docker login --username=<阿里云账号> registry.cn-hangzhou.aliyuncs.com
-docker push registry.cn-hangzhou.aliyuncs.com/<命名空间>/wechat-markup-api:20261120
+cd /opt/wechat/deploy
+sudo docker load -i /tmp/api-1.0.1.tar
+sudo docker compose ps                 # 先确认 db 是 Up (healthy)
+sudo docker compose up -d db           # 若 db 没起来，先单独拉起
+# 用新镜像跑迁移（旧镜像里没有新迁移文件，必须换镜像后再跑）
+sudo docker compose run --rm api npx prisma migrate deploy
+# .env 里把 IMAGE 改成 wechat-markup-api:1.0.1 后
+sudo docker compose up -d api
+curl http://127.0.0.1:3000/api/ping
 ```
-
-把 `.env` 里的 `IMAGE` 改成上面这个带版本号的地址。没有 ACR 时也可以用 `docker save | ssh ... docker load` 传镜像。
-
-**MySQL 基础镜像也要进 ACR**：ECS 在国内，直连 Docker Hub 基本拉不下来。本地把 `mysql:5.7` 打 tag 后推到同一仓库，再把 `.env` 的 `MYSQL_IMAGE` 指过去：
 
 ```bash
-docker tag mysql:5.7 registry.cn-hangzhou.aliyuncs.com/<命名空间>/mysql:5.7
-docker push registry.cn-hangzhou.aliyuncs.com/<命名空间>/mysql:5.7
+systemctl systemctl reload nginx 重启 Nginx 配置生效
 ```
 
-```ini
-MYSQL_IMAGE=registry.cn-hangzhou.aliyuncs.com/<命名空间>/mysql:5.7
-```
 
-本地拉不到 Docker Hub 时，先在 Docker Desktop 配置镜像加速（阿里云控制台 → 容器镜像服务 → 镜像加速器，拿到专属地址）：
-
-```json
-{ "registry-mirrors": ["https://<你的ID>.mirror.aliyuncs.com"] }
-```
-
----
 
 ## 三、部署
 

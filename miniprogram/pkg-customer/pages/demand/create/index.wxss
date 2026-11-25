@@ -7,16 +7,6 @@
   margin-top: var(--space-md);
 }
 
-.create__notice {
-  margin-top: var(--space-md);
-  border-color: #f3ddb5;
-  background: #fff3dd;
-}
-
-.create__notice-btn {
-  margin-top: var(--space-sm);
-}
-
 /* 定向预约提示卡（E9-02） */
 .create__target {
   margin-top: var(--space-md);

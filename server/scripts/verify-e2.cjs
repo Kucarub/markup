@@ -132,9 +132,30 @@ async function main() {
   check('无签名读取私有文件返回 403/40300', rawDenied.status === 403 && rawDenied.data.code === 40300)
 
   console.log('\n[E2-06] 敏感字段加密与脱敏（库内为密文）')
-  const artistRow = await prisma.artist.findFirst({ where: { status: 'approved' } })
-  check('身份证落库为 v1 密文', !!artistRow && String(artistRow.idCardCipher).startsWith('v1.'))
+  // 自建临时化妆师走「选角色 + 完善个人信息」，避免依赖历史数据
+  const cryptoStamp = Date.now()
+  const cryptoLogin = await request('POST', '/api/auth/wx-login', {
+    body: { code: `dev-openid-e2crypto-${cryptoStamp}` },
+  })
+  const cryptoUserId = cryptoLogin.data.data.userId
+  const cryptoRole = await request('POST', '/api/auth/role', {
+    token: cryptoLogin.data.data.accessToken,
+    body: { role: 'artist' },
+  })
+  const applied = await request('POST', '/api/artist/apply', {
+    token: cryptoRole.data.data.accessToken,
+    body: { name: '加密验证', city: '上海', idCard: '310101199501011234', agreed: true },
+  })
+  const artistRow = await prisma.artist.findUnique({ where: { userId: cryptoUserId } })
+  check(
+    '身份证落库为 v1 密文',
+    applied.status === 200 && !!artistRow && String(artistRow.idCardCipher).startsWith('v1.'),
+  )
   check('密文不含明文身份证', !!artistRow && !String(artistRow.idCardCipher).includes('19950101'))
+
+  await prisma.artist.deleteMany({ where: { userId: cryptoUserId } })
+  await prisma.creditScore.deleteMany({ where: { userId: cryptoUserId } })
+  await prisma.userAuth.deleteMany({ where: { id: cryptoUserId } })
 
   console.log('\n[E2-07] 后台登录失败锁定')
   const wrongPassword = { username: 'admin', password: 'WrongPass#1' }

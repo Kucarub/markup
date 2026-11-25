@@ -9,17 +9,6 @@
     <view class="card__desc">本条需求仅推送给 {{targetName}}，不会出现在需求大厅。</view>
   </view>
 
-  <view wx:if="{{!checking && !phoneBound}}" class="card create__notice" id="field-phone">
-    <view class="card__title">先绑定手机号</view>
-    <view class="card__desc">发布需求前需绑定手机号，便于化妆师与你联系；手机号加密存储，不会对外展示。</view>
-    <button
-      class="btn btn--primary btn--block create__notice-btn"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="onGetPhone"
-    >授权手机号</button>
-    <view class="field__error" wx:if="{{errors.phone}}">{{errors.phone}}</view>
-  </view>
-
   <view class="card create__card">
     <view class="form-section form-section--first">服务信息</view>
 

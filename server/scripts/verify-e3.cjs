@@ -79,31 +79,15 @@ async function main() {
     JSON.stringify(artistSession),
   )
 
-  console.log('\n[E3-02] 手机号快速验证与加密绑定')
-  const phone = await request('POST', '/api/auth/phone', {
+  console.log('\n[E3-02] 手机号（方案 A：不收集，接口已下线）')
+  const phoneGone = await request('POST', '/api/auth/phone', {
     token: testUser.accessToken,
     body: { code: '13812345678' },
   })
-  check(
-    '手机号绑定成功并返回脱敏值',
-    phone.status === 200 && phone.data.data.phoneBound === true &&
-      phone.data.data.phoneMasked === '138****5678',
-    JSON.stringify(phone.data),
-  )
+  check('手机号绑定接口已下线（404/40400）', phoneGone.status === 404 && phoneGone.data.code === 40400)
 
-  const phoneRow = await prisma.userAuth.findUnique({ where: { openid } })
-  check(
-    '手机号密文落库（v1. 前缀且不含明文）',
-    !!phoneRow.phoneCipher &&
-      phoneRow.phoneCipher.startsWith('v1.') &&
-      !phoneRow.phoneCipher.includes('13812345678'),
-  )
-
-  const meAfterPhone = await request('GET', '/api/auth/me', { token: testUser.accessToken })
-  check('GET /auth/me 回显 phoneBound=true', meAfterPhone.data.data.phoneBound === true)
-
-  const phoneNoAuth = await request('POST', '/api/auth/phone', { body: { code: '13812345678' } })
-  check('未登录绑定手机号返回 401/40100', phoneNoAuth.status === 401 && phoneNoAuth.data.code === 40100)
+  const meAfter = await request('GET', '/api/auth/me', { token: testUser.accessToken })
+  check('GET /auth/me 不再回显手机号字段', meAfter.data.data.phoneBound === undefined)
 
   console.log('\n[E3-03] 角色选择 / 切换')
   const roleArtist = await request('POST', '/api/auth/role', {
@@ -160,7 +144,7 @@ async function main() {
   const expired = await request('GET', '/api/auth/me', { token: expiredToken })
   check('过期 token 返回 401/40101', expired.status === 401 && expired.data.code === 40101)
 
-  console.log('\n[E3-05] 入驻状态路由守卫数据')
+  console.log('\n[E3-05] 选角色即建档与资料完善状态')
   const customerProfile = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
   check(
     '客户资料回传 profileId 且无需审核',
@@ -168,31 +152,48 @@ async function main() {
     JSON.stringify(customerProfile.data.data),
   )
 
-  const pendingArtist = await prisma.artist.create({
-    data: { userId: testUser.userId, name: '冒烟测试', city: '上海', status: 'pending' },
-  })
-  await request('POST', '/api/auth/role', {
+  const roleBack = await request('POST', '/api/auth/role', {
     token: roleCustomer.data.data.accessToken,
     body: { role: 'artist' },
   })
-  const pendingMe = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
   check(
-    '审核中返回 profileStatus=pending 与 profileId',
-    pendingMe.data.data.profileStatus === 'pending' &&
-      pendingMe.data.data.profileId === pendingArtist.id,
-    JSON.stringify(pendingMe.data.data),
+    '切回化妆师自动建档（profileStatus=approved / profileCompleted=false）',
+    roleBack.status === 200 &&
+      roleBack.data.data.profileStatus === 'approved' &&
+      roleBack.data.data.profileCompleted === false,
+    JSON.stringify(roleBack.data.data),
+  )
+
+  const artistMe = await request('GET', '/api/auth/me', { token: roleBack.data.data.accessToken })
+  check(
+    '未完善资料仍返回 profileId，可直接使用全部功能',
+    typeof artistMe.data.data.profileId === 'number' &&
+      artistMe.data.data.profileStatus === 'approved',
+    JSON.stringify(artistMe.data.data),
   )
 
   await prisma.artist.update({
-    where: { id: pendingArtist.id },
-    data: { status: 'rejected', rejectReason: '作品数量不足' },
+    where: { userId: testUser.userId },
+    data: { profileCompleted: true },
   })
-  const rejectedMe = await request('GET', '/api/auth/me', { token: roleCustomer.data.data.accessToken })
+  const completedMe = await request('GET', '/api/auth/me', { token: roleBack.data.data.accessToken })
+  check('完善资料后 profileCompleted=true', completedMe.data.data.profileCompleted === true)
+
+  await prisma.artist.update({
+    where: { userId: testUser.userId },
+    data: { status: 'disabled' },
+  })
+  const disabledMe = await request('GET', '/api/auth/me', { token: roleBack.data.data.accessToken })
   check(
-    '驳回时回传 profileStatus=rejected 与驳回原因',
-    rejectedMe.data.data.profileStatus === 'rejected' &&
-      rejectedMe.data.data.rejectReason === '作品数量不足',
+    '停用账号回传 profileStatus=disabled',
+    disabledMe.data.data.profileStatus === 'disabled',
+    JSON.stringify(disabledMe.data.data),
   )
+
+  await prisma.artist.update({
+    where: { userId: testUser.userId },
+    data: { status: 'approved' },
+  })
 
   const customerLogin = await request('POST', '/api/auth/wx-login', {
     body: { code: 'dev-customer-openid' },
@@ -207,10 +208,8 @@ async function main() {
   const doc = await request('GET', '/api-docs/openapi.json')
   const paths = (doc.data && doc.data.paths) || {}
   check(
-    'OpenAPI 已包含 E3 四个登录态接口',
-    ['/api/auth/wx-login', '/api/auth/me', '/api/auth/role', '/api/auth/phone'].every(
-      (path) => !!paths[path],
-    ),
+    'OpenAPI 已包含 E3 三个登录态接口',
+    ['/api/auth/wx-login', '/api/auth/me', '/api/auth/role'].every((path) => !!paths[path]),
   )
 
   // 清理测试数据

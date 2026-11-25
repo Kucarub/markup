@@ -130,6 +130,11 @@ async function main() {
     `dev-openid-e12a-${stamp}`,
   )
 
+  // 选角色即自动建档，这里先清掉自动档案，按后台审核场景重建（pending 为历史数据）
+  await prisma.artist.deleteMany({
+    where: { userId: { in: [artPending.userId, artPending2.userId, artOk.userId] } },
+  })
+
   const pendingArtist = await prisma.artist.create({
     data: {
       userId: artPending.userId,
@@ -199,14 +204,6 @@ async function main() {
   const profile = await request('GET', '/api/customer/me', { token: cust.token })
   const customerId = profile.data.data.id
   created.customerIds.push(customerId)
-
-  // 发布需求要求先绑定手机号（E7 规则）
-  const phone = `139${String(stamp).slice(-8)}`
-  const bound = await request('POST', '/api/auth/phone', {
-    token: cust.token,
-    body: { code: phone },
-  })
-  if (bound.status !== 200) throw new Error(`绑定手机号失败：${JSON.stringify(bound.data)}`)
 
   // auditor 账号：复用 admin 的密码哈希，仅改角色
   const adminRow = await prisma.adminUser.findUnique({ where: { username: 'admin' } })

@@ -14,77 +14,47 @@
       <view class="auth-tagline">让每一次练习，都被看见</view>
     </view>
 
-    <block wx:if="{{!needPhone}}">
-      <view class="role-section">
-        <text class="welcome-kicker">WELCOME</text>
-        <view class="welcome-title">选择你的身份</view>
-        <view class="welcome-subtitle">我们会为你准备更合适的工作台</view>
+    <view class="role-section">
+      <text class="welcome-kicker">WELCOME</text>
+      <view class="welcome-title">选择你的身份</view>
+      <view class="welcome-subtitle">我们会为你准备更合适的工作台</view>
 
-        <view class="role-list">
-          <view
-            wx:for="{{roles}}"
-            wx:key="key"
-            class="role-card {{role === item.key ? 'role-card--selected' : ''}}"
-            data-role="{{item.key}}"
-            bindtap="selectRole"
-          >
-            <view class="role-icon role-icon--{{item.key}}">
-              <image class="role-icon__img" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" />
-            </view>
-            <view class="role-copy">
-              <text class="role-title">{{item.title}}</text>
-              <text class="role-desc">{{item.desc}}</text>
-              <text class="role-note">{{item.note}}</text>
-            </view>
-            <view class="role-check {{role === item.key ? 'role-check--on' : ''}}">
-              <view wx:if="{{role === item.key}}" class="role-check__tick"></view>
-              <image
-                wx:else
-                class="role-check__arrow"
-                src="/assets/icons/chevron-right.svg"
-                mode="aspectFit"
-              />
-            </view>
+      <view class="role-list">
+        <view
+          wx:for="{{roles}}"
+          wx:key="key"
+          class="role-card {{role === item.key ? 'role-card--selected' : ''}}"
+          data-role="{{item.key}}"
+          bindtap="selectRole"
+        >
+          <view class="role-icon role-icon--{{item.key}}">
+            <image class="role-icon__img" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" />
+          </view>
+          <view class="role-copy">
+            <text class="role-title">{{item.title}}</text>
+            <text class="role-desc">{{item.desc}}</text>
+            <text class="role-note">{{item.note}}</text>
+          </view>
+          <view class="role-check {{role === item.key ? 'role-check--on' : ''}}">
+            <view wx:if="{{role === item.key}}" class="role-check__tick"></view>
+            <image
+              wx:else
+              class="role-check__arrow"
+              src="/assets/icons/chevron-right.svg"
+              mode="aspectFit"
+            />
           </view>
         </view>
       </view>
-    </block>
-
-    <block wx:else>
-      <view class="phone-card">
-        <view class="phone-card__title">绑定手机号</view>
-        <view class="phone-card__desc">用于接收邀约与订单通知，手机号加密存储，不会对外展示。</view>
-        <button
-          class="btn btn--primary btn--block phone-card__action"
-          open-type="getPhoneNumber"
-          bindgetphonenumber="handleGetPhone"
-        >
-          {{phoneDenied ? '重新授权手机号' : '授权手机号'}}
-        </button>
-        <view class="phone-card__skip" bindtap="handleSkipPhone">暂不绑定，先去逛逛</view>
-      </view>
-    </block>
+    </view>
   </view>
 
-  <view wx:if="{{!needPhone}}" class="welcome__actions">
-    <!-- 已勾选协议：登录按钮直接携带 getPhoneNumber，一次点击完成登录 + 手机号授权 -->
+  <view class="welcome__actions">
     <button
-      wx:if="{{agreed}}"
       class="btn btn--primary welcome__login"
       loading="{{loading}}"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="handleLoginWithPhone"
-    >
-      微信一键登录
-    </button>
-    <button
-      wx:else
-      class="btn btn--primary welcome__login"
-      loading="{{loading}}"
-      bindtap="handleLoginTap"
-    >
-      微信一键登录
-    </button>
+      bindtap="handleLogin"
+    >微信一键登录</button>
 
     <view class="agreement">
       <view class="agreement__box {{agreed ? 'agreement__box--on' : ''}}" bindtap="toggleAgreement">
@@ -96,7 +66,5 @@
         <text class="agreement__link" data-doc="隐私政策" catchtap="showDoc">《隐私政策》</text>
       </view>
     </view>
-
-    <view class="welcome__skip" bindtap="handleSkip">先随便看看</view>
   </view>
 </view>

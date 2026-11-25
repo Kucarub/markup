@@ -20,13 +20,8 @@ const DICTS: Array<{ type: string; code: string; label: string; sort: number }> 
   { type: 'style', code: 'japanese', label: '日系', sort: 7 },
   { type: 'style', code: 'western', label: '欧美', sort: 8 },
   { type: 'city', code: 'shanghai', label: '上海', sort: 1 },
-  { type: 'city', code: 'beijing', label: '北京', sort: 2 },
-  { type: 'city', code: 'hangzhou', label: '杭州', sort: 3 },
-  { type: 'city', code: 'suzhou', label: '苏州', sort: 4 },
-  { type: 'city', code: 'nanjing', label: '南京', sort: 5 },
-  { type: 'city', code: 'guangzhou', label: '广州', sort: 6 },
-  { type: 'city', code: 'shenzhen', label: '深圳', sort: 7 },
-  { type: 'city', code: 'chengdu', label: '成都', sort: 8 },
+  { type: 'city', code: 'taicang', label: '太仓', sort: 2 },
+  { type: 'city', code: 'kunshan', label: '昆山', sort: 3 },
   { type: 'service_type', code: 'bridal', label: '婚礼跟妆', sort: 1 },
   { type: 'service_type', code: 'daily', label: '日常妆造', sort: 2 },
   { type: 'service_type', code: 'event', label: '商业活动', sort: 3 },
@@ -51,7 +46,13 @@ async function seedDicts() {
       create: item,
     })
   }
-  console.info(`[seed] dict_item: ${DICTS.length} 条`)
+  // 城市收敛为上海 / 太仓 / 昆山：停用种子清单外的旧城市，避免重复执行后残留
+  const cityCodes = DICTS.filter((item) => item.type === 'city').map((item) => item.code)
+  const stale = await prisma.dictItem.updateMany({
+    where: { type: 'city', enabled: true, code: { notIn: cityCodes } },
+    data: { enabled: false },
+  })
+  console.info(`[seed] dict_item: ${DICTS.length} 条，停用旧城市 ${stale.count} 条`)
 }
 
 async function seedDemoArtist() {

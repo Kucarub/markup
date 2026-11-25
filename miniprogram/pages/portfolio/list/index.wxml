@@ -23,7 +23,7 @@
   <view class="portfolio-content">
     <view wx:if="{{belowThreshold}}" class="threshold-tip">
       <image class="icon icon--xs" src="/assets/icons/info.svg" mode="aspectFit" />
-      <text>作品不足 {{counts.minImages}} 张图片（或 1 个视频），入驻审核可能不通过</text>
+      <text>作品少于 {{counts.minImages}} 张图片（或 1 个视频），建议补充作品以提升曝光</text>
     </view>
 
     <!-- 首屏骨架屏 -->
@@ -73,8 +73,8 @@
       />
 
       <view wx:else class="empty">
-        <view>登录并完成化妆师入驻后，即可管理作品</view>
-        <view class="empty__action btn btn--secondary btn--sm" bindtap="onGoApply">去登录 / 入驻</view>
+        <view>登录并完善个人信息后，即可管理作品</view>
+        <view class="empty__action btn btn--secondary btn--sm" bindtap="onGoApply">去登录 / 完善资料</view>
       </view>
 
       <view wx:if="{{hasMore}}" class="list-footer">{{loadingMore ? '加载中…' : '上滑加载更多'}}</view>

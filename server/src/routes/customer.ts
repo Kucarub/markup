@@ -4,11 +4,10 @@ import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { currentCustomer } from '../services/customer'
 import { asyncHandler } from '../utils/asyncHandler'
-import { decryptAndMask } from '../utils/crypto'
 
 /**
  * 客户资料（E7-01）。
- * 手机号仍只落在 user_auth.phone_cipher，customer 表不重复存，避免两处不一致。
+ * 账号体系仅依赖 openid（方案 A），不收集手机号。
  */
 export const customerRouter = Router()
 
@@ -18,18 +17,19 @@ const updateSchema = z.object({
   district: z.string().trim().max(32).optional(),
 })
 
-function toProfile(
-  customer: { id: number; nickname: string | null; city: string | null; district: string | null; status: string },
-  phoneCipher: string | null,
-) {
+function toProfile(customer: {
+  id: number
+  nickname: string | null
+  city: string | null
+  district: string | null
+  status: string
+}) {
   return {
     id: customer.id,
     nickname: customer.nickname,
     city: customer.city,
     district: customer.district,
     status: customer.status,
-    phoneBound: Boolean(phoneCipher),
-    phoneMasked: phoneCipher ? decryptAndMask(phoneCipher) : null,
   }
 }
 
@@ -38,12 +38,7 @@ customerRouter.get(
   '/customer/me',
   requireAuth('customer'),
   asyncHandler(async (req, res) => {
-    const customer = await currentCustomer(req.auth!.uid)
-    const user = await getPrisma().userAuth.findUnique({
-      where: { id: req.auth!.uid },
-      select: { phoneCipher: true },
-    })
-    res.ok(toProfile(customer, user?.phoneCipher ?? null))
+    res.ok(toProfile(await currentCustomer(req.auth!.uid)))
   }),
 )
 
@@ -55,10 +50,6 @@ customerRouter.put(
     const input = updateSchema.parse(req.body)
     const customer = await currentCustomer(req.auth!.uid)
     const updated = await getPrisma().customer.update({ where: { id: customer.id }, data: input })
-    const user = await getPrisma().userAuth.findUnique({
-      where: { id: req.auth!.uid },
-      select: { phoneCipher: true },
-    })
-    res.ok(toProfile(updated, user?.phoneCipher ?? null))
+    res.ok(toProfile(updated))
   }),
 )

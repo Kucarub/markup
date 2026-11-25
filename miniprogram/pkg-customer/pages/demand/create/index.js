@@ -15,7 +15,6 @@ const SERVICE_TYPES = [
 
 /** 表单字段 → 页面锚点，校验失败时滚动到首个错误 */
 const FIELD_ANCHOR = {
-  phone: 'field-phone',
   city: 'field-city',
   district: 'field-district',
   serviceDate: 'field-date',
@@ -41,13 +40,12 @@ function toast(title) {
  * - 带 artistId 时复用同一套需求字段，仅额外提交 targetArtistId；
  * - 必填校验完整，失败时定位首个错误字段；
  * - 预算下限不得高于上限，服务日期最早今天、最远 180 天；
- * - 未绑定手机号不可发布，可就地拉起手机号授权。
+ * - 账号体系仅依赖 openid（方案 A），发布需求不要求手机号。
  */
 Page({
   data: {
     checking: true,
     submitting: false,
-    phoneBound: true,
     cities: CITIES,
     cityIndex: -1,
     serviceTypes: SERVICE_TYPES,
@@ -104,7 +102,7 @@ Page({
       .then((customer) => {
         if (!customer) return
         const index = CITIES.indexOf(customer.city)
-        const patch = { phoneBound: Boolean(customer.phoneBound) }
+        const patch = {}
         if (index > -1 && !this.data.form.city) {
           patch.cityIndex = index
           patch['form.city'] = customer.city
@@ -201,29 +199,13 @@ Page({
     })
   },
 
-  onGetPhone(event) {
-    const code = event.detail && event.detail.code
-    if (!code) {
-      toast('未授权手机号，可稍后重试')
-      return
-    }
-    request
-      .post('/api/auth/phone', { code })
-      .then(() => {
-        this.setData({ phoneBound: true, 'errors.phone': '' })
-        wx.showToast({ title: '手机号绑定成功', icon: 'success' })
-      })
-      .catch(() => {})
-  },
-
   validate() {
-    const { form, today, phoneBound } = this.data
+    const { form, today } = this.data
     const errors = {}
     const headcount = Number(form.headcount)
     const budgetMin = Number(form.budgetMin)
     const budgetMax = Number(form.budgetMax)
 
-    if (!phoneBound) errors.phone = '请先绑定手机号后再发布需求'
     if (!form.city) errors.city = '请选择服务城市'
     if (!form.district.trim()) errors.district = '请填写服务区域'
     if (!form.serviceDate) errors.serviceDate = '请选择服务日期'
@@ -296,13 +278,6 @@ Page({
       })
       .catch((error) => {
         const code = error && error.code
-        if (code === 40300) {
-          this.setData({ phoneBound: false, 'errors.phone': '请先绑定手机号后再发布需求' }, () => {
-            wx.pageScrollTo({ selector: '#field-phone', offsetTop: -120, duration: 200 })
-          })
-          toast('请先绑定手机号')
-          return
-        }
         if (code === 42900) {
           wx.showModal({
             title: '今日发布已达上限',

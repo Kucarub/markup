@@ -81,7 +81,7 @@ Page({
         const artistId = (profile && profile.profileId) || null
         this.setData({ artistId, loading: false })
         if (!artistId) {
-          wx.showToast({ title: '请先完成化妆师入驻', icon: 'none' })
+          wx.showToast({ title: '请先完善个人信息', icon: 'none' })
         }
       })
       .catch(() => this.setData({ loading: false }))

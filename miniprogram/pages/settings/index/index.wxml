@@ -3,7 +3,7 @@
     <view class="row row--between">
       <view>
         <view class="card__title">账号与登录</view>
-        <view class="card__desc">微信登录与手机号绑定已接入（E3），可在此切换身份或退出登录</view>
+        <view class="card__desc">微信登录已接入（E3），可在此切换身份或退出登录</view>
       </view>
       <button class="btn btn--sm btn--primary" bindtap="goRole">设置角色</button>
     </view>
@@ -11,7 +11,7 @@
 
   <view class="card list">
     <view class="list__item" bindtap="goRole">
-      <text>角色与入驻</text>
+      <text>角色与资料</text>
       <text class="muted">›</text>
     </view>
     <view class="list__item" bindtap="goTokens">

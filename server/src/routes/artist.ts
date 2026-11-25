@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { recordEvent } from '../services/analytics'
-import { getCredit } from '../services/credit'
+import { ensureCredit, getCredit } from '../services/credit'
 import { buildSignedPath } from '../services/storage'
 import { getUnlimitedQrCode } from '../services/wechat'
 import { asyncHandler } from '../utils/asyncHandler'
@@ -13,14 +13,14 @@ import { AppError } from '../utils/errors'
 import { extractBearerToken, verifyToken, type TokenRole } from '../utils/jwt'
 
 /**
- * 化妆师入驻（E4-02 / E4-03 / E4-05）。
- * 状态机：pending → approved | rejected；rejected → pending（重新提审）。
+ * 化妆师个人信息完善（E4-02 / E4-03 / E4-05，注册流程调整）。
+ * 选化妆师角色即自动建档，本模块负责补全资料；
+ * 提交即生效（status=approved，profileCompleted=true），不再走后台审核。
  * 作品文件必须先走 /api/upload/sign + /api/files/upload 完成上传，再提交 fileId。
  */
 export const artistRouter = Router()
 
 const ID_CARD_RE = /^\d{17}[\dXx]$/
-const MIN_IMAGES = 6
 
 const workSchema = z.object({
   fileId: z.coerce.number().int().positive('作品文件不合法'),
@@ -28,19 +28,20 @@ const workSchema = z.object({
   styles: z.array(z.string().trim().min(1).max(32)).max(8).optional(),
 })
 
+/**
+ * 个人信息完善（注册流程调整）：仅姓名、城市必填。
+ * 从业年限 / 风格 / 身份证 / 作品均为选填，可先完善基础资料，后续随时补充。
+ */
 const applySchema = z.object({
   name: z.string().trim().min(2, '姓名至少 2 个字').max(32),
   city: z.string().trim().min(1, '请选择所在城市').max(32),
   district: z.string().trim().max(32).optional(),
-  years: z.coerce.number().int('从业年限需为整数').min(0).max(60),
-  styles: z
-    .array(z.string().trim().min(1).max(32))
-    .min(1, '至少选择 1 个擅长风格')
-    .max(3, '最多选择 3 个擅长风格'),
+  years: z.coerce.number().int('从业年限需为整数').min(0).max(60).optional(),
+  styles: z.array(z.string().trim().min(1).max(32)).max(3, '最多选择 3 个擅长风格').optional(),
   intro: z.string().trim().max(500, '自我介绍不超过 500 字').optional(),
-  idCard: z.string().trim().regex(ID_CARD_RE, '身份证号需为 18 位'),
-  works: z.array(workSchema).min(1, '请至少上传 6 张作品图片或 1 个作品视频'),
-  agreed: z.boolean().refine((value) => value === true, '请先阅读并同意入驻协议'),
+  idCard: z.string().trim().regex(ID_CARD_RE, '身份证号需为 18 位').optional(),
+  works: z.array(workSchema).max(9, '最多上传 9 个作品').optional(),
+  agreed: z.boolean().refine((value) => value === true, '请先阅读并同意个人信息使用协议'),
 })
 
 /** 编辑资料：身份证可不传（表示不修改），其余字段仍按表单全量提交 */
@@ -56,7 +57,7 @@ interface ResolvedWork {
   sort: number
 }
 
-/** 校验作品文件归属与数量规则：≥6 张图片或 ≥1 个视频 */
+/** 校验作品文件归属；作品为选填，数量上限由 schema 约束 */
 async function resolveWorks(userId: number, works: WorkInput[]): Promise<ResolvedWork[]> {
   const files = await getPrisma().fileObject.findMany({
     where: { id: { in: works.map((work) => work.fileId) } },
@@ -68,12 +69,6 @@ async function resolveWorks(userId: number, works: WorkInput[]): Promise<Resolve
     if (!file || file.userId !== userId || file.scene !== 'portfolio' || file.status !== 'uploaded') {
       throw AppError.badRequest(`作品文件不存在或尚未上传完成（fileId=${work.fileId}）`)
     }
-  }
-
-  const imageCount = works.filter((work) => fileById.get(work.fileId)!.mimeType.startsWith('image/')).length
-  const videoCount = works.filter((work) => fileById.get(work.fileId)!.mimeType.startsWith('video/')).length
-  if (imageCount < MIN_IMAGES && videoCount < 1) {
-    throw AppError.badRequest(`请至少上传 ${MIN_IMAGES} 张作品图片或 1 个作品视频`)
   }
 
   return works.map((work, index) => {
@@ -92,7 +87,7 @@ function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? (value.filter((item) => typeof item === 'string') as string[]) : []
 }
 
-/** 入驻资料详情：身份证脱敏，作品返回 15 分钟签名地址 */
+/** 个人信息详情：身份证脱敏，作品返回 15 分钟签名地址 */
 async function buildArtistDetail(artistId: number) {
   const prisma = getPrisma()
   const artist = await prisma.artist.findUnique({
@@ -109,6 +104,7 @@ async function buildArtistDetail(artistId: number) {
       })
     : []
   const fileIdByKey = new Map(files.map((file) => [file.objectKey, file.id]))
+  const credit = await getCredit(artist.userId)
 
   return {
     id: artist.id,
@@ -120,6 +116,8 @@ async function buildArtistDetail(artistId: number) {
     intro: artist.intro,
     idCardMasked: decryptAndMask(artist.idCardCipher, maskIdCard),
     status: artist.status,
+    profileCompleted: artist.profileCompleted,
+    credit: { score: credit.score, level: credit.level },
     rejectReason: artist.rejectReason,
     auditAt: artist.auditAt,
     submittedAt: artist.createdAt,
@@ -136,7 +134,11 @@ async function buildArtistDetail(artistId: number) {
   }
 }
 
-/** 提交入驻（E4-02）：已有非驳回记录返回 409，驳回状态视为重新提审 */
+/**
+ * 提交 / 更新个人信息（E4-02，注册流程调整）：
+ * 提交即生效，不再进入后台审核；同一账号重复提交视为覆盖更新。
+ * 完成后建档信用分（初始 0 分），并标记 profileCompleted=true 进入公开列表。
+ */
 artistRouter.post(
   '/artist/apply',
   requireAuth('artist'),
@@ -146,25 +148,26 @@ artistRouter.post(
     const prisma = getPrisma()
 
     const existing = await prisma.artist.findUnique({ where: { userId } })
-    if (existing && existing.status !== 'rejected') {
-      throw AppError.conflict('已提交过入驻申请，请勿重复提交')
-    }
+    if (existing?.status === 'disabled') throw AppError.forbidden('账号已停用，请联系平台')
 
-    const works = await resolveWorks(userId, input.works)
-    const idCardCipher = encryptSensitive(input.idCard)
+    const works = await resolveWorks(userId, input.works ?? [])
+    const idCardCipher = input.idCard
+      ? encryptSensitive(input.idCard)
+      : existing?.idCardCipher ?? null
 
     const artist = await prisma.$transaction(async (tx) => {
       const data = {
         name: input.name,
         city: input.city,
         district: input.district || null,
-        years: input.years,
-        styles: input.styles,
+        years: input.years ?? 0,
+        styles: input.styles ?? [],
         intro: input.intro || null,
         idCardCipher,
-        status: 'pending',
+        status: 'approved',
+        profileCompleted: true,
         rejectReason: null,
-        auditAt: null,
+        auditAt: new Date(),
       }
       const saved = existing
         ? await tx.artist.update({ where: { id: existing.id }, data })
@@ -182,6 +185,8 @@ artistRouter.post(
           sort: work.sort,
         })),
       })
+      // 完善信息后建档信用分（初始 0 分），已存在则保留历史分值
+      await ensureCredit(tx, { userId, role: 'artist' })
       return saved
     })
 
@@ -204,9 +209,9 @@ artistRouter.get(
 )
 
 /**
- * 编辑资料（E4-05）：
- * 姓名 / 城市 / 年限 / 风格 / 身份证 / 作品变化 → 回退待审核并清空驳回原因；
- * 仅改简介或区域 → 保持当前状态，不触发重审。
+ * 编辑个人信息（E4-05，注册流程调整）：
+ * 提交即生效，任何字段修改都不会回退状态或触发审核；
+ * keyChanged 仅用于前端提示「资料已更新」。
  */
 artistRouter.put(
   '/artist/me',
@@ -217,10 +222,11 @@ artistRouter.put(
     const prisma = getPrisma()
 
     const artist = await prisma.artist.findUnique({ where: { userId } })
-    if (!artist) throw AppError.notFound('尚未提交入驻申请')
+    if (!artist) throw AppError.notFound('请先完善个人信息')
     if (artist.status === 'disabled') throw AppError.forbidden('账号已停用，请联系平台')
 
-    const works = await resolveWorks(userId, input.works)
+    // works 未传表示「不修改作品」，传空数组表示清空
+    const works = input.works ? await resolveWorks(userId, input.works) : null
     const currentWorks = await prisma.artistPortfolio.findMany({
       where: { artistId: artist.id },
       orderBy: { sort: 'asc' },
@@ -230,15 +236,17 @@ artistRouter.put(
     const idCardChanged = input.idCard
       ? !sameIdCard(artist.idCardCipher, input.idCard)
       : false
-    const stylesChanged =
-      asStringArray(artist.styles).slice().sort().join(',') !== input.styles.slice().sort().join(',')
+    const stylesChanged = input.styles
+      ? asStringArray(artist.styles).slice().sort().join(',') !== input.styles.slice().sort().join(',')
+      : false
     const worksChanged =
-      currentWorks.map((item) => item.url).join(',') !== works.map((item) => item.objectKey).join(',')
+      works !== null &&
+      currentWorks.map((item) => item.url).join(',') !== works.map((work) => work.objectKey).join(',')
 
     const keyChanged =
       artist.name !== input.name ||
       artist.city !== input.city ||
-      artist.years !== input.years ||
+      (input.years !== undefined && artist.years !== input.years) ||
       stylesChanged ||
       worksChanged ||
       idCardChanged
@@ -252,28 +260,32 @@ artistRouter.put(
           name: input.name,
           city: input.city,
           district: input.district || null,
-          years: input.years,
-          styles: input.styles,
+          years: input.years ?? artist.years,
+          styles: input.styles ?? asStringArray(artist.styles),
           intro: input.intro || null,
           idCardCipher,
-          ...(keyChanged
-            ? { status: 'pending', rejectReason: null, auditAt: null }
-            : {}),
+          status: 'approved',
+          profileCompleted: true,
+          rejectReason: null,
+          auditAt: new Date(),
         },
       })
 
-      await tx.artistPortfolio.deleteMany({ where: { artistId: artist.id } })
-      await tx.artistPortfolio.createMany({
-        data: works.map((work) => ({
-          artistId: artist.id,
-          type: work.type,
-          url: work.objectKey,
-          title: work.title,
-          styles: work.styles,
-          status: 'pending',
-          sort: work.sort,
-        })),
-      })
+      if (works) {
+        await tx.artistPortfolio.deleteMany({ where: { artistId: artist.id } })
+        await tx.artistPortfolio.createMany({
+          data: works.map((work) => ({
+            artistId: artist.id,
+            type: work.type,
+            url: work.objectKey,
+            title: work.title,
+            styles: work.styles,
+            status: 'pending',
+            sort: work.sort,
+          })),
+        })
+      }
+      await ensureCredit(tx, { userId, role: 'artist' })
     })
 
     res.ok({ ...(await buildArtistDetail(artist.id)), keyChanged })
@@ -416,14 +428,14 @@ async function buildPublicProfile(artistId: number) {
   }
 }
 
-/** 化妆师公开主页（E5-04）：待审核 / 驳回 / 封禁对外 404，本人与管理员可预览 */
+/** 化妆师公开主页（E5-04）：未完善信息 / 停用对外 404，本人与管理员可预览 */
 artistRouter.get(
   '/artist/:id',
   asyncHandler(async (req, res) => {
     const { id } = artistIdParam.parse(req.params)
     const artist = await getPrisma().artist.findUnique({
       where: { id },
-      select: { userId: true, status: true },
+      select: { userId: true, status: true, profileCompleted: true },
     })
     if (!artist) throw AppError.notFound('化妆师不存在')
 
@@ -431,8 +443,8 @@ artistRouter.get(
     const canPreview =
       claims &&
       (claims.role === 'admin' || (claims.role === 'artist' && claims.uid === artist.userId))
-    if (artist.status !== 'approved' && !canPreview) {
-      throw AppError.notFound('化妆师不存在或尚未通过审核')
+    if ((artist.status !== 'approved' || !artist.profileCompleted) && !canPreview) {
+      throw AppError.notFound('化妆师不存在或尚未完善个人信息')
     }
 
     res.ok(await buildPublicProfile(id))
@@ -450,8 +462,13 @@ artistRouter.post(
     const { deviceId } = visitSchema.parse(req.body)
 
     const prisma = getPrisma()
-    const artist = await prisma.artist.findUnique({ where: { id }, select: { status: true } })
-    if (!artist || artist.status !== 'approved') throw AppError.notFound('化妆师不存在')
+    const artist = await prisma.artist.findUnique({
+      where: { id },
+      select: { status: true, profileCompleted: true },
+    })
+    if (!artist || artist.status !== 'approved' || !artist.profileCompleted) {
+      throw AppError.notFound('化妆师不存在')
+    }
 
     const visitDate = dayOnly()
     const deviceHash = crypto.createHash('sha256').update(deviceId).digest('hex')
@@ -487,8 +504,13 @@ artistRouter.get(
   '/artist/:id/qrcode',
   asyncHandler(async (req, res) => {
     const { id } = artistIdParam.parse(req.params)
-    const artist = await getPrisma().artist.findUnique({ where: { id }, select: { status: true } })
-    if (!artist || artist.status !== 'approved') throw AppError.notFound('化妆师不存在')
+    const artist = await getPrisma().artist.findUnique({
+      where: { id },
+      select: { status: true, profileCompleted: true },
+    })
+    if (!artist || artist.status !== 'approved' || !artist.profileCompleted) {
+      throw AppError.notFound('化妆师不存在')
+    }
 
     const buffer = await getUnlimitedQrCode(`artist_${id}`, 'pages/artist/detail/index')
     res.setHeader('content-type', 'image/png')

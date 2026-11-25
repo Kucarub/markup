@@ -4,19 +4,9 @@ const TOKEN_KEY = env.storageKeys.TOKEN
 const REFRESH_TOKEN_KEY = env.storageKeys.REFRESH_TOKEN
 const ROLE_KEY = env.storageKeys.ROLE
 const USER_ID_KEY = env.storageKeys.USER_ID
-/** 游客浏览标记：点过「先随便看看」后，冷启动不再强制回欢迎页 */
-const GUEST_KEY = 'guest_browse'
 
 function getToken() {
   return wx.getStorageSync(TOKEN_KEY) || ''
-}
-
-function isGuestBrowse() {
-  return Boolean(wx.getStorageSync(GUEST_KEY))
-}
-
-function setGuestBrowse() {
-  wx.setStorageSync(GUEST_KEY, true)
 }
 
 function setToken(token) {
@@ -66,7 +56,6 @@ function clearAuth() {
   wx.removeStorageSync(REFRESH_TOKEN_KEY)
   wx.removeStorageSync(ROLE_KEY)
   wx.removeStorageSync(USER_ID_KEY)
-  wx.removeStorageSync(GUEST_KEY)
 }
 
 /** 未登录 / 过期统一回登录页，避免多页重复 reLaunch */
@@ -93,8 +82,6 @@ function takeLoginRedirect() {
 
 module.exports = {
   getToken,
-  isGuestBrowse,
-  setGuestBrowse,
   setToken,
   getRefreshToken,
   setRefreshToken,

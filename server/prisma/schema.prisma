@@ -53,8 +53,10 @@ model Artist {
   intro        String?   @db.Text
   /// AES-256-GCM 密文
   idCardCipher String?   @map("id_card_cipher") @db.VarChar(255)
-  /// pending | approved | rejected | disabled
+  /// pending | approved | rejected | disabled（选角色即建档为 approved，pending/rejected 仅保留历史数据）
   status       String    @default("pending") @db.VarChar(16)
+  /// 是否已完善个人信息：自动建档为 false（不对外展示），提交资料后为 true
+  profileCompleted Boolean @default(true) @map("profile_completed")
   rejectReason String?   @map("reject_reason") @db.VarChar(255)
   lat          Float?
   lng          Float?
@@ -286,14 +288,14 @@ model Review {
   @@map("review")
 }
 
-/// 信用分（E10-07）：初始 60，完成 +2 / 取消 -5，按事件累加
+/// 信用分（E10-07）：完善个人信息后建档，初始 0，完成 +2 / 取消 -5，按事件累加
 model CreditScore {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique @map("user_id")
   /// artist | customer
   role      String   @db.VarChar(16)
-  score     Int      @default(60)
-  level     String   @default("一般") @db.VarChar(16)
+  score     Int      @default(0)
+  level     String   @default("待提升") @db.VarChar(16)
   /// 变动流水 [{ at, type, delta, orderId }]，保留最近 50 条
   events    Json?
   createdAt DateTime @default(now()) @map("created_at")

@@ -101,7 +101,7 @@ Page({
         this.reportVisit()
         return this.fetchWorks(1)
       })
-      .catch(() => this.setData({ loading: false, error: '主页不存在或尚未通过审核' }))
+      .catch(() => this.setData({ loading: false, error: '主页不存在或尚未完善个人信息' }))
   },
 
   fetchWorks(page) {
@@ -272,6 +272,17 @@ Page({
     const payload = {
       title: `${profile.name || '化妆师'} · ${profile.city ? `${profile.city}专业化妆师` : '作品主页'}`,
       path: `/pages/artist/detail/index?id=${this.data.artistId}`,
+    }
+    const image = profile.avatarUrl || absoluteUrl(profile.coverPath)
+    if (image) payload.imageUrl = image
+    return payload
+  },
+
+  onShareTimeline() {
+    const profile = this.data.profile || {}
+    const payload = {
+      title: `${profile.name || '化妆师'} · ${profile.city ? `${profile.city}专业化妆师` : '作品主页'}`,
+      query: `id=${this.data.artistId}`,
     }
     const image = profile.avatarUrl || absoluteUrl(profile.coverPath)
     if (image) payload.imageUrl = image

@@ -78,8 +78,9 @@ Page({
   },
 
   onShow() {
+    // 切换身份后角色可能变化：每次页面显示都让底部导航按最新角色重建
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().syncSelected()
+      this.getTabBar().refresh()
     }
     this.load()
   },

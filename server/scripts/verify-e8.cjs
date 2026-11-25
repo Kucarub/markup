@@ -98,8 +98,21 @@ async function main() {
     `dev-openid-e8p-${stamp}`,
   )
 
-  const artistA = await prisma.artist.create({
-    data: {
+  // 选角色即自动建档，这里按 userId 覆盖为测试资料
+  const artistA = await prisma.artist.upsert({
+    where: { userId: artA.userId },
+    update: {
+      name: `E8 化妆师A-${stamp}`,
+      city,
+      district: '测试区',
+      years: 6,
+      styles: ['fresh'],
+      status: 'approved',
+      profileCompleted: true,
+      lat: 31.2304,
+      lng: 121.4737,
+    },
+    create: {
       userId: artA.userId,
       name: `E8 化妆师A-${stamp}`,
       city,
@@ -107,12 +120,25 @@ async function main() {
       years: 6,
       styles: ['fresh'],
       status: 'approved',
+      profileCompleted: true,
       lat: 31.2304,
       lng: 121.4737,
     },
   })
-  const artistB = await prisma.artist.create({
-    data: {
+  const artistB = await prisma.artist.upsert({
+    where: { userId: artB.userId },
+    update: {
+      name: `E8 化妆师B-${stamp}`,
+      city,
+      district: '测试区',
+      years: 1,
+      styles: ['retro'],
+      status: 'approved',
+      profileCompleted: true,
+      lat: 31.4,
+      lng: 121.6,
+    },
+    create: {
       userId: artB.userId,
       name: `E8 化妆师B-${stamp}`,
       city,
@@ -120,12 +146,25 @@ async function main() {
       years: 1,
       styles: ['retro'],
       status: 'approved',
+      profileCompleted: true,
       lat: 31.4,
       lng: 121.6,
     },
   })
-  const artistC = await prisma.artist.create({
-    data: {
+  const artistC = await prisma.artist.upsert({
+    where: { userId: artC.userId },
+    update: {
+      name: `E8 化妆师C-${stamp}`,
+      city,
+      district: '测试区',
+      years: 3,
+      styles: ['fresh', 'retro'],
+      status: 'approved',
+      profileCompleted: true,
+      lat: 31.2306,
+      lng: 121.4739,
+    },
+    create: {
       userId: artC.userId,
       name: `E8 化妆师C-${stamp}`,
       city,
@@ -133,12 +172,25 @@ async function main() {
       years: 3,
       styles: ['fresh', 'retro'],
       status: 'approved',
+      profileCompleted: true,
       lat: 31.2306,
       lng: 121.4739,
     },
   })
-  const artistPending = await prisma.artist.create({
-    data: {
+  // 历史遗留 pending 数据（新流程不再产生），验证不可见 / 不可响应
+  const artistPending = await prisma.artist.upsert({
+    where: { userId: artPending.userId },
+    update: {
+      name: `E8 待审化妆师-${stamp}`,
+      city,
+      district: '测试区',
+      years: 9,
+      styles: ['fresh'],
+      status: 'pending',
+      lat: 31.2304,
+      lng: 121.4737,
+    },
+    create: {
       userId: artPending.userId,
       name: `E8 待审化妆师-${stamp}`,
       city,
@@ -151,12 +203,6 @@ async function main() {
     },
   })
   created.artistIds.push(artistA.id, artistB.id, artistC.id, artistPending.id)
-
-  const phone = await request('POST', '/api/auth/phone', {
-    token: cust.token,
-    body: { code: '13800002222' },
-  })
-  check('客户绑定手机号成功', phone.status === 200 && phone.data.data.phoneBound === true)
 
   const profile = await request('GET', '/api/customer/me', { token: cust.token })
   const customerId = profile.data.data.id

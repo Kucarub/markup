@@ -253,6 +253,7 @@ adminAuditRouter.get(
     const artists = await getPrisma().artist.findMany({
       where: {
         status: 'approved',
+        profileCompleted: true,
         ...(keyword
           ? { OR: [{ name: { contains: keyword } }, { city: { contains: keyword } }] }
           : {}),

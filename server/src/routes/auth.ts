@@ -2,11 +2,11 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { ensureArtist } from '../services/artist'
 import { ensureCustomer } from '../services/customer'
 import { recordEvent } from '../services/analytics'
-import { code2session, getPhoneNumber } from '../services/wechat'
+import { code2session } from '../services/wechat'
 import { asyncHandler } from '../utils/asyncHandler'
-import { decryptAndMask, encryptSensitive, maskPhone } from '../utils/crypto'
 import { AppError } from '../utils/errors'
 import { issueTokenPair, verifyToken, type TokenRole } from '../utils/jwt'
 
@@ -26,20 +26,17 @@ const roleSchema = z.object({
   role: z.enum(['artist', 'customer'], { invalid_type_error: '角色只能是 artist 或 customer' }),
 })
 
-const phoneSchema = z.object({
-  code: z.string().min(1, 'code 不能为空'),
-})
-
 /**
  * 登录态资料（E3-03 / E3-05）：
- * profileStatus 供前端路由守卫判断入驻三态，none 表示尚未提交入驻。
- * 客户无资质审核（E7-01），profileStatus 恒为 approved。
+ * profileStatus 供前端路由守卫判断状态，none 表示尚未建档。
+ * 客户与化妆师均无需资质审核：选角色即建档，profileStatus 恒为 approved；
+ * 化妆师额外回传 profileCompleted，区分「已注册」与「已完善个人信息」。
  */
 async function buildProfile(userId: number) {
   const user = await getPrisma().userAuth.findUnique({
     where: { id: userId },
     include: {
-      artist: { select: { id: true, status: true, rejectReason: true } },
+      artist: { select: { id: true, status: true, rejectReason: true, profileCompleted: true } },
       customer: { select: { id: true, status: true } },
     },
   })
@@ -55,12 +52,12 @@ async function buildProfile(userId: number) {
     userId: user.id,
     role: user.role as 'artist' | 'customer' | null,
     needRoleSelect: !user.role,
-    phoneBound: Boolean(user.phoneCipher),
-    phoneMasked: decryptAndMask(user.phoneCipher),
     nickname: user.nickname,
     avatarUrl: user.avatarUrl,
     profileId: entity?.id ?? null,
     profileStatus,
+    profileCompleted:
+      user.role === 'artist' ? Boolean(user.artist?.profileCompleted) : user.role === 'customer',
     rejectReason,
   }
 }
@@ -136,7 +133,7 @@ authRouter.get(
   }),
 )
 
-/** 绑定 / 切换角色（E3-03 / E7-01）：写库后重签 token；切客户角色时自动建档 */
+/** 绑定 / 切换角色（E3-03 / E7-01）：写库后重签 token；选角色即自动建档（无需填表单/审核） */
 authRouter.post(
   '/auth/role',
   requireAuth(),
@@ -144,21 +141,7 @@ authRouter.post(
     const { role } = roleSchema.parse(req.body)
     await getPrisma().userAuth.update({ where: { id: req.auth!.uid }, data: { role } })
     if (role === 'customer') await ensureCustomer(req.auth!.uid)
+    if (role === 'artist') await ensureArtist(req.auth!.uid)
     res.ok(await issueSession(req.auth!.uid))
-  }),
-)
-
-/** 手机号快速验证（E3-02）：code 换手机号，AES-256-GCM 加密落库 */
-authRouter.post(
-  '/auth/phone',
-  requireAuth(),
-  asyncHandler(async (req, res) => {
-    const { code } = phoneSchema.parse(req.body)
-    const phone = await getPhoneNumber(code)
-    await getPrisma().userAuth.update({
-      where: { id: req.auth!.uid },
-      data: { phoneCipher: encryptSensitive(phone) },
-    })
-    res.ok({ phoneBound: true, phoneMasked: maskPhone(phone) })
   }),
 )

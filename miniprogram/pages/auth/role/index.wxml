@@ -1,6 +1,6 @@
 <view class="page">
   <view class="page-title">选择你的身份</view>
-  <view class="page-subtitle">身份决定底部导航与后续入驻流程，可随时在「我的」中切换</view>
+  <view class="page-subtitle">身份决定底部导航与后续资料完善流程，可随时在「我的」中切换</view>
 
   <view
     class="card role"

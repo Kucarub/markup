@@ -105,6 +105,9 @@ async function main() {
     `dev-openid-e11b-${stamp}`,
   )
 
+  // 选角色即自动建档，这里先清掉自动档案再按测试资料重建
+  await prisma.artist.deleteMany({ where: { userId: { in: [artA.userId, artB.userId] } } })
+
   const artistA = await prisma.artist.create({
     data: {
       userId: artA.userId,
@@ -138,16 +141,6 @@ async function main() {
       state: 'available',
     })),
   })
-
-  const phone1 = await request('POST', '/api/auth/phone', {
-    token: cust.token,
-    body: { code: '13800006601' },
-  })
-  await request('POST', '/api/auth/phone', {
-    token: cust2.token,
-    body: { code: '13800006602' },
-  })
-  check('两位客户绑定手机号成功', phone1.data.data.phoneBound === true)
 
   const profile = await request('GET', '/api/customer/me', { token: cust.token })
   created.customerIds.push(profile.data.data.id)

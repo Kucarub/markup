@@ -121,31 +121,94 @@ async function main() {
     : null
   check('后台账号可登录（审核入口可用）', adminLogin.status === 200 && !!adminToken)
 
-  console.log('\n[E4-02] 入驻提交与 artist 落库')
-  const empty = await request('GET', '/api/artist/me', { token: tokenA })
-  check('未提交时 GET /artist/me 返回 data=null', empty.status === 200 && empty.data.data === null)
-
-  const twoWorks = await uploadWorks(tokenA, 2)
-  const tooFew = await request('POST', '/api/artist/apply', {
-    token: tokenA,
-    body: payloadOf(twoWorks),
-  })
+  console.log('\n[E4-02] 选角色即建档 / 完善个人信息')
+  const autoProfile = await request('GET', '/api/artist/me', { token: tokenA })
   check(
-    '作品不足 6 图且无视频 → 400/40001',
-    tooFew.status === 400 && tooFew.data.code === 40001,
-    JSON.stringify(tooFew.data),
+    '选角色后自动建档（profileCompleted=false / status=approved）',
+    autoProfile.status === 200 &&
+      !!autoProfile.data.data &&
+      autoProfile.data.data.profileCompleted === false &&
+      autoProfile.data.data.status === 'approved',
+    JSON.stringify(autoProfile.data).slice(0, 300),
   )
 
-  const sixWorks = await uploadWorks(tokenA, 4)
-  const allWorks = twoWorks.concat(sixWorks)
-  const applied = await request('POST', '/api/artist/apply', {
-    token: tokenA,
-    body: payloadOf(allWorks),
-  })
-  artistId = (applied.data.data || {}).id
+  const creditBefore = await request('GET', `/api/credit/${userIdA}`)
   check(
-    '提交成功返回 artistId 且状态 pending',
-    applied.status === 200 && !!artistId && applied.data.data.status === 'pending',
+    '完善前信用分为初始 0 分 / 待提升',
+    creditBefore.status === 200 &&
+      creditBefore.data.data.score === 0 &&
+      creditBefore.data.data.level === '待提升',
+    JSON.stringify(creditBefore.data),
+  )
+
+  const minimal = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: { name: '林小满', city: '上海', agreed: true },
+  })
+  artistId = (minimal.data.data || {}).id
+  check(
+    '仅姓名 + 城市即可提交，提交即生效（approved）',
+    minimal.status === 200 &&
+      !!artistId &&
+      minimal.data.data.status === 'approved' &&
+      minimal.data.data.profileCompleted === true,
+    JSON.stringify(minimal.data).slice(0, 300),
+  )
+
+  const creditRow = await prisma.creditScore.findUnique({ where: { userId: userIdA } })
+  check(
+    '完善信息后信用分建档，初始 0 分',
+    !!creditRow && creditRow.score === 0 && creditRow.level === '待提升',
+    JSON.stringify(creditRow && { score: creditRow.score, level: creditRow.level }),
+  )
+
+  const duplicate = await request('POST', '/api/artist/apply', {
+    token: tokenA,
+    body: { name: '林小满', city: '上海', agreed: true },
+  })
+  check(
+    '重复提交视为覆盖更新（不再 409）',
+    duplicate.status === 200 && duplicate.data.data.status === 'approved',
+    JSON.stringify(duplicate.data),
+  )
+
+  const noAuth = await request('POST', '/api/artist/apply', {
+    body: { name: '林小满', city: '上海', agreed: true },
+  })
+  check('未登录提交 → 401/40100', noAuth.status === 401 && noAuth.data.code === 40100)
+
+  const customerLogin = await request('POST', '/api/auth/wx-login', {
+    body: { code: 'dev-customer-openid' },
+  })
+  const customerToken = customerLogin.data.data.accessToken
+  const wrongRole = await request('POST', '/api/artist/apply', {
+    token: customerToken,
+    body: { name: '林小满', city: '上海', agreed: true },
+  })
+  check('客户角色提交 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
+
+  const foreignWorks = await uploadWorks(tokenB, 1)
+  const foreign = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: payloadOf(foreignWorks),
+  })
+  check(
+    '引用他人 fileId 提交 → 400/40001',
+    foreign.status === 400 && foreign.data.code === 40001,
+    JSON.stringify(foreign.data),
+  )
+
+  console.log('\n[E4-02] 作品与身份证（选填）')
+  const sixWorks = await uploadWorks(tokenA, 6)
+  const applied = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: payloadOf(sixWorks),
+  })
+  check(
+    '提交作品与身份证成功且保持 approved',
+    applied.status === 200 &&
+      applied.data.data.status === 'approved' &&
+      applied.data.data.works.length === 6,
     JSON.stringify(applied.data).slice(0, 300),
   )
   check(
@@ -168,67 +231,10 @@ async function main() {
       !artistRow.idCardCipher.includes(ID_CARD),
   )
 
-  const duplicate = await request('POST', '/api/artist/apply', {
-    token: tokenA,
-    body: payloadOf(allWorks),
-  })
-  check(
-    '待审核状态重复提交 → 409/40900',
-    duplicate.status === 409 && duplicate.data.code === 40900,
-    JSON.stringify(duplicate.data),
-  )
-
-  const noAuth = await request('POST', '/api/artist/apply', { body: payloadOf(allWorks) })
-  check('未登录提交 → 401/40100', noAuth.status === 401 && noAuth.data.code === 40100)
-
-  const customerLogin = await request('POST', '/api/auth/wx-login', {
-    body: { code: 'dev-customer-openid' },
-  })
-  const customerToken = customerLogin.data.data.accessToken
-  const wrongRole = await request('POST', '/api/artist/apply', {
-    token: customerToken,
-    body: payloadOf(allWorks),
-  })
-  check('客户角色提交入驻 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
-
-  const foreignWorks = await uploadWorks(tokenB, 1)
-  const foreign = await request('PUT', '/api/artist/me', {
-    token: tokenA,
-    body: payloadOf(allWorks.concat(foreignWorks)),
-  })
-  check(
-    '引用他人 fileId 提交 → 400/40001',
-    foreign.status === 400 && foreign.data.code === 40001,
-    JSON.stringify(foreign.data),
-  )
-
-  console.log('\n[E4-06] 审核状态机与 audit_log')
-  const artistApprove = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
-    token: tokenA,
-  })
-  check('化妆师 token 调用审核接口 → 403', artistApprove.status === 403)
-
-  const approved = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
-    token: adminToken,
-  })
-  check(
-    'pending → approved 成功',
-    approved.status === 200 && approved.data.data.status === 'approved',
-    JSON.stringify(approved.data),
-  )
-
-  const approveAgain = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
-    token: adminToken,
-  })
-  check(
-    '已通过再次审核 → 409（状态机限制）',
-    approveAgain.status === 409 && approveAgain.data.code === 40900,
-  )
-
-  console.log('\n[E4-05] 资料编辑与重审规则')
+  console.log('\n[E4-05] 资料编辑（不再回退审核）')
   const introOnly = await request('PUT', '/api/artist/me', {
     token: tokenA,
-    body: payloadOf(allWorks, { intro: '补充：擅长法式盘发与妈妈妆' }),
+    body: payloadOf(sixWorks, { intro: '补充：擅长法式盘发与妈妈妆' }),
   })
   check(
     '仅改简介 keyChanged=false 且状态保持 approved',
@@ -240,23 +246,65 @@ async function main() {
 
   const nameChanged = await request('PUT', '/api/artist/me', {
     token: tokenA,
-    body: payloadOf(allWorks, { name: '林小满满' }),
+    body: payloadOf(sixWorks, { name: '林小满满' }),
   })
   check(
-    '改姓名 keyChanged=true 且回退 pending',
+    '改姓名 keyChanged=true 且仍为 approved（不回退审核）',
     nameChanged.status === 200 &&
       nameChanged.data.data.keyChanged === true &&
-      nameChanged.data.data.status === 'pending',
+      nameChanged.data.data.status === 'approved',
     JSON.stringify({ keyChanged: nameChanged.data.data.keyChanged, status: nameChanged.data.data.status }),
   )
 
-  const rejectNoReason = await request('POST', `/api/admin/audits/artists/${artistId}/reject`, {
+  const worksOmitted = await request('PUT', '/api/artist/me', {
+    token: tokenA,
+    body: { name: '林小满满', city: '上海', agreed: true },
+  })
+  check(
+    '不传 works 时保留原有作品',
+    worksOmitted.status === 200 && worksOmitted.data.data.works.length === 6,
+    JSON.stringify({ works: (worksOmitted.data.data.works || []).length }),
+  )
+
+  console.log('\n[E4-06] 审核状态机与 audit_log（历史 pending 数据）')
+  const artistB = await prisma.artist.findUnique({ where: { userId: userIdB } })
+  const artistIdB = artistB.id
+  await prisma.artist.update({
+    where: { id: artistIdB },
+    data: { status: 'pending', profileCompleted: false },
+  })
+
+  const artistApprove = await request('POST', `/api/admin/audits/artists/${artistIdB}/approve`, {
+    token: tokenB,
+  })
+  check('化妆师 token 调用审核接口 → 403', artistApprove.status === 403)
+
+  const approved = await request('POST', `/api/admin/audits/artists/${artistIdB}/approve`, {
+    token: adminToken,
+  })
+  check(
+    'pending → approved 成功',
+    approved.status === 200 && approved.data.data.status === 'approved',
+    JSON.stringify(approved.data),
+  )
+
+  const approveAgain = await request('POST', `/api/admin/audits/artists/${artistIdB}/approve`, {
+    token: adminToken,
+  })
+  check(
+    '已通过再次审核 → 409（状态机限制）',
+    approveAgain.status === 409 && approveAgain.data.code === 40900,
+  )
+
+  await prisma.artist.update({ where: { id: artistIdB }, data: { status: 'pending' } })
+
+  const rejectNoReason = await request('POST', `/api/admin/audits/artists/${artistIdB}/reject`, {
     token: adminToken,
     body: {},
   })
   check('驳回缺少原因 → 400/40001', rejectNoReason.status === 400 && rejectNoReason.data.code === 40001)
 
-  const rejected = await request('POST', `/api/admin/audits/artists/${artistId}/reject`, {
+  const rejected = await request('POST', `/api/admin/audits/artists/${artistIdB}/reject`, {
     token: adminToken,
     body: { reason: '作品风格与资料描述不一致，请补充婚礼跟妆作品' },
   })
@@ -268,25 +316,25 @@ async function main() {
     JSON.stringify(rejected.data),
   )
 
-  const approveRejected = await request('POST', `/api/admin/audits/artists/${artistId}/approve`, {
+  const approveRejected = await request('POST', `/api/admin/audits/artists/${artistIdB}/approve`, {
     token: adminToken,
   })
   check('驳回状态直接通过 → 409（须先重新提审）', approveRejected.status === 409)
 
   const resubmitted = await request('POST', '/api/artist/apply', {
-    token: tokenA,
-    body: payloadOf(allWorks, { intro: '已补充婚礼跟妆作品' }),
+    token: tokenB,
+    body: { name: '林小满', city: '上海', intro: '已补充婚礼跟妆作品', agreed: true },
   })
   check(
-    '驳回 → 重新提审回到 pending 且清空原因',
+    '驳回 → 重新提交直接生效 approved 且清空原因',
     resubmitted.status === 200 &&
-      resubmitted.data.data.status === 'pending' &&
+      resubmitted.data.data.status === 'approved' &&
       resubmitted.data.data.rejectReason === null,
     JSON.stringify(resubmitted.data).slice(0, 300),
   )
 
   const logs = await prisma.auditLog.findMany({
-    where: { targetType: 'artist', targetId: artistId },
+    where: { targetType: 'artist', targetId: artistIdB },
     orderBy: { id: 'asc' },
   })
   check(
@@ -312,10 +360,16 @@ async function main() {
     ].every((path) => !!paths[path]) && !!paths['/api/artist/me'].put,
   )
 
-  // 清理测试数据（作品随 artist 级联删除，文件记录按用户清理）
-  if (artistId) {
-    await prisma.auditLog.deleteMany({ where: { targetType: 'artist', targetId: artistId } })
-    await prisma.artist.deleteMany({ where: { id: artistId } })
+  // 清理测试数据（作品随 artist 级联删除，文件与信用分按用户清理）
+  const testArtistIds = (
+    await prisma.artist.findMany({
+      where: { userId: { in: [userIdA, userIdB] } },
+      select: { id: true },
+    })
+  ).map((item) => item.id)
+  if (testArtistIds.length) {
+    await prisma.auditLog.deleteMany({ where: { targetType: 'artist', targetId: { in: testArtistIds } } })
+    await prisma.artist.deleteMany({ where: { id: { in: testArtistIds } } })
   }
   await prisma.fileObject.deleteMany({ where: { userId: { in: [userIdA, userIdB] } } })
   await prisma.userAuth.deleteMany({ where: { openid: { in: [openid, openidB] } } })

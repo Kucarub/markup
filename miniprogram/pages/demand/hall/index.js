@@ -92,8 +92,9 @@ Page({
   },
 
   onShow() {
+    // 切换身份后角色可能变化：每次页面显示都让底部导航按最新角色重建
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().syncSelected()
+      this.getTabBar().refresh()
     }
     businessGuard()
   },
@@ -185,5 +186,19 @@ Page({
 
   goHome() {
     wx.switchTab({ url: '/pages/home/index' })
+  },
+
+  /** 分享需求大厅：好友可直接浏览同城妆造需求 */
+  onShareAppMessage() {
+    return {
+      title: '妆集 · 同城妆造需求大厅',
+      path: '/pages/demand/hall/index',
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '妆集 · 同城妆造需求大厅',
+    }
   },
 })

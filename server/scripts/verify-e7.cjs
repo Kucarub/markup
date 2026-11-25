@@ -2,7 +2,7 @@
 /**
  * E7 冒烟验证脚本（可重复执行）：node scripts/verify-e7.cjs
  * 覆盖 E7-01 ~ E7-04 的服务端验收点：
- * 客户自动建档与资料修改、未绑手机号拦截、需求发布（幂等 / 每日上限 / 日期与预算校验）、
+ * 客户自动建档与资料修改、需求发布（幂等 / 每日上限 / 日期与预算校验）、
  * 定向预约校验、我的需求四态筛选、需求大厅过滤、编辑与关闭、越权隔离、接口文档。
  */
 require('dotenv').config()
@@ -93,11 +93,8 @@ async function main() {
 
   const profileA = await request('GET', '/api/customer/me', { token: customerA.token })
   check(
-    '选择客户角色后自动建档（active，未绑手机号）',
-    profileA.status === 200 &&
-      profileA.data.data.status === 'active' &&
-      profileA.data.data.phoneBound === false &&
-      profileA.data.data.phoneMasked === null,
+    '选择客户角色后自动建档（active）',
+    profileA.status === 200 && profileA.data.data.status === 'active',
     JSON.stringify(profileA.data),
   )
 
@@ -120,16 +117,6 @@ async function main() {
 
   // ---------- E7-03 发布需求 ----------
   console.log('\n[E7-03] 需求创建与防刷')
-  const noPhone = await request('POST', '/api/demands', {
-    token: customerA.token,
-    body: demandBody(),
-  })
-  check(
-    '未绑手机号发布 → 403/40300',
-    noPhone.status === 403 && noPhone.data.code === 40300,
-    JSON.stringify(noPhone.data),
-  )
-
   const withoutRole = await request('POST', '/api/demands', {
     token: customerArtist.token,
     body: demandBody(),
@@ -139,12 +126,6 @@ async function main() {
     withoutRole.status === 403 && withoutRole.data.code === 40300,
     JSON.stringify(withoutRole.data),
   )
-
-  const phone = await request('POST', '/api/auth/phone', {
-    token: customerA.token,
-    body: { code: '13800001111' },
-  })
-  check('客户绑定手机号成功', phone.status === 200 && phone.data.data.phoneBound === true)
 
   const firstCreate = await request('POST', '/api/demands', {
     token: customerA.token,
@@ -343,8 +324,10 @@ async function main() {
     ),
   )
 
-  // 清理测试数据（customer 级联删除 demand / demand_response）
+  // 清理测试数据（customer 级联删除 demand / demand_response；化妆师角色会自带 artist 档案）
   await prisma.customer.deleteMany({ where: { userId: { in: created.userIds } } })
+  await prisma.artist.deleteMany({ where: { userId: { in: created.userIds } } })
+  await prisma.creditScore.deleteMany({ where: { userId: { in: created.userIds } } })
   await prisma.userAuth.deleteMany({ where: { openid: { in: created.openids } } })
 
   console.log(`\n[verify] 通过 ${passed} / 失败 ${failed}`)

@@ -343,4 +343,12 @@ Page({
       path: `/pages/demand/detail/index?id=${this.data.id}`,
     }
   },
+
+  onShareTimeline() {
+    const { detail, typeLabel } = this.data
+    return {
+      title: detail ? `${typeLabel}需求 · ${detail.city}${detail.district}` : '妆集 · 需求详情',
+      query: `id=${this.data.id}`,
+    }
+  },
 })

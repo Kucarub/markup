@@ -156,7 +156,7 @@ async function main() {
   check('未登录查询 → 401/40100', anonymous.status === 401 && anonymous.data.code === 40100)
 
   const notApplied = await request('GET', '/api/schedule', { token: noProfile.token })
-  check('未入驻化妆师 → 404/40400', notApplied.status === 404 && notApplied.data.code === 40400)
+  check('未完善个人信息的化妆师仍可查询档期（功能不设限）', notApplied.status === 200)
 
   const wrongRole = await request('GET', '/api/schedule', { token: customer.token })
   check('非化妆师角色 → 403/40300', wrongRole.status === 403 && wrongRole.data.code === 40300)
@@ -276,7 +276,7 @@ async function main() {
     token: noProfile.token,
     body: { date: tomorrow, state: 'available' },
   })
-  check('未入驻设置 → 404', setByNoProfile.status === 404)
+  check('未完善个人信息的化妆师仍可设置档期（功能不设限）', setByNoProfile.status === 200)
 
   // ---------- E6-02 批量设置 ----------
   console.log('\n[E6-02] 批量设置')

@@ -85,10 +85,6 @@ Page({
         this.setData({ loading: false, error: '仅化妆师可维护档期' })
         return
       }
-      if (!profile.profileStatus || profile.profileStatus === 'none') {
-        this.setData({ loading: false, error: '请先完成化妆师入驻' })
-        return
-      }
 
       const month = `${this.data.year}-${pad(this.data.month)}`
       const data = await request.get('/api/schedule', { month }, { showError: false })

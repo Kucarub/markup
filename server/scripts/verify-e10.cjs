@@ -93,6 +93,9 @@ async function main() {
     `dev-openid-e10b-${stamp}`,
   )
 
+  // 选角色即自动建档，这里先清掉自动档案再按测试资料重建
+  await prisma.artist.deleteMany({ where: { userId: { in: [artA.userId, artB.userId] } } })
+
   const artistA = await prisma.artist.create({
     data: {
       userId: artA.userId,
@@ -125,19 +128,6 @@ async function main() {
     })),
   })
 
-  const phone1 = await request('POST', '/api/auth/phone', {
-    token: cust.token,
-    body: { code: '13800005501' },
-  })
-  const phone2 = await request('POST', '/api/auth/phone', {
-    token: cust2.token,
-    body: { code: '13800005502' },
-  })
-  check(
-    '两位客户绑定手机号成功',
-    phone1.data.data.phoneBound === true && phone2.data.data.phoneBound === true,
-  )
-
   const profile = await request('GET', '/api/customer/me', { token: cust.token })
   const customerId = profile.data.data.id
   created.customerIds.push(customerId)
@@ -162,10 +152,10 @@ async function main() {
   console.log('\n[E10-07] 初始信用分')
   const creditInit = await request('GET', `/api/credit/${cust.userId}`)
   check(
-    '未产生变动时返回初始 60 分（一般）',
+    '未产生变动时返回初始 0 分（待提升）',
     creditInit.status === 200 &&
-      creditInit.data.data.score === 60 &&
-      creditInit.data.data.level === '一般' &&
+      creditInit.data.data.score === 0 &&
+      creditInit.data.data.level === '待提升' &&
       creditInit.data.data.initial === true,
     JSON.stringify(creditInit.data.data),
   )
@@ -327,8 +317,8 @@ async function main() {
   const creditAfterFinish = await request('GET', `/api/credit/${cust.userId}`)
   const creditArtistAfterFinish = await request('GET', `/api/credit/${artA.userId}`)
   check(
-    '完成后双方信用 +2（60 → 62）',
-    creditAfterFinish.data.data.score === 62 && creditArtistAfterFinish.data.data.score === 62,
+    '完成后双方信用 +2（0 → 2）',
+    creditAfterFinish.data.data.score === 2 && creditArtistAfterFinish.data.data.score === 2,
     JSON.stringify({ customer: creditAfterFinish.data.data, artist: creditArtistAfterFinish.data.data }),
   )
 
@@ -420,8 +410,8 @@ async function main() {
 
   const creditAfterCancel = await request('GET', `/api/credit/${artA.userId}`)
   check(
-    '取消方（化妆师）信用 -5（64 → 59）',
-    creditAfterCancel.data.data.score === 59,
+    '取消方（化妆师）信用 -5 后夹紧至 0（4 → -1 → 0）',
+    creditAfterCancel.data.data.score === 0,
     JSON.stringify(creditAfterCancel.data.data),
   )
 
@@ -552,15 +542,15 @@ async function main() {
   const finalCustCredit = await request('GET', `/api/credit/${cust.userId}`)
   const finalArtistCredit = await request('GET', `/api/credit/${artA.userId}`)
   check(
-    '两次完成累计加分（客户 60 → 64）',
-    finalCustCredit.data.data.score === 64 &&
-      finalCustCredit.data.data.level === '一般' &&
+    '两次完成累计加分（客户 0 → 4）',
+    finalCustCredit.data.data.score === 4 &&
+      finalCustCredit.data.data.level === '待提升' &&
       finalCustCredit.data.data.initial === false,
     JSON.stringify(finalCustCredit.data.data),
   )
   check(
-    '化妆师完成两次 +4、取消一次 -5（60 → 59）',
-    finalArtistCredit.data.data.score === 59,
+    '化妆师完成两次 +4、取消一次 -5 后夹紧至 0',
+    finalArtistCredit.data.data.score === 0,
     JSON.stringify(finalArtistCredit.data.data),
   )
 

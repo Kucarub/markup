@@ -2,15 +2,12 @@
   <view wx:if="{{loading}}" class="empty">加载中…</view>
 
   <block wx:else>
-    <view class="page-title">化妆师入驻</view>
-    <view class="page-subtitle">资料仅用于平台审核，身份证号加密存储</view>
+    <view class="page-title">完善个人信息</view>
+    <view class="page-subtitle">姓名与城市必填，其余选填；保存后立即生效并获得信用分（初始 0 分）</view>
 
-    <view class="notice notice--{{status}}" wx:if="{{mode === 'edit'}}">
-      <view class="notice__title">
-        {{status === 'approved' ? '已通过审核' : status === 'rejected' ? '审核未通过' : '资料审核中'}}
-      </view>
-      <view class="notice__desc" wx:if="{{status === 'rejected' && rejectReason}}">驳回原因：{{rejectReason}}</view>
-      <view class="notice__desc" wx:else>修改姓名、城市、从业年限、风格、身份证或作品后会重新进入审核。</view>
+    <view class="notice notice--approved" wx:if="{{mode === 'edit'}}">
+      <view class="notice__title">{{profileCompleted ? '信息已完善' : '待完善个人信息'}}</view>
+      <view class="notice__desc">完善信息后可被搜索与展示，资料可随时修改，修改后立即生效。</view>
     </view>
 
     <view class="card apply__card">
@@ -55,7 +52,10 @@
       </view>
 
       <view class="field" id="field-years">
-        <view class="field__label">从业年限<text class="field__required">*</text></view>
+        <view class="field__label">
+          从业年限
+          <text class="field__label-note">选填</text>
+        </view>
         <input
           class="input"
           type="number"
@@ -71,8 +71,8 @@
 
       <view class="field" id="field-styles">
         <view class="field__label">
-          擅长风格<text class="field__required">*</text>
-          <text class="field__label-note">最多 3 个</text>
+          擅长风格
+          <text class="field__label-note">选填，最多 3 个</text>
         </view>
         <view class="styles">
           <view
@@ -105,18 +105,21 @@
       <view class="form-section">实名信息</view>
 
       <view class="field" id="field-id-card">
-        <view class="field__label">身份证号<text class="field__required">*</text></view>
+        <view class="field__label">
+          身份证号
+          <text class="field__label-note">选填</text>
+        </view>
         <input
           class="input"
           value="{{form.idCard}}"
           data-field="idCard"
           bindinput="onFieldInput"
           maxlength="18"
-          placeholder="{{idCardMasked ? '已提交，不修改可留空' : '请输入 18 位身份证号'}}"
+          placeholder="{{idCardMasked ? '已提交，不修改可留空' : '请输入 18 位身份证号（选填）'}}"
           placeholder-class="input-placeholder"
         />
         <view class="field__hint" wx:if="{{idCardMasked}}">已提交证件号：{{idCardMasked}}</view>
-        <view class="field__hint" wx:else>仅用于实名审核，平台加密存储，不会对外展示</view>
+        <view class="field__hint" wx:else>用于实名认证，平台加密存储，不会对外展示</view>
         <view class="field__error" wx:if="{{errors.idCard}}">{{errors.idCard}}</view>
       </view>
 
@@ -124,8 +127,8 @@
 
       <view class="field" id="field-works">
         <view class="field__label">
-          作品<text class="field__required">*</text>
-          <text class="field__label-note">至少 {{minImages}} 张图片或 1 个视频</text>
+          作品
+          <text class="field__label-note">选填，最多 {{maxWorks}} 个</text>
         </view>
         <view class="works">
           <view class="work" wx:for="{{works}}" wx:key="key">
@@ -171,7 +174,7 @@
         </view>
         <view class="agreement__text">
           <text bindtap="toggleAgreement">我已阅读并同意</text>
-          <text class="agreement__link" catchtap="openAgreement">《化妆师入驻协议》</text>
+          <text class="agreement__link" catchtap="openAgreement">《个人信息使用协议》</text>
         </view>
       </view>
       <view class="field__error" wx:if="{{errors.agreed}}">{{errors.agreed}}</view>
@@ -185,7 +188,7 @@
       loading="{{submitting}}"
       disabled="{{submitting}}"
     >
-      {{mode === 'edit' ? '保存并重新提交' : '提交审核'}}
+      {{mode === 'edit' ? '保存个人信息' : '完成个人信息'}}
     </button>
   </view>
 </view>

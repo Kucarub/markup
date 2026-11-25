@@ -26,8 +26,9 @@ Page({
   },
 
   onShow() {
+    // 切换身份后角色可能变化：每次页面显示都让底部导航按最新角色重建
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().syncSelected()
+      this.getTabBar().refresh()
     }
     this.load()
   },
@@ -53,6 +54,15 @@ Page({
       })
       .then((profile) => {
         if (!profile) return null
+        // 作品集为化妆师专属：客户越权进入时退回「我的」
+        if (profile.role !== 'artist') {
+          this.setData({ loading: false, list: [], total: 0, hasMore: false })
+          wx.switchTab({
+            url: '/pages/mine/index',
+            success: () => wx.showToast({ title: '作品集仅对化妆师开放', icon: 'none' }),
+          })
+          return null
+        }
         const artistId = profile.profileId || null
         this.setData({ artistId })
         if (!artistId) {
@@ -104,7 +114,7 @@ Page({
 
   onCreate() {
     if (!this.data.artistId) {
-      wx.showToast({ title: '请先登录并完成入驻', icon: 'none' })
+      wx.showToast({ title: '请先登录并完善个人信息', icon: 'none' })
       return
     }
     wx.navigateTo({ url: '/pages/artist/portfolio/edit/index' })
@@ -112,13 +122,13 @@ Page({
 
   onPreview() {
     if (!this.data.artistId) {
-      wx.showToast({ title: '请先登录并完成入驻', icon: 'none' })
+      wx.showToast({ title: '请先登录并完善个人信息', icon: 'none' })
       return
     }
     wx.navigateTo({ url: `/pages/artist/detail/index?id=${this.data.artistId}` })
   },
 
-  /** 游客 / 未入驻：先登录选角色，再由守卫分流到入驻页 */
+  /** 游客 / 未建档：先登录选角色，再引导完善个人信息 */
   onGoApply() {
     if (!getToken()) {
       wx.switchTab({ url: '/pages/mine/index' })

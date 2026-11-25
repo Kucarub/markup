@@ -9,11 +9,11 @@
     </view>
   </view>
 
-  <!-- 未登录 / 未入驻 / 非化妆师 -->
+  <!-- 未登录 / 未完善资料 / 非化妆师 -->
   <view wx:if="{{error}}" class="card schedule-empty">
     <view class="card__title">{{error}}</view>
     <view class="card__desc">档期用于客户判断你哪天可接单；未设置的日期默认不可接。</view>
-    <button class="btn btn--primary btn--block schedule-empty__action" bindtap="onGoApply">去登录 / 入驻</button>
+    <button class="btn btn--primary btn--block schedule-empty__action" bindtap="onGoApply">去登录 / 完善资料</button>
   </view>
 
   <view wx:elif="{{loading}}" class="card schedule-loading">档期加载中…</view>

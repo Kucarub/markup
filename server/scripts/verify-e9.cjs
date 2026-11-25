@@ -112,6 +112,11 @@ async function main() {
     `dev-openid-e9f-${stamp}`,
   )
 
+  // 选角色即自动建档，这里先清掉自动档案再按测试资料重建
+  await prisma.artist.deleteMany({
+    where: { userId: { in: [artA.userId, artB.userId, artC.userId, artD.userId, artE.userId, artF.userId] } },
+  })
+
   const artistA = await prisma.artist.create({
     data: {
       userId: artA.userId,
@@ -149,7 +154,7 @@ async function main() {
     data: {
       userId: artD.userId,
       name: `E9 异城化妆师-${stamp}`,
-      city: '杭州',
+      city: '昆山',
       district: '测试区',
       years: 8,
       styles: ['fresh'],
@@ -193,12 +198,6 @@ async function main() {
       { artistId: artistF.id, date: dayValue(dayB), state: 'available' },
     ],
   })
-
-  const phone = await request('POST', '/api/auth/phone', {
-    token: cust.token,
-    body: { code: '13800003333' },
-  })
-  check('客户绑定手机号成功', phone.status === 200 && phone.data.data.phoneBound === true)
 
   const profile = await request('GET', '/api/customer/me', { token: cust.token })
   const customerId = profile.data.data.id

@@ -120,14 +120,13 @@ function resolveServiceDate(value: string): Date {
   return date
 }
 
-/** 未绑定手机号不可发布需求（E7-01） */
-async function assertPhoneBound(userId: number): Promise<void> {
+/** 发布前校验账号状态（E7-01）；方案 A 起不再要求绑定手机号 */
+async function assertActiveUser(userId: number): Promise<void> {
   const user = await getPrisma().userAuth.findUnique({
     where: { id: userId },
-    select: { phoneCipher: true, status: true },
+    select: { status: true },
   })
   if (!user || user.status !== 'active') throw AppError.unauthorized('账号不存在或已禁用')
-  if (!user.phoneCipher) throw AppError.forbidden('请先绑定手机号后再发布需求')
 }
 
 /** 定向预约：目标化妆师必须存在且已通过审核（档期冲突预校验在 E9-03） */
@@ -244,7 +243,7 @@ demandRouter.post(
   asyncHandler(async (req, res) => {
     const input = demandBody.parse(req.body)
     const customer = await currentCustomer(req.auth!.uid)
-    await assertPhoneBound(req.auth!.uid)
+    await assertActiveUser(req.auth!.uid)
     const targetArtist = input.targetArtistId
       ? await assertTargetArtist(input.targetArtistId)
       : null
@@ -1037,6 +1036,7 @@ demandRouter.get(
     const artists = await prisma.artist.findMany({
       where: {
         status: 'approved',
+        profileCompleted: true,
         city: demand.city,
         id: { not: demand.targetArtistId },
         ...(stylePrefs.length

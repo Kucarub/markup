@@ -109,7 +109,7 @@ async function main() {
   const stamp = Date.now()
   const created = { userIds: [], artistIds: [] }
 
-  // ---------- 准备：审核通过的主账号 A ----------
+  // ---------- 准备：已完善个人信息的主账号 A ----------
   const accountA = await createArtistAccount(`dev-openid-e5a-${stamp}`)
   created.userIds.push(accountA.userId)
   const worksA = await uploadWorks(accountA.token, 6, 'e5-a')
@@ -120,8 +120,11 @@ async function main() {
   const artistIdA = (appliedA.data.data || {}).id
   created.artistIds.push(artistIdA)
   check(
-    '准备：化妆师 A 提交入驻（pending）',
-    appliedA.status === 200 && !!artistIdA && appliedA.data.data.status === 'pending',
+    '准备：化妆师 A 提交个人信息（提交即生效 approved）',
+    appliedA.status === 200 &&
+      !!artistIdA &&
+      appliedA.data.data.status === 'approved' &&
+      appliedA.data.data.profileCompleted === true,
     JSON.stringify(appliedA.data).slice(0, 200),
   )
 
@@ -134,32 +137,25 @@ async function main() {
   })
 
   console.log('\n[E5-04] 公开主页与可见性')
+  // 未完善个人信息（profileCompleted=false）时对外 404，本人仍可预览
+  await prisma.artist.update({ where: { id: artistIdA }, data: { profileCompleted: false } })
   const pendingPublic = await request('GET', `/api/artist/${artistIdA}`)
   check(
-    '待审核主页对外 404',
+    '未完善个人信息主页对外 404',
     pendingPublic.status === 404 && pendingPublic.data.code === 40400,
     JSON.stringify(pendingPublic.data),
   )
 
   const ownerPreview = await request('GET', `/api/artist/${artistIdA}`, { token: accountA.token })
   check(
-    '本人可预览待审核主页，档期为 14 天',
+    '本人可预览未完善信息的主页，档期为 14 天',
     ownerPreview.status === 200 &&
       ownerPreview.data.data.schedule.days.length === 14 &&
-      ownerPreview.data.data.status === 'pending',
+      ownerPreview.data.data.status === 'approved',
     JSON.stringify(ownerPreview.data).slice(0, 200),
   )
 
-  const adminLogin = await request('POST', '/api/admin/auth/login', {
-    body: { username: 'admin', password: 'Admin@123456' },
-  })
-  const adminToken = (adminLogin.data.data || {}).accessToken
-  check('后台账号可登录', adminLogin.status === 200 && !!adminToken)
-
-  const approved = await request('POST', `/api/admin/audits/artists/${artistIdA}/approve`, {
-    token: adminToken,
-  })
-  check('审核通过化妆师 A', approved.status === 200 && approved.data.data.status === 'approved')
+  await prisma.artist.update({ where: { id: artistIdA }, data: { profileCompleted: true } })
 
   const publicProfile = await request('GET', `/api/artist/${artistIdA}`)
   const profile = publicProfile.data.data || {}
@@ -236,14 +232,14 @@ async function main() {
     JSON.stringify(foreignCreate.data),
   )
 
-  const noArtistCreate = await request('POST', '/api/portfolio', {
+  const draftCreate = await request('POST', '/api/portfolio', {
     token: accountB.token,
     body: { fileId: worksB[0] },
   })
   check(
-    '未入驻账号新增作品 → 404/40400',
-    noArtistCreate.status === 404 && noArtistCreate.data.code === 40400,
-    JSON.stringify(noArtistCreate.data),
+    '未完善个人信息的化妆师仍可新增作品（功能不设限）',
+    draftCreate.status === 200 && draftCreate.data.data.status === 'pending',
+    JSON.stringify(draftCreate.data).slice(0, 200),
   )
 
   const otherLogin = await request('POST', '/api/auth/wx-login', {
@@ -362,6 +358,12 @@ async function main() {
   )
 
   console.log('\n[E5-06] 主页 UV 去重与后台查询')
+  const adminLogin = await request('POST', '/api/admin/auth/login', {
+    body: { username: 'admin', password: 'Admin@123456' },
+  })
+  const adminToken = (adminLogin.data.data || {}).accessToken
+  check('后台账号可登录', adminLogin.status === 200 && !!adminToken)
+
   const deviceId = `verify-e5-device-${stamp}`
   const visit1 = await request('POST', `/api/artist/${artistIdA}/visit`, { body: { deviceId } })
   const visit2 = await request('POST', `/api/artist/${artistIdA}/visit`, { body: { deviceId } })
@@ -424,6 +426,8 @@ async function main() {
   })
   const artistIdC = (appliedC.data.data || {}).id
   created.artistIds.push(artistIdC)
+  // 提交即生效后，手工把 C 置为未完善个人信息，验证对外不可见
+  await prisma.artist.update({ where: { id: artistIdC }, data: { profileCompleted: false } })
 
   const cProfile = await request('GET', `/api/artist/${artistIdC}`)
   const cWorks = await request('GET', `/api/artist/${artistIdC}/portfolios`)
@@ -432,7 +436,7 @@ async function main() {
   })
   const cQrcode = await request('GET', `/api/artist/${artistIdC}/qrcode`)
   check(
-    '待审核化妆师的公开主页 / 作品 / UV / 小程序码一律 404',
+    '未完善个人信息化妆师的公开主页 / 作品 / UV / 小程序码一律 404',
     cProfile.status === 404 &&
       cWorks.status === 404 &&
       cVisit.status === 404 &&

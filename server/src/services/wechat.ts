@@ -6,7 +6,6 @@ import { ErrorCode } from '../utils/response'
  * 微信开放能力封装（E3-01 / E3-02 / E11-02）。
  * - code2session：wx.login 的 code 换 openid
  * - getAccessToken：client_credential，内存缓存至过期前 5 分钟
- * - getPhoneNumber：getPhoneNumber 的 code 换手机号
  * - sendSubscribeMessage：服务通知订阅消息（E11-02）
  * 未配置 WX_APPID / WX_SECRET 时走 dev 兜底，保证本地全链路可联调。
  */
@@ -24,7 +23,6 @@ interface WechatErrorBody {
 
 const CODE2SESSION_URL = 'https://api.weixin.qq.com/sns/jscode2session'
 const ACCESS_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token'
-const PHONE_URL = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber'
 const WXACODE_URL = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit'
 const SUBSCRIBE_SEND_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send'
 const TIMEOUT_MS = 8000
@@ -118,27 +116,6 @@ async function getAccessToken(): Promise<string> {
     expiresAt: Date.now() + Math.max((body.expires_in || 7200) - 300, 60) * 1000,
   }
   return accessTokenCache.token
-}
-
-/** getPhoneNumber code -> 手机号；dev 模式下 code 为 11 位手机号时直接回显 */
-export async function getPhoneNumber(code: string): Promise<string> {
-  if (!hasWxConfig()) {
-    warnDevFallback('手机号解析')
-    return /^1\d{10}$/.test(code) ? code : '13800000000'
-  }
-
-  const token = await getAccessToken()
-  const body = await wxPost<{ phone_info?: { purePhoneNumber?: string; phoneNumber?: string } }>(
-    `${PHONE_URL}?access_token=${token}`,
-    { code },
-  )
-  if (body.errcode) {
-    // 40029 / 40163：code 无效或已使用
-    throw AppError.badRequest(`手机号验证失败：${body.errmsg || body.errcode}`)
-  }
-  const phone = body.phone_info?.purePhoneNumber || body.phone_info?.phoneNumber
-  if (!phone) throw AppError.badRequest('手机号验证失败：未返回手机号')
-  return phone
 }
 
 /**

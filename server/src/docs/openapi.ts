@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.9.2',
+    version: '0.9.3',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -31,6 +31,7 @@ export const openApiDocument = {
     { name: '基础' },
     { name: '登录态' },
     { name: '入驻' },
+    { name: '资料' },
     { name: '客户' },
     { name: '需求' },
     { name: '服务记录' },
@@ -78,14 +79,17 @@ export const openApiDocument = {
           userId: { type: 'integer' },
           role: { type: 'string', nullable: true, enum: ['artist', 'customer'] },
           needRoleSelect: { type: 'boolean', description: '未选角色时为 true，前端跳角色选择页' },
-          phoneBound: { type: 'boolean' },
-          phoneMasked: { type: 'string', example: '138****8000' },
           nickname: { type: 'string', nullable: true },
           avatarUrl: { type: 'string', nullable: true },
           profileId: { type: 'integer', nullable: true, description: 'artist.id / customer.id' },
           profileStatus: {
             type: 'string',
-            enum: ['none', 'pending', 'approved', 'rejected', 'disabled'],
+            description: 'none=未建档 / approved=正常 / disabled=停用；选角色即建档，不再有 pending、rejected',
+            enum: ['none', 'approved', 'disabled'],
+          },
+          profileCompleted: {
+            type: 'boolean',
+            description: '化妆师是否已完善个人信息（未完善仍可正常使用全部功能，仅不进入搜索与公开主页）',
           },
           rejectReason: { type: 'string', nullable: true },
         },
@@ -148,35 +152,44 @@ export const openApiDocument = {
           styles: { type: 'array', items: { type: 'string' } },
           intro: { type: 'string', nullable: true },
           idCardMasked: { type: 'string', example: '310***********1234' },
-          status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'disabled'] },
+          status: { type: 'string', enum: ['approved', 'disabled'], description: '选角色即建档，pending / rejected 仅历史数据' },
+          profileCompleted: { type: 'boolean', description: '是否已完善个人信息' },
+          credit: {
+            type: 'object',
+            properties: {
+              score: { type: 'integer', example: 0, description: '信用分（初始 0 分）' },
+              level: { type: 'string', example: '待提升' },
+            },
+          },
           rejectReason: { type: 'string', nullable: true },
           auditAt: { type: 'string', format: 'date-time', nullable: true },
           submittedAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           works: { type: 'array', items: { $ref: '#/components/schemas/ArtistWork' } },
-          keyChanged: { type: 'boolean', description: '仅 PUT 返回：关键字段变更并回退待审核' },
+          keyChanged: { type: 'boolean', description: '仅 PUT 返回：关键字段是否有变更（不再回退审核状态）' },
         },
       },
       ArtistApplyRequest: {
         type: 'object',
-        required: ['name', 'city', 'years', 'styles', 'idCard', 'works', 'agreed'],
+        description: '仅 name、city 必填；其余选填，可先完善基础资料后再补充作品与实名信息',
+        required: ['name', 'city', 'agreed'],
         properties: {
           name: { type: 'string', example: '林小满' },
           city: { type: 'string', example: '上海' },
           district: { type: 'string', nullable: true },
-          years: { type: 'integer', example: 5 },
+          years: { type: 'integer', example: 5, description: '选填，0–60' },
           styles: {
             type: 'array',
-            minItems: 1,
             maxItems: 3,
+            description: '选填，最多 3 个',
             items: { type: 'string', example: 'fresh' },
           },
           intro: { type: 'string', maxLength: 500 },
-          idCard: { type: 'string', description: '18 位身份证号；PUT 时可不传表示不修改' },
+          idCard: { type: 'string', description: '选填，18 位身份证号；PUT 时可不传表示不修改' },
           works: {
             type: 'array',
-            minItems: 1,
-            description: '≥6 张图片或 ≥1 个视频，fileId 来自 /api/upload/sign',
+            maxItems: 9,
+            description: '选填，最多 9 个；fileId 来自 /api/upload/sign',
             items: {
               type: 'object',
               required: ['fileId'],
@@ -198,8 +211,6 @@ export const openApiDocument = {
           city: { type: 'string', nullable: true },
           district: { type: 'string', nullable: true },
           status: { type: 'string', enum: ['active', 'disabled'] },
-          phoneBound: { type: 'boolean' },
-          phoneMasked: { type: 'string', nullable: true, example: '139****2345' },
         },
       },
       Demand: {
@@ -369,9 +380,9 @@ export const openApiDocument = {
         properties: {
           userId: { type: 'integer' },
           role: { type: 'string', enum: ['artist', 'customer'] },
-          score: { type: 'integer', example: 60 },
-          level: { type: 'string', example: '一般' },
-          initial: { type: 'boolean', description: '尚未产生变动时返回初始分' },
+          score: { type: 'integer', example: 0, description: '初始 0 分，完成 +2 / 取消 -5，0–100 夹紧' },
+          level: { type: 'string', example: '待提升', description: '≥80 优秀 / ≥60 良好 / ≥30 一般 / else 待提升' },
+          initial: { type: 'boolean', description: '尚未建档时返回初始分' },
         },
       },
       SubscribeTemplate: {
@@ -589,7 +600,7 @@ export const openApiDocument = {
     '/api/auth/me': {
       get: {
         tags: ['登录态'],
-        summary: '当前登录态（数据库资料 + 入驻状态）',
+        summary: '当前登录态（数据库资料 + 资料完善状态）',
         security: bearer,
         responses: {
           200: {
@@ -627,41 +638,10 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/auth/phone': {
-      post: {
-        tags: ['登录态'],
-        summary: '手机号快速验证（getPhoneNumber code 换手机号，加密落库）',
-        security: bearer,
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['code'],
-                properties: { code: { type: 'string', description: 'getPhoneNumber 返回的 code' } },
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: '绑定结果',
-            content: {
-              'application/json': {
-                example: { phoneBound: true, phoneMasked: '138****8000' },
-              },
-            },
-          },
-          400: errorResponse,
-          401: errorResponse,
-        },
-      },
-    },
     '/api/artist/apply': {
       post: {
-        tags: ['入驻'],
-        summary: '提交化妆师入驻（作品需先完成上传，初始状态 pending）',
+        tags: ['资料'],
+        summary: '提交个人信息（提交即生效，同时建档信用分，初始 0 分）',
         security: bearer,
         requestBody: {
           required: true,
@@ -671,7 +651,7 @@ export const openApiDocument = {
         },
         responses: {
           200: {
-            description: '入驻资料详情',
+            description: '个人信息详情',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ArtistDetail' } },
             },
@@ -685,12 +665,12 @@ export const openApiDocument = {
     },
     '/api/artist/me': {
       get: {
-        tags: ['入驻'],
-        summary: '我的入驻资料与审核状态（未提交返回 data=null）',
+        tags: ['资料'],
+        summary: '我的个人信息与信用分（未建档返回 data=null）',
         security: bearer,
         responses: {
           200: {
-            description: '入驻资料详情',
+            description: '个人信息详情',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ArtistDetail' } },
             },
@@ -700,8 +680,8 @@ export const openApiDocument = {
         },
       },
       put: {
-        tags: ['入驻'],
-        summary: '修改入驻资料（关键字段变更回退 pending，仅改简介不重审）',
+        tags: ['资料'],
+        summary: '修改个人信息（提交即生效，不回退状态、不触发审核）',
         security: bearer,
         requestBody: {
           required: true,
@@ -711,7 +691,7 @@ export const openApiDocument = {
         },
         responses: {
           200: {
-            description: '入驻资料详情 + keyChanged',
+            description: '个人信息详情 + keyChanged',
             content: {
               'application/json': { schema: { $ref: '#/components/schemas/ArtistDetail' } },
             },
@@ -770,7 +750,7 @@ export const openApiDocument = {
     '/api/demands': {
       post: {
         tags: ['需求'],
-        summary: '发布需求（需已绑定手机号；5 分钟同内容幂等，每日上限 5 条）',
+        summary: '发布需求（5 分钟同内容幂等，每日上限 5 条）',
         security: bearer,
         requestBody: {
           required: true,
@@ -890,7 +870,7 @@ export const openApiDocument = {
     '/api/demands/{id}/respond': {
       post: {
         tags: ['需求'],
-        summary: '响应需求（仅已通过审核的化妆师；同人同需求只能一条）',
+        summary: '响应需求（化妆师角色即可响应，停用账号除外；同人同需求只能一条）',
         security: bearer,
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
         requestBody: {
@@ -1108,7 +1088,7 @@ export const openApiDocument = {
     '/api/search/artists': {
       get: {
         tags: ['搜索'],
-        summary: '找化妆师（城市/区域/风格/档期日期/半径/年限筛选，仅返回已通过审核者）',
+        summary: '找化妆师（城市/区域/风格/档期日期/半径/年限筛选，仅返回已完善个人信息者）',
         parameters: [
           { name: 'city', in: 'query', schema: { type: 'string' }, example: '上海' },
           { name: 'district', in: 'query', schema: { type: 'string' } },
@@ -1947,7 +1927,7 @@ export const openApiDocument = {
     '/api/artist/{id}': {
       get: {
         tags: ['主页'],
-        summary: '化妆师公开主页（未通过审核对外 404，本人 / 管理员可预览）',
+        summary: '化妆师公开主页（未完善个人信息对外 404，本人 / 管理员可预览）',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
         responses: {
           200: {
