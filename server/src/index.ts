@@ -3,6 +3,7 @@ import { env } from './config/env'
 import { getPrisma } from './lib/prisma'
 import { redis } from './lib/redis'
 import { ensureStorageDir } from './services/storage'
+import { startStatsScheduler } from './services/statsScheduler'
 
 ensureStorageDir()
 
@@ -18,6 +19,8 @@ async function warmup() {
   try {
     await getPrisma().$connect()
     console.info('[db] prisma connected')
+    // 每日 01:00 聚合前一日指标（E13-02）；重复调用无副作用
+    startStatsScheduler()
   } catch (error) {
     console.warn(`[db] 连接跳过（E2-01 生成 Client 后生效）：${(error as Error).message}`)
   }

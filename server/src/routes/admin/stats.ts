@@ -1,8 +1,10 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import type { Prisma } from '@prisma/client'
+import type { Prisma, StatsDaily } from '@prisma/client'
 import { getPrisma } from '../../lib/prisma'
+import { ADMIN_ALL, ADMIN_MANAGE, requireAdminRole } from '../../middlewares/adminRole'
 import { requireAuth } from '../../middlewares/auth'
+import { aggregateDay, aggregateRange, STATS_MAX_RANGE_DAYS, toDailyDto } from '../../services/stats'
 import { asyncHandler } from '../../utils/asyncHandler'
 import { AppError } from '../../utils/errors'
 
@@ -151,5 +153,147 @@ adminStatsRouter.get(
         uv: item._count._all,
       })),
     })
+  }),
+)
+
+const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式需为 YYYY-MM-DD')
+
+const rangeQuery = z.object({
+  from: daySchema.optional(),
+  to: daySchema.optional(),
+})
+
+function round4(value: number): number {
+  return Math.round(value * 10000) / 10000
+}
+
+function rangeDays(from: Date, to: Date): number {
+  return Math.round((to.getTime() - from.getTime()) / 86400000) + 1
+}
+
+/**
+ * 看板数据（E13-03）：6 个核心指标 + 按日趋势 + 运营待办计数。
+ * 查询区间含当天时先实时聚合今天，避免 01:00 前看板全为 0。
+ */
+adminStatsRouter.get(
+  '/admin/stats/dashboard',
+  requireAuth('admin'),
+  requireAdminRole(...ADMIN_ALL),
+  asyncHandler(async (req, res) => {
+    const query = rangeQuery.parse(req.query)
+    const today = resolveDay()
+    const to = query.to ? resolveDay(query.to) : today
+    const from = query.from ? resolveDay(query.from) : addDays(to, -13)
+    if (from.getTime() > to.getTime()) throw AppError.badRequest('结束日期需晚于开始日期')
+    const days = rangeDays(from, to)
+    if (days > STATS_MAX_RANGE_DAYS) {
+      throw AppError.badRequest(`时间范围最多 ${STATS_MAX_RANGE_DAYS} 天`)
+    }
+
+    const prisma = getPrisma()
+    if (to.getTime() >= today.getTime()) await aggregateDay(today)
+
+    const rows = await prisma.statsDaily.findMany({ where: { date: { gte: from, lte: to } } })
+    const byDate = new Map(rows.map((row) => [row.date.toISOString().slice(0, 10), row]))
+
+    // 补齐区间内缺失日期，前端无需处理空数据
+    const series: ReturnType<typeof toDailyDto>[] = []
+    for (let cursor = from; cursor.getTime() <= to.getTime(); cursor = addDays(cursor, 1)) {
+      const key = cursor.toISOString().slice(0, 10)
+      const row = byDate.get(key)
+      series.push(
+        row
+          ? toDailyDto(row)
+          : {
+              date: key,
+              registrations: 0,
+              artistPageUv: 0,
+              demands: 0,
+              responses: 0,
+              responseRate: 0,
+              serviceOrders: 0,
+              completionRate: 0,
+              retentionD7: 0,
+            },
+      )
+    }
+
+    const totalOf = (key: 'registrations' | 'artistPageUv' | 'demands' | 'responses' | 'serviceOrders') =>
+      series.reduce((acc, item) => acc + item[key], 0)
+    const demands = totalOf('demands')
+    const serviceOrders = totalOf('serviceOrders')
+    // 比率按分母加权，避免直接平均导致口径失真
+    const responded = series.reduce((acc, item) => acc + item.responseRate * item.demands, 0)
+    const finished = series.reduce((acc, item) => acc + item.completionRate * item.serviceOrders, 0)
+    const retentionDays = series.filter((item) => item.retentionD7 > 0)
+
+    const [pendingArtists, disabledUsers, pendingOrders, finishedOrders] = await Promise.all([
+      prisma.artist.count({ where: { status: 'pending' } }),
+      prisma.userAuth.count({ where: { status: 'disabled' } }),
+      prisma.serviceOrder.count({ where: { status: 'pending' } }),
+      prisma.serviceOrder.count({ where: { status: 'finished' } }),
+    ])
+
+    res.ok({
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+      days: series.length,
+      totals: {
+        registrations: totalOf('registrations'),
+        artistPageUv: totalOf('artistPageUv'),
+        demands,
+        responses: totalOf('responses'),
+        responseRate: demands > 0 ? round4(responded / demands) : 0,
+        serviceOrders,
+        completionRate: serviceOrders > 0 ? round4(finished / serviceOrders) : 0,
+        retentionD7:
+          retentionDays.length > 0
+            ? round4(
+                retentionDays.reduce((acc, item) => acc + item.retentionD7, 0) / retentionDays.length,
+              )
+            : 0,
+      },
+      series,
+      counts: { pendingArtists, disabledUsers, pendingOrders, finishedOrders },
+    })
+  }),
+)
+
+const aggregateBody = z.object({
+  date: daySchema.optional(),
+  from: daySchema.optional(),
+  to: daySchema.optional(),
+})
+
+/** 手动重跑聚合（E13-02）：支持单日或区间，幂等；供运维补数与冒烟验证 */
+adminStatsRouter.post(
+  '/admin/stats/aggregate',
+  requireAuth('admin'),
+  requireAdminRole(...ADMIN_MANAGE),
+  asyncHandler(async (req, res) => {
+    const input = aggregateBody.parse(req.body ?? {})
+    if (input.date && (input.from || input.to)) {
+      throw AppError.badRequest('date 与 from/to 不能同时传')
+    }
+
+    const today = resolveDay()
+    let rows: StatsDaily[]
+    if (input.from || input.to) {
+      const from = input.from ? resolveDay(input.from) : today
+      const to = input.to ? resolveDay(input.to) : from
+      if (from.getTime() > to.getTime()) throw AppError.badRequest('结束日期需晚于开始日期')
+      const days = rangeDays(from, to)
+      if (days > STATS_MAX_RANGE_DAYS) {
+        throw AppError.badRequest(`时间范围最多 ${STATS_MAX_RANGE_DAYS} 天`)
+      }
+      if (to.getTime() > today.getTime()) throw AppError.badRequest('不能聚合未来日期')
+      rows = await aggregateRange(from, to)
+    } else {
+      const day = input.date ? resolveDay(input.date) : today
+      if (day.getTime() > today.getTime()) throw AppError.badRequest('不能聚合未来日期')
+      rows = [await aggregateDay(day)]
+    }
+
+    res.ok({ days: rows.length, rows: rows.map(toDailyDto) })
   }),
 )

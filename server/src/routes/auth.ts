@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { ensureCustomer } from '../services/customer'
+import { recordEvent } from '../services/analytics'
 import { code2session, getPhoneNumber } from '../services/wechat'
 import { asyncHandler } from '../utils/asyncHandler'
 import { decryptAndMask, encryptSensitive, maskPhone } from '../utils/crypto'
@@ -97,16 +98,30 @@ authRouter.post(
     const { code, nickname, avatarUrl } = wxLoginSchema.parse(req.body)
     const { openid, unionid } = await code2session(code)
 
-    const user = await getPrisma().userAuth.upsert({
-      where: { openid },
-      update: {
-        lastLoginAt: new Date(),
-        ...(unionid ? { unionid } : {}),
-        ...(nickname ? { nickname } : {}),
-        ...(avatarUrl ? { avatarUrl } : {}),
-      },
-      create: { openid, unionid, nickname, avatarUrl, lastLoginAt: new Date() },
-    })
+    const prisma = getPrisma()
+    const existing = await prisma.userAuth.findUnique({ where: { openid } })
+    const user = existing
+      ? await prisma.userAuth.update({
+          where: { openid },
+          data: {
+            lastLoginAt: new Date(),
+            ...(unionid ? { unionid } : {}),
+            ...(nickname ? { nickname } : {}),
+            ...(avatarUrl ? { avatarUrl } : {}),
+          },
+        })
+      : await prisma.userAuth.create({
+          data: { openid, unionid, nickname, avatarUrl, lastLoginAt: new Date() },
+        })
+
+    // 埋点（E13-01）：仅首次建档记注册；失败不影响登录
+    if (!existing) {
+      void recordEvent({
+        event: 'user_register',
+        userId: user.id,
+        props: { userId: user.id, channel: 'wechat' },
+      })
+    }
 
     res.ok(await issueSession(user.id))
   }),

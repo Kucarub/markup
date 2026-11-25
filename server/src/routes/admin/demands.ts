@@ -4,6 +4,7 @@ import type { Demand, Prisma } from '@prisma/client'
 import { getPrisma } from '../../lib/prisma'
 import { ADMIN_ALL, ADMIN_MANAGE, requireAdminRole } from '../../middlewares/adminRole'
 import { requireAuth } from '../../middlewares/auth'
+import { recordEvent } from '../../services/analytics'
 import { notifyUser, orderNotifyContent } from '../../services/notification'
 import { addDays, dayOnly, formatDay, parseDay } from '../../services/schedule'
 import { asyncHandler } from '../../utils/asyncHandler'
@@ -223,6 +224,19 @@ adminDemandRouter.post(
       include: listInclude,
     })
 
+    // 埋点（E13-01）：运营代发布同样计入 demand_publish，props.source=ops 可区分
+    void recordEvent({
+      event: 'demand_publish',
+      userId: req.auth!.uid,
+      role: 'admin',
+      props: {
+        demandId: created.id,
+        city: created.city,
+        serviceType: created.serviceType,
+        source: 'ops',
+      },
+    })
+
     if (targetArtist) {
       await notifyUser({
         userId: targetArtist.userId,
@@ -343,6 +357,14 @@ adminDemandRouter.post(
         },
       })
       const responseCount = await prisma.demandResponse.count({ where: { demandId: id } })
+
+      // 埋点（E13-01）：运营代响应计入 demand_response，props.source=ops 可区分
+      void recordEvent({
+        event: 'demand_response',
+        userId: req.auth!.uid,
+        role: 'admin',
+        props: { demandId: id, responseId: created.id, artistId: artist.id, source: 'ops' },
+      })
 
       await notifyUser({
         userId: demand.customer.userId,

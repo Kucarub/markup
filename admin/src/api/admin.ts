@@ -144,7 +144,44 @@ export interface AuditLogItem {
   createdAt: string
 }
 
+/** 看板单日指标（E13-03）：比率均为 0–1 */
+export interface DashboardDay {
+  date: string
+  registrations: number
+  artistPageUv: number
+  demands: number
+  responses: number
+  responseRate: number
+  serviceOrders: number
+  completionRate: number
+  retentionD7: number
+}
+
+export interface DashboardStats {
+  from: string
+  to: string
+  days: number
+  totals: Omit<DashboardDay, 'date'>
+  series: DashboardDay[]
+  counts: {
+    pendingArtists: number
+    disabledUsers: number
+    pendingOrders: number
+    finishedOrders: number
+  }
+}
+
 type Query = Record<string, unknown>
+
+/** 数据看板（E13-03）：区间默认最近 14 天，含当天时服务端实时聚合 */
+export function fetchDashboardStats(params: { from?: string; to?: string }) {
+  return http.get<DashboardStats>('/api/admin/stats/dashboard', params)
+}
+
+/** 手动重跑聚合（E13-02）：单日或区间，幂等 */
+export function runStatsAggregate(payload: { date?: string; from?: string; to?: string }) {
+  return http.post<{ days: number; rows: DashboardDay[] }>('/api/admin/stats/aggregate', payload)
+}
 
 /** 化妆师审核列表（E12-02） */
 export function fetchArtistAudits(params: Query) {

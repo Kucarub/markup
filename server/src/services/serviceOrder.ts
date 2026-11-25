@@ -1,5 +1,6 @@
 import type { Prisma, ServiceOrder } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
+import { recordEvent } from './analytics'
 import { adjustCredit, CREDIT_FINISH_DELTA } from './credit'
 import { notifyUser, orderNotifyContent } from './notification'
 import { formatDay } from './schedule'
@@ -195,6 +196,11 @@ export async function settleExpiredFinishes(): Promise<number> {
     })
     if (done) {
       settled += 1
+      // 埋点（E13-01）：自动完成也计入 order_finish，便于统计完成量
+      void recordEvent({
+        event: 'order_finish',
+        props: { orderId: order.id, serviceType: order.serviceType, auto: true },
+      })
       // 自动完成通知（E11-03）：双方各收一条站内消息
       const content = orderNotifyContent(order)
       for (const userId of [order.customer.userId, order.artist.userId]) {

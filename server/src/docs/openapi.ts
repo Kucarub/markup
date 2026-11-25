@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.9.1',
+    version: '0.9.2',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -1227,6 +1227,151 @@ export const openApiDocument = {
             },
           },
           400: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/stats/dashboard': {
+      get: {
+        tags: ['后台'],
+        summary: '数据看板（E13-03）：6 个核心指标 + 按日趋势 + 运营待办计数',
+        description:
+          '指标口径与 PRD 第 1 章一致；比率均为 0–1 的小数（responseRate / completionRate / retentionD7）。' +
+          '区间含当天时先实时聚合今天；缺失日期补 0；单次最多 90 天。',
+        security: bearer,
+        parameters: [
+          {
+            name: 'from',
+            in: 'query',
+            schema: { type: 'string', example: '2026-11-12' },
+            description: '开始日期 YYYY-MM-DD，默认 to - 13 天',
+          },
+          {
+            name: 'to',
+            in: 'query',
+            schema: { type: 'string', example: '2026-11-25' },
+            description: '结束日期 YYYY-MM-DD，默认今天',
+          },
+        ],
+        responses: {
+          200: {
+            description: '看板数据',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    from: { type: 'string' },
+                    to: { type: 'string' },
+                    days: { type: 'integer' },
+                    totals: {
+                      type: 'object',
+                      description: '区间汇总；比率按分母加权',
+                      properties: {
+                        registrations: { type: 'integer' },
+                        artistPageUv: { type: 'integer' },
+                        demands: { type: 'integer' },
+                        responses: { type: 'integer' },
+                        responseRate: { type: 'number', example: 0.6667 },
+                        serviceOrders: { type: 'integer' },
+                        completionRate: { type: 'number', example: 0.5 },
+                        retentionD7: { type: 'number', example: 0.25 },
+                      },
+                    },
+                    series: {
+                      type: 'array',
+                      description: '逐日指标，日期升序，缺失日期补 0',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          date: { type: 'string', example: '2026-11-25' },
+                          registrations: { type: 'integer' },
+                          artistPageUv: { type: 'integer' },
+                          demands: { type: 'integer' },
+                          responses: { type: 'integer' },
+                          responseRate: { type: 'number' },
+                          serviceOrders: { type: 'integer' },
+                          completionRate: { type: 'number' },
+                          retentionD7: { type: 'number' },
+                        },
+                      },
+                    },
+                    counts: {
+                      type: 'object',
+                      description: '运营待办计数（全量，不受时间区间影响）',
+                      properties: {
+                        pendingArtists: { type: 'integer' },
+                        disabledUsers: { type: 'integer' },
+                        pendingOrders: { type: 'integer' },
+                        finishedOrders: { type: 'integer' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/stats/aggregate': {
+      post: {
+        tags: ['后台'],
+        summary: '手动重跑每日聚合（E13-02）：单日或区间，幂等',
+        description:
+          '`date` 与 `from/to` 互斥；区间最多 90 天；不可聚合未来日期。重跑同一天结果一致。仅 super / admin 可调用。',
+        security: bearer,
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', example: '2026-11-24' },
+                  from: { type: 'string', example: '2026-11-18' },
+                  to: { type: 'string', example: '2026-11-24' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: '聚合结果',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    days: { type: 'integer' },
+                    rows: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          date: { type: 'string' },
+                          registrations: { type: 'integer' },
+                          artistPageUv: { type: 'integer' },
+                          demands: { type: 'integer' },
+                          responses: { type: 'integer' },
+                          responseRate: { type: 'number' },
+                          serviceOrders: { type: 'integer' },
+                          completionRate: { type: 'number' },
+                          retentionD7: { type: 'number' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: errorResponse,
+          401: errorResponse,
           403: errorResponse,
         },
       },

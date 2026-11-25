@@ -422,15 +422,25 @@ model EventLog {
   @@map("event_log")
 }
 
-/// 每日汇总指标
+/// 每日汇总指标（E13-02）：口径见 PRD 第 1 章，聚合任务幂等覆盖
 model StatsDaily {
   id             Int      @id @default(autoincrement())
   date           DateTime @unique @db.Date
+  /// 当日新建账号数
   registrations  Int      @default(0)
+  /// 当日主页访问 UV（同设备同日同化妆师去重）
   artistPageUv   Int      @default(0) @map("artist_page_uv")
-  invitations    Int      @default(0)
-  matches        Int      @default(0)
-  matchRate      Float    @default(0) @map("match_rate")
+  /// 当日发布需求数（含运营代发布）
+  demands        Int      @default(0)
+  /// 当日新增响应数
+  responses      Int      @default(0)
+  /// 当日需求中至少收到 1 条响应的比例（0-1，保留 4 位）
+  responseRate   Float    @default(0) @map("response_rate")
+  /// 当日新建服务记录数
+  serviceOrders  Int      @default(0) @map("service_orders")
+  /// 当日服务记录中已完成的比例（0-1，保留 4 位）
+  completionRate Float    @default(0) @map("completion_rate")
+  /// 注册后第 7 日仍活跃的占比（0-1，保留 4 位）
   retentionD7    Float    @default(0) @map("retention_d7")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

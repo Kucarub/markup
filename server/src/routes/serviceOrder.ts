@@ -4,6 +4,7 @@ import type { ServiceOrder } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
 import { resolveActor, type Actor } from '../services/actor'
+import { recordEvent } from '../services/analytics'
 import { adjustCredit, CREDIT_CANCEL_DELTA } from '../services/credit'
 import { notifyUser, orderNotifyContent } from '../services/notification'
 import { releaseDay } from '../services/schedule'
@@ -209,6 +210,16 @@ serviceOrderRouter.post(
           throw AppError.conflict('服务记录状态已变化，请刷新后重试')
         }
         await finishOrderInTx(tx, order)
+      })
+    }
+
+    // 埋点（E13-01）：双方确认完成时记一条 order_finish
+    if (!firstRequest) {
+      void recordEvent({
+        event: 'order_finish',
+        userId: req.auth!.uid,
+        role: actor.role,
+        props: { orderId: id, serviceType: order.serviceType },
       })
     }
 

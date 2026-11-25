@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Artist, Demand, Prisma } from '@prisma/client'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { recordEvent } from '../services/analytics'
 import { currentCustomer } from '../services/customer'
 import { notifyUser, orderNotifyContent } from '../services/notification'
 import { addDays, claimDay, dayOnly, formatDay, parseDay } from '../services/schedule'
@@ -324,6 +325,19 @@ demandRouter.post(
       include: { _count: { select: { responses: true } } },
     })
 
+    // 埋点（E13-01）：需求发布成功后异步落库，失败不影响发布
+    void recordEvent({
+      event: 'demand_publish',
+      userId: req.auth!.uid,
+      role: 'customer',
+      props: {
+        demandId: created.id,
+        city: created.city,
+        serviceType: created.serviceType,
+        source: created.source,
+      },
+    })
+
     // 定向预约到达提醒（E11-02）：通知被预约的化妆师，站内消息同步落库
     if (targetArtist) {
       await notifyUser({
@@ -632,6 +646,14 @@ demandRouter.post(
         data: { demandId: id, artistId: artist.id, note: input.note || null },
       })
       const responseCount = await prisma.demandResponse.count({ where: { demandId: id } })
+
+      // 埋点（E13-01）：响应成功后异步落库
+      void recordEvent({
+        event: 'demand_response',
+        userId: req.auth!.uid,
+        role: 'artist',
+        props: { demandId: id, responseId: created.id, artistId: artist.id },
+      })
 
       // 响应到达提醒（E11-02）：通知需求所属客户
       await notifyUser({

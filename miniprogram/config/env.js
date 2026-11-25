@@ -18,12 +18,12 @@ const ENVS = {
   },
   trial: {
     name: 'trial',
-    baseURL: 'https://staging-api.example.com',
+    baseURL: 'http://106.15.8.132',
     debug: true,
   },
   release: {
     name: 'prod',
-    baseURL: 'https://api.example.com',
+    baseURL: 'http://106.15.8.132',
     debug: false,
   },
 }

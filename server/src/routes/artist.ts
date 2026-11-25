@@ -3,6 +3,7 @@ import { Router, type Request } from 'express'
 import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { recordEvent } from '../services/analytics'
 import { getCredit } from '../services/credit'
 import { buildSignedPath } from '../services/storage'
 import { getUnlimitedQrCode } from '../services/wechat'
@@ -473,6 +474,8 @@ artistRouter.post(
         update: { artistPageUv: { increment: 1 } },
         create: { date: visitDate, artistPageUv: 1 },
       })
+      // 埋点（E13-01）：去重成功后记一条主页访问
+      void recordEvent({ event: 'artist_page_view', props: { artistId: id } })
     }
     const stats = await prisma.statsDaily.findUnique({ where: { date: visitDate } })
     res.ok({ deduped, uv: stats?.artistPageUv ?? 0 })
