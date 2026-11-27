@@ -91,6 +91,8 @@ model ArtistPortfolio {
   sort         Int      @default(0)
   /// pending | online | offline | rejected
   status       String   @default("pending") @db.VarChar(16)
+  /// 内容安全检测记录（E14-01）：{ taskId, submittedAt, result: pending|pass|reject|skipped|timeout, detail }
+  contentCheck Json?    @map("content_check")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -454,7 +456,7 @@ model StatsDaily {
 model FileObject {
   id        Int      @id @default(autoincrement())
   userId    Int?     @map("user_id")
-  /// portfolio | avatar | license | id_card | report
+  /// portfolio | watermark | avatar | license | id_card | report
   scene     String   @db.VarChar(16)
   bucket    String   @db.VarChar(64)
   objectKey String   @unique @map("object_key") @db.VarChar(180)

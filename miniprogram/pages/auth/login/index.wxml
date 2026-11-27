@@ -4,13 +4,8 @@
 
   <view class="welcome__content">
     <view class="auth-brand">
-      <view class="auth-logo">
-        <view class="auth-logo__petal auth-logo__petal--left"></view>
-        <view class="auth-logo__petal auth-logo__petal--mid"></view>
-        <view class="auth-logo__petal auth-logo__petal--right"></view>
-        <image class="auth-logo__mark" src="/assets/icons/photo.svg" mode="aspectFit" />
-      </view>
-      <view class="auth-wordmark">妆集</view>
+      <image class="auth-logo" src="/assets/logo.png" mode="aspectFit" />
+      <view class="auth-wordmark">兰妆有约</view>
       <view class="auth-tagline">让每一次练习，都被看见</view>
     </view>
 

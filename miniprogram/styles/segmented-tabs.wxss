@@ -1,0 +1,81 @@
+/**
+ * 全站统一的分段式状态 Tab（原型 request-status-tabs）。
+ * 适用于「我的需求 / 服务记录 / 消息通知 / 接单中心」等状态筛选页，
+ * 列数由 flex:1 自适应，4 项与 5 项布局一致。
+ */
+.status-tabs-wrap {
+  margin-top: 30rpx;
+  padding: 0 var(--space-md);
+}
+
+.status-tabs {
+  display: flex;
+  gap: 6rpx;
+  height: 86rpx;
+  padding: 8rpx;
+  box-sizing: border-box;
+  border: 2rpx solid #ebe6e7;
+  border-radius: 22rpx;
+  background: #f3f0f1;
+}
+
+.status-tabs__item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  border-radius: 16rpx;
+  color: #777174;
+  font-size: 20rpx;
+  white-space: nowrap;
+  transition: background 160ms, color 160ms, box-shadow 160ms;
+}
+
+.status-tabs__item--active {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  font-weight: 650;
+  box-shadow: 0 4rpx 14rpx rgba(65, 45, 51, 0.09), inset 0 0 0 2rpx rgba(180, 86, 110, 0.08);
+}
+
+/* 状态计数徽标：激活时反色 */
+.status-tabs__count {
+  min-width: 28rpx;
+  height: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: #e5dfe1;
+  color: var(--color-text-secondary);
+  font-size: 14rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-tabs__count--active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+/* Tab 上下文行：当前筛选项 + 总条数 */
+.status-tabs__context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22rpx 4rpx 18rpx;
+}
+
+.status-tabs__context-label {
+  color: var(--color-text-regular);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.status-tabs__context-total {
+  color: var(--color-text-placeholder);
+  font-size: 18rpx;
+}

@@ -79,6 +79,8 @@ Page({
     return request
       .get(`/api/artist/${this.data.artistId}`, null, { showError: false })
       .then((profile) => {
+        // 头像可能存相对路径（/api/avatars/<fileId>），统一拼域名后再展示与分享
+        if (profile.avatarUrl) profile.avatarUrl = absoluteUrl(profile.avatarUrl)
         const days = (profile.schedule && profile.schedule.days) || []
         const latest = (profile.reviews && profile.reviews.latest) || []
         this.setData({
@@ -116,7 +118,8 @@ Page({
           id: item.id,
           type: item.type,
           isVideo: item.type === 'video',
-          cover: absoluteUrl(item.path),
+          // 对外展示优先水印版本（E14-02）
+          cover: absoluteUrl(item.displayPath || item.path),
           title: item.title,
         }))
         const works = page === 1 ? mapped : this.data.works.concat(mapped)
@@ -211,6 +214,14 @@ Page({
       .filter(Boolean)
       .join('&')
     wx.navigateTo({ url: `/pkg-customer/pages/demand/create/index?${query}` })
+  },
+
+  /** 举报入口（E14-03）：携带对象信息进入举报页 */
+  onReport() {
+    const name = this.data.profile && this.data.profile.name ? this.data.profile.name : '该化妆师'
+    wx.navigateTo({
+      url: `/pages/report/index?targetType=artist&targetId=${this.data.artistId}&artistId=${this.data.artistId}&targetLabel=${encodeURIComponent(`化妆师「${name}」`)}`,
+    })
   },
 
   onShowQrcode() {

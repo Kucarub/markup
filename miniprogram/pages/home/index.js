@@ -1,30 +1,16 @@
 const request = require('../../utils/request')
-const { profile, stats, schedule, demands } = require('../../data/mock')
+const { SERVICE_TYPE_LABELS, toDemandCard, monthDay, budgetText } = require('../../utils/demand-card')
+const { computeCompleteness } = require('../../utils/profile')
 const { getToken, getRole } = require('../../utils/auth')
 const { entryGuard, fetchProfile } = require('../../utils/guard')
 const { styleLabels } = require('../../utils/dict')
 const { absoluteUrl } = require('../../utils/upload')
 
-const SERVICE_TYPES = {
-  bridal: '婚礼跟妆',
-  daily: '日常妆造',
-  event: '商业活动',
-  photo: '写真拍摄',
-}
+const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
+const DEFAULT_AVATAR = '/assets/logo.png'
 
-function monthDay(value) {
-  const parts = String(value || '').split('-')
-  if (parts.length !== 3) return value || ''
-  return `${Number(parts[1])}月${Number(parts[2])}日`
-}
-
-function budgetText(min, max) {
-  if (min === undefined || min === null) return ''
-  return min === max ? `${min}` : `${min}–${max}`
-}
-
-/** 需求 DTO → 客户工作台卡片 */
-function toDemandCard(demand) {
+/** 接口 DTO → 客户工作台需求行 */
+function toDemandRow(demand) {
   let tone = 'warning'
   if (demand.status === 'closed') tone = 'neutral'
   else if (demand.status === 'selected') tone = 'success'
@@ -32,7 +18,7 @@ function toDemandCard(demand) {
 
   return {
     id: demand.id,
-    typeLabel: SERVICE_TYPES[demand.serviceType] || demand.serviceType || '妆造需求',
+    typeLabel: SERVICE_TYPE_LABELS[demand.serviceType] || demand.serviceType || '妆造需求',
     statusLabel: demand.statusLabel || '',
     tone,
     dateText: monthDay(demand.serviceDate),
@@ -60,9 +46,22 @@ function toArtistCard(artist) {
   }
 }
 
+/** 档期接口数据 → 近 7 天档期条（今天置顶标记） */
+function toScheduleDay(item, index) {
+  return {
+    weekday: index === 0 ? '今天' : `周${WEEKDAY_LABELS[item.weekday] || ''}`,
+    day: String(Number(String(item.date).split('-')[2]) || ''),
+    state: item.state === 'booked' ? 'booked' : index === 0 ? 'today' : 'available',
+  }
+}
+
+function currentMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
 /**
  * 工作台（按角色区分内容）。
- * - 化妆师：资料完整度、数据概览、近期档期、匹配需求；
+ * - 化妆师：资料卡、统计概览、近期档期、推荐需求（全部来自 /api 真实接口）；
  * - 客户：发布需求入口、我的需求、推荐化妆师。
  */
 Page({
@@ -70,10 +69,11 @@ Page({
     /** 'artist' | 'customer'：先用本地缓存渲染，onShow 再用 /auth/me 校正 */
     role: getRole(),
     // 化妆师工作台
-    profile,
-    stats,
-    schedule,
-    recommended: demands.slice(0, 3),
+    profile: { city: '上海' },
+    stats: [],
+    schedule: [],
+    recommended: [],
+    recommendedLoading: true,
     // 客户工作台
     myDemands: [],
     myDemandsLoading: true,
@@ -102,21 +102,130 @@ Page({
     })
   },
 
-  /** 校正当前角色，客户额外拉取需求与推荐化妆师 */
+  /** 校正当前角色，化妆师拉工作台数据，客户拉需求与推荐化妆师 */
   syncRole() {
     return fetchProfile()
-      .then((info) => (info && info.role) || getRole())
-      .catch(() => getRole())
-      .then((role) => {
+      .then((info) => {
+        const role = (info && info.role) || getRole()
         if (!role) return
         if (role !== this.data.role) this.setData({ role })
+        if (role === 'artist') this.loadArtist(info)
         if (role === 'customer') this.loadCustomer()
       })
+      .catch(() => {})
+  },
+
+  /** 化妆师工作台：资料卡 / 统计 / 近期档期 / 推荐需求 并行加载 */
+  loadArtist(authInfo) {
+    this.loadArtistProfile(authInfo)
+    this.loadArtistStats()
+    this.loadSchedule()
+    this.loadRecommended()
+  },
+
+  /** 资料卡：/auth/me 提供头像昵称，/artist/me 提供资料与信用等级 */
+  loadArtistProfile(authInfo) {
+    request
+      .get('/api/artist/me', null, { showError: false })
+      .then((artist) => {
+        const nickname = (authInfo && authInfo.nickname) || ''
+        const avatar = absoluteUrl((authInfo && authInfo.avatarUrl) || '') || DEFAULT_AVATAR
+        if (!artist) {
+          this.setData({
+            profile: {
+              name: nickname || '化妆师',
+              avatar,
+              level: '',
+              city: '',
+              subtitle: '完善个人信息后展示更多',
+              completeness: 0,
+            },
+          })
+          return
+        }
+        this.setData({
+          profile: {
+            name: artist.name || nickname || '化妆师',
+            avatar,
+            level: (artist.credit && artist.credit.level) || '',
+            city: artist.city || '',
+            subtitle: `${artist.years || 0} 年经验 · 作品 ${(artist.works || []).length} 个`,
+            completeness: computeCompleteness(artist),
+          },
+        })
+      })
+      .catch(() => {})
+  },
+
+  /** 统计概览：作品 / 被查看 / 待定向 / 本月服务 */
+  loadArtistStats() {
+    request
+      .get('/api/artist/stats', null, { showError: false })
+      .then((stats) => {
+        this.setData({
+          stats: [
+            { value: String(stats.works || 0), label: '作品' },
+            { value: String(stats.visits || 0), label: '被查看' },
+            { value: String(stats.targeted || 0), label: '待定向' },
+            { value: String(stats.monthOrders || 0), label: '本月服务' },
+          ],
+        })
+      })
+      .catch(() => {})
+  },
+
+  /** 近期档期：取当月起未来 7 天，不足时向下月补齐 */
+  loadSchedule() {
+    const now = new Date()
+    const month = currentMonthKey(now)
+    request
+      .get('/api/schedule', { month }, { showError: false })
+      .then((data) => {
+        const upcoming = (data.days || []).filter((day) => !day.isPast)
+        if (upcoming.length >= 7) {
+          this.setData({ schedule: upcoming.slice(0, 7).map(toScheduleDay) })
+          return
+        }
+        const nextDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        return request
+          .get('/api/schedule', { month: currentMonthKey(nextDate) }, { showError: false })
+          .then((next) => {
+            const merged = upcoming.concat((next.days || []).filter((day) => !day.isPast))
+            this.setData({ schedule: merged.slice(0, 7).map(toScheduleDay) })
+          })
+          .catch(() => this.setData({ schedule: upcoming.slice(0, 7).map(toScheduleDay) }))
+      })
+      .catch(() => {})
+  },
+
+  /** 推荐需求：与需求大厅同一口径，取最近 3 条 */
+  loadRecommended() {
+    if (this.data.recommended.length) return
+    request
+      .get('/api/demands', { scope: 'hall', page: 1, size: 3 }, { showError: false })
+      .then((data) => {
+        this.setData({
+          recommended: (data.list || []).map(toDemandCard),
+          recommendedLoading: false,
+        })
+      })
+      .catch(() => this.setData({ recommendedLoading: false }))
   },
 
   loadCustomer() {
     this.loadMyDemands()
     this.loadArtists()
+    this.loadCustomerCity()
+  },
+
+  /** 顶部城市条：客户资料里的城市（首次调用 /customer/me 自动建档） */
+  loadCustomerCity() {
+    request
+      .get('/api/customer/me', null, { showError: false })
+      .then((me) => {
+        if (me && me.city) this.setData({ 'profile.city': me.city })
+      })
+      .catch(() => {})
   },
 
   loadMyDemands() {
@@ -125,7 +234,7 @@ Page({
       .get('/api/demands', { scope: 'mine', page: 1, size: 3 }, { showError: false })
       .then((data) => {
         this.setData({
-          myDemands: (data.list || []).map(toDemandCard),
+          myDemands: (data.list || []).map(toDemandRow),
           myDemandsLoading: false,
         })
       })
@@ -171,12 +280,16 @@ Page({
   },
 
   onEditSchedule() {
-    this.toast('档期设置将在下一版本开放')
+    wx.navigateTo({ url: '/pkg-artist/pages/artist/schedule/index' })
   },
 
   onDayTap(event) {
-    const { state, day } = event.currentTarget.dataset
-    this.toast(state === 'booked' ? '该日期已有预约' : `${day} 日当前可约`)
+    const { state } = event.currentTarget.dataset
+    if (state === 'booked') {
+      this.toast('该日期已有预约')
+      return
+    }
+    wx.navigateTo({ url: '/pkg-artist/pages/artist/schedule/index' })
   },
 
   onDemandOpen(event) {
@@ -213,14 +326,14 @@ Page({
   /** 分享小程序：好友点开进入工作台，未登录会先引导登录 */
   onShareAppMessage() {
     return {
-      title: '妆集 · 让每一次练习，都被看见',
+      title: '兰妆有约 · 让每一次练习，都被看见',
       path: '/pages/home/index',
     }
   },
 
   onShareTimeline() {
     return {
-      title: '妆集 · 让每一次练习，都被看见',
+      title: '兰妆有约 · 让每一次练习，都被看见',
     }
   },
 

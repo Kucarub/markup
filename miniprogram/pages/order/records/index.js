@@ -63,6 +63,8 @@ Page({
   data: {
     tabs: tabViews({}),
     activeStatus: '',
+    activeTabLabel: '全部',
+    total: 0,
     counts: { all: 0, pending: 0, confirmed: 0, finished: 0, cancelled: 0 },
     list: [],
     loading: true,
@@ -90,7 +92,14 @@ Page({
     const key = event.currentTarget.dataset.key || ''
     if (key === this.data.activeStatus) return
     const empty = EMPTY[key] || EMPTY['']
-    this.setData({ activeStatus: key, emptyTitle: empty[0], emptyDesc: empty[1] })
+    const activeTabLabel = (TABS.filter((tab) => tab.key === key)[0] || {}).label || '全部'
+    this.setData({
+      activeStatus: key,
+      activeTabLabel,
+      total: 0,
+      emptyTitle: empty[0],
+      emptyDesc: empty[1],
+    })
     this.load(true)
   },
 
@@ -119,6 +128,7 @@ Page({
           list,
           counts,
           tabs: tabViews(counts),
+          total: data.total || 0,
           hasMore: list.length < (data.total || 0),
         })
       })

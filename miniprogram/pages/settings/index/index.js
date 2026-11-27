@@ -14,6 +14,10 @@ Page({
     wx.navigateTo({ url: '/pages/dev/tokens/index' })
   },
 
+  goReport() {
+    wx.navigateTo({ url: '/pages/report/index' })
+  },
+
   handleLogout() {
     clearAuth()
     clearProfileCache()

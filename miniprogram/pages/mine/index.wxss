@@ -19,6 +19,37 @@
   padding: 28rpx 36rpx 26rpx;
 }
 
+/* 头像可点击更换：左下角入口 + 上传中遮罩（右下角留给等级徽标） */
+.avatar__edit {
+  position: absolute;
+  left: -2rpx;
+  bottom: 2rpx;
+  z-index: 2;
+  padding: 2rpx 12rpx;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: 16rpx;
+  line-height: 1.6;
+  box-shadow: 0 4rpx 10rpx rgba(180, 86, 110, 0.28);
+}
+
+.avatar__mask {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(65, 45, 51, 0.5);
+  color: #ffffff;
+  font-size: 17rpx;
+}
+
 .mine-profile__copy {
   flex: 1;
   min-width: 0;

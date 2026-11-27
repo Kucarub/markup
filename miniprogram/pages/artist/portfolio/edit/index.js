@@ -1,7 +1,8 @@
 const request = require('../../../../utils/request')
 const { fetchProfile, clearProfileCache } = require('../../../../utils/guard')
-const { uploadWorkFile, absoluteUrl } = require('../../../../utils/upload')
-const { chooseMedia, compressImageToLimit, IMAGE_LIMIT } = require('../../../../utils/media')
+const { uploadWorkFile, uploadWatermarkFile, absoluteUrl } = require('../../../../utils/upload')
+const { chooseMedia, compressImageToLimit, fileSize, IMAGE_LIMIT } = require('../../../../utils/media')
+const { makeWatermarkedImage } = require('../../../../utils/watermark')
 const { STYLE_OPTIONS } = require('../../../../utils/dict')
 
 const MAX_WORKS = 9
@@ -147,6 +148,7 @@ Page({
           status: 'waiting',
           message: '',
           fileId: null,
+          watermarkFileId: null,
           created: false,
         }))
         this.setData({ pending: this.data.pending.concat(additions) })
@@ -175,7 +177,7 @@ Page({
 
     try {
       let current = target
-      if (current.type === 'image') {
+      if (current.type === 'image' && !current.fileId) {
         this.patchPending(key, { status: 'compressing' })
         const compressed = await compressImageToLimit(current.rawPath)
         this.patchPending(key, {
@@ -188,17 +190,34 @@ Page({
           wx.showToast({ title: '图片仍超过 500KB，已按最高压缩上传', icon: 'none' })
         }
         current = this.findPending(key)
-      } else {
+      } else if (!current.fileId) {
         this.patchPending(key, { status: 'uploading' })
         current = this.findPending(key)
       }
 
-      const uploaded = await uploadWorkFile({
-        filePath: current.path,
-        size: current.size,
-        mediaType: current.type,
-      })
-      this.patchPending(key, { status: 'done', fileId: uploaded.fileId, path: uploaded.path })
+      if (!current.fileId) {
+        const uploaded = await uploadWorkFile({
+          filePath: current.path,
+          size: current.size,
+          mediaType: current.type,
+        })
+        this.patchPending(key, { fileId: uploaded.fileId, path: uploaded.path })
+        current = this.findPending(key)
+      }
+
+      // 水印生成（E14-02）：原图上传成功后叠加平铺水印并上传副本，对外展示用水印版本；
+      // 失败标记 error 可重试（重试时原图 fileId 已存在，不会重复上传）
+      if (current.type === 'image' && !current.watermarkFileId) {
+        this.patchPending(key, { status: 'watermarking' })
+        const profile = await fetchProfile().catch(() => null)
+        const text = `${(profile && profile.nickname) || '兰妆有约'} · 兰妆有约`
+        const wmPath = await makeWatermarkedImage(current.path, text)
+        const wmSize = await fileSize(wmPath)
+        const watermark = await uploadWatermarkFile(wmPath, wmSize)
+        this.patchPending(key, { watermarkFileId: watermark.fileId, status: 'done' })
+      } else {
+        this.patchPending(key, { status: 'done' })
+      }
     } catch (error) {
       this.patchPending(key, {
         status: 'error',
@@ -225,7 +244,7 @@ Page({
     const key = event.currentTarget.dataset.key
     const item = this.findPending(key)
     if (!item) return
-    if (item.status === 'uploading' || item.status === 'compressing') {
+    if (item.status === 'uploading' || item.status === 'compressing' || item.status === 'watermarking') {
       wx.showToast({ title: '上传中，请稍候', icon: 'none' })
       return
     }
@@ -285,6 +304,7 @@ Page({
       for (let index = 0; index < done.length; index += 1) {
         const item = done[index]
         const payload = { fileId: item.fileId }
+        if (item.watermarkFileId) payload.watermarkFileId = item.watermarkFileId
         const title = this.data.title.trim()
         if (title) payload.title = title
         if (this.data.selectedStyles.length) payload.styles = this.data.selectedStyles

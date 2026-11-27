@@ -6,6 +6,7 @@ import { DemandDetailPage } from "./pages/DemandDetailPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
 import { MinePage } from "./pages/MinePage";
 import { LoggedOutPage } from "./pages/LoggedOutPage";
+import { MyRequestsPage } from "./pages/MyRequestsPage";
 import type { Demand } from "./data/mockData";
 
 export type MainTab = "home" | "demands" | "portfolio" | "mine";
@@ -18,6 +19,7 @@ export default function App() {
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
   const [toast, setToast] = useState("");
   const isAuthenticated = false;
+  const isReviewingRequestTabs = true;
 
   const showToast = (message: string) => setToast(message);
 
@@ -104,7 +106,13 @@ export default function App() {
   return (
     <main className="app-stage">
       <section className="mobile-shell" aria-label="妆集化妆师端">
-        {isAuthenticated ? <>{page}</> : <LoggedOutPage onToast={showToast} />}
+        {isReviewingRequestTabs ? (
+          <MyRequestsPage onToast={showToast} />
+        ) : isAuthenticated ? (
+          <>{page}</>
+        ) : (
+          <LoggedOutPage onToast={showToast} />
+        )}
         <Toast message={toast} />
       </section>
     </main>

@@ -57,8 +57,10 @@ function toCard(demand) {
  */
 Page({
   data: {
-    tabs: TABS,
+    tabs: TABS.map((tab) => ({ ...tab, count: 0 })),
     activeTab: 'pending',
+    activeTabLabel: '待处理',
+    total: 0,
     loading: true,
     error: '',
     unread: 0,
@@ -110,6 +112,12 @@ Page({
           typeLabel: TYPE_LABEL[item.serviceType] || item.serviceType,
         }))
 
+        const tabCounts = {
+          pending: pending.length,
+          handled: handled.length,
+          responses: responses.length,
+          orders: orders.length,
+        }
         this.setData({
           loading: false,
           unread: data.unread || 0,
@@ -117,6 +125,7 @@ Page({
           handled,
           responses,
           orders,
+          tabs: TABS.map((tab) => ({ ...tab, count: tabCounts[tab.key] || 0 })),
         })
         this.applyTab(this.data.activeTab)
       })
@@ -140,9 +149,13 @@ Page({
       responses: ['还没有响应记录', '去需求大厅看看同城客户的需求'],
       orders: ['暂无服务记录', '接受定向预约后会自动生成服务记录'],
     }[key] || ['', '']
+    const rows = this.data[key] || []
+    const activeTabLabel = (TABS.filter((tab) => tab.key === key)[0] || {}).label || '待处理'
 
     this.setData({
       activeTab: key,
+      activeTabLabel,
+      total: rows.length,
       emptyTitle: empty[0],
       emptyDesc: empty[1],
     })

@@ -1,0 +1,92 @@
+<view class="screen report-page">
+  <view class="report-head">
+    <text class="kicker">REPORT</text>
+    <view class="page-heading">举报与安全</view>
+    <view class="report-sub">对违规内容或化妆师账号进行举报，平台将在 1-2 个工作日内处理</view>
+  </view>
+
+  <!-- 举报表单：从化妆师主页进入时展示；设置页仅查看记录 -->
+  <view wx:if="{{targetLabel}}" class="card report-card">
+    <view class="field">
+      <view class="field__label">举报对象</view>
+      <view class="report-target">
+        <text class="report-target__text">{{targetLabel}}</text>
+        <view wx:if="{{works.length}}" class="report-target__switch" bindtap="onSwitchTargetType">
+          {{targetType === 'artist' ? '改为举报作品' : '改为举报化妆师'}}
+        </view>
+      </view>
+      <view wx:if="{{targetType === 'portfolio' && works.length}}" class="report-works">
+        <view
+          wx:for="{{works}}"
+          wx:key="id"
+          class="report-work {{targetId === item.id ? 'report-work--on' : ''}}"
+          data-id="{{item.id}}"
+          data-title="{{item.title}}"
+          bindtap="onPickWork"
+        >
+          {{item.title}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field__label">举报原因</view>
+      <view class="report-reasons">
+        <view
+          wx:for="{{reasons}}"
+          wx:key="code"
+          class="report-reason {{reason === item.code ? 'report-reason--on' : ''}}"
+          data-code="{{item.code}}"
+          bindtap="onPickReason"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field__label">
+        补充说明
+        <text class="field__label-note">选填，≤200 字</text>
+      </view>
+      <textarea
+        class="textarea"
+        value="{{detail}}"
+        maxlength="200"
+        placeholder="补充违规内容的说明，方便我们核实"
+        placeholder-class="input-placeholder"
+        bindinput="onDetailInput"
+      />
+    </view>
+
+    <button
+      class="btn btn--primary btn--block report-submit"
+      bindtap="onSubmit"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >
+      提交举报
+    </button>
+  </view>
+
+  <!-- 我的举报记录（E14-04 结果回显） -->
+  <view class="card report-history">
+    <view class="field">
+      <view class="field__label">我的举报记录</view>
+    </view>
+    <view wx:if="{{historyLoading}}" class="empty">加载中…</view>
+    <view wx:elif="{{!history.length}}" class="report-empty">暂无举报记录</view>
+    <view wx:else class="report-list">
+      <view wx:for="{{history}}" wx:key="id" class="report-item">
+        <view class="report-item__head">
+          <text class="report-item__target">{{item.targetLabel}}</text>
+          <text class="report-item__status report-item__status--{{item.status}}">{{item.statusLabel}}</text>
+        </view>
+        <view class="report-item__reason">{{item.reason}}</view>
+        <view wx:if="{{item.handleResult}}" class="report-item__result">处理结果：{{item.handleResult}}</view>
+        <view class="report-item__time">{{item.timeText}}</view>
+      </view>
+    </view>
+    <view wx:if="{{hasMoreHistory}}" class="report-more" bindtap="loadHistory">加载更多</view>
+  </view>
+</view>

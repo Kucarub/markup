@@ -39,8 +39,7 @@ async function handleSubmit() {
 <template>
   <div class="login">
     <div class="login__card">
-      <h1 class="login__title">化妆师接单门户</h1>
-      <p class="login__subtitle">运营后台</p>
+      <h1 class="login__title">后台管理系统</h1>
 
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent>
         <el-form-item label="账号" prop="username">
@@ -61,7 +60,7 @@ async function handleSubmit() {
         </el-button>
       </el-form>
 
-      <p class="login__tip">演示账号：admin / Admin@123456（来自服务端 seed 数据）</p>
+      <p class="login__tip"></p>
     </div>
   </div>
 </template>

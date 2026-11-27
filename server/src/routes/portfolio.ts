@@ -2,6 +2,7 @@ import { Router, type Request } from 'express'
 import { z } from 'zod'
 import { getPrisma } from '../lib/prisma'
 import { requireAuth } from '../middlewares/auth'
+import { submitPortfolioCheck } from '../services/contentSecurity'
 import { buildSignedPath } from '../services/storage'
 import { asyncHandler } from '../utils/asyncHandler'
 import { AppError } from '../utils/errors'
@@ -24,6 +25,8 @@ const styleArray = z.array(z.string().trim().min(1).max(32)).max(8)
 
 const createSchema = z.object({
   fileId: z.coerce.number().int().positive('作品文件不合法'),
+  /// 水印副本（E14-02）：客户端 canvas 叠加水印后二次上传，对外展示用
+  watermarkFileId: z.coerce.number().int().positive().optional(),
   title: z.string().trim().max(64).optional(),
   styles: styleArray.optional(),
 })
@@ -64,10 +67,12 @@ interface PortfolioRow {
   artistId: number
   type: string
   url: string
+  watermarkUrl?: string | null
   title: string
   styles: unknown
   sort: number
   status: string
+  contentCheck?: unknown
   createdAt: Date
 }
 
@@ -83,6 +88,12 @@ function toListItem(item: PortfolioRow, fileIdByKey: Map<string, number>) {
     createdAt: item.createdAt,
     // 私有桶：签名 15 分钟有效，前端需拼接接口域名
     path: buildSignedPath('/api/files/raw', item.url),
+    // 对外展示优先水印版本（E14-02）；无水印副本时与原图一致
+    displayPath: item.watermarkUrl
+      ? buildSignedPath('/api/files/raw', item.watermarkUrl)
+      : buildSignedPath('/api/files/raw', item.url),
+    // 内容安全检测结果（E14-01）：skipped / timeout 为待人工复核
+    contentCheck: item.contentCheck ?? null,
   }
 }
 
@@ -123,17 +134,21 @@ portfolioRouter.get(
       throw AppError.notFound('化妆师不存在或尚未完善个人信息')
     }
 
+    // 对外仅展示已上线作品（E14-01 内容检测中 / 违规驳回 / 下架均不可见）；本人与管理员可看全部
+    const publicVisible = !canPreview
+    const listWhere = publicVisible ? { artistId, status: 'online' } : { artistId }
+
     const [total, items, counts] = await Promise.all([
-      prisma.artistPortfolio.count({ where: { artistId } }),
+      prisma.artistPortfolio.count({ where: listWhere }),
       prisma.artistPortfolio.findMany({
-        where: { artistId },
+        where: listWhere,
         orderBy: [{ sort: 'asc' }, { id: 'asc' }],
         skip: (pagination.page - 1) * pagination.size,
         take: pagination.size,
       }),
       prisma.artistPortfolio.groupBy({
         by: ['type'],
-        where: { artistId },
+        where: listWhere,
         _count: { _all: true },
       }),
     ])
@@ -169,6 +184,22 @@ portfolioRouter.post(
       throw AppError.badRequest('作品文件不存在或尚未上传完成')
     }
 
+    // 水印副本校验（E14-02）：必须为本人上传的 watermark 场景图片
+    let watermarkUrl: string | null = null
+    if (input.watermarkFileId) {
+      const watermark = await prisma.fileObject.findUnique({ where: { id: input.watermarkFileId } })
+      if (
+        !watermark ||
+        watermark.userId !== req.auth!.uid ||
+        watermark.scene !== 'watermark' ||
+        watermark.status !== 'uploaded' ||
+        !watermark.mimeType.startsWith('image/')
+      ) {
+        throw AppError.badRequest('水印文件不存在或尚未上传完成')
+      }
+      watermarkUrl = watermark.objectKey
+    }
+
     const aggregate = await prisma.artistPortfolio.aggregate({
       where: { artistId: artist.id },
       _max: { sort: true },
@@ -182,6 +213,7 @@ portfolioRouter.post(
         artistId: artist.id,
         type: file.mimeType.startsWith('video/') ? 'video' : 'image',
         url: file.objectKey,
+        watermarkUrl,
         title: input.title || `作品 ${total + 1}`,
         styles: input.styles,
         sort: nextSort,
@@ -189,7 +221,36 @@ portfolioRouter.post(
       },
     })
 
-    res.ok(toListItem(created, new Map([[created.url, file.id]])))
+    // 内容安全送检（E14-01）：异步检测结果由微信回调更新状态；
+    // 未配置凭证 / 超时时按通过上线并记录待复核（服务内部消化异常）
+    if (created.type !== 'video') {
+      await submitPortfolioCheck(created.id, file.objectKey)
+    } else {
+      await prisma.artistPortfolio.update({
+        where: { id: created.id },
+        data: {
+          status: 'online',
+          contentCheck: {
+            result: 'skipped',
+            submittedAt: new Date().toISOString(),
+            detail: '视频暂不支持自动检测，待人工复核',
+          },
+        },
+      })
+    }
+
+    const refreshed = await prisma.artistPortfolio.findUnique({ where: { id: created.id } })
+    if (!refreshed) throw AppError.notFound('作品不存在')
+
+    res.ok(
+      toListItem(
+        refreshed,
+        new Map([
+          [refreshed.url, file.id],
+          ...(watermarkUrl ? [[watermarkUrl, input.watermarkFileId!] as [string, number]] : []),
+        ]),
+      ),
+    )
   }),
 )
 

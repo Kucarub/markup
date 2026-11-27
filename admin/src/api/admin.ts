@@ -300,6 +300,35 @@ export function setPortfolioStatus(id: number, payload: { action: 'offline' | 'r
   return http.post<{ id: number; status: string }>(`/api/admin/portfolios/${id}/status`, payload)
 }
 
+/** 举报处理（E14-04） */
+export interface AdminReportItem {
+  id: number
+  targetType: 'portfolio' | 'artist'
+  targetId: number
+  targetLabel: string
+  targetStatus: string | null
+  reporter: { id: number; nickname: string }
+  reason: string
+  status: 'pending' | 'handled' | 'rejected'
+  handleOperator: number | null
+  handleResult: string | null
+  createdAt: string
+}
+
+export function fetchReports(params: Query) {
+  return http.get<PageResult<AdminReportItem>>('/api/admin/reports', params)
+}
+
+export function handleReport(
+  id: number,
+  payload: { action: 'dismiss' | 'offline' | 'ban'; note?: string },
+) {
+  return http.post<{ id: number; status: string; handleResult: string }>(
+    `/api/admin/reports/${id}/handle`,
+    payload,
+  )
+}
+
 /** 审核日志（E12-09） */
 export function fetchAuditLogs(params: Query) {
   return http.get<PageResult<AuditLogItem>>('/api/admin/audit-logs', params)
@@ -347,6 +376,11 @@ export const STATUS_OPTIONS = {
     { value: 'online', label: '在线' },
     { value: 'offline', label: '已下架' },
     { value: 'rejected', label: '已驳回' },
+  ],
+  report: [
+    { value: 'pending', label: '待处理' },
+    { value: 'handled', label: '已处理' },
+    { value: 'rejected', label: '未成立' },
   ],
 } as const
 

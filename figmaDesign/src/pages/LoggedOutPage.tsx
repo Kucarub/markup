@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Brush, Check, ChevronRight, MessageCircle, Store, UsersRound } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 import { Button, StatusBar } from "../components/ui";
 
 type Role = "artist" | "business";
@@ -24,12 +25,7 @@ export function LoggedOutPage({ onToast }: { onToast: (message: string) => void 
 
       <div className="auth-content">
         <header className="auth-brand">
-          <div className="auth-logo" aria-label="妆集">
-            <span />
-            <span />
-            <span />
-            <Brush size={23} />
-          </div>
+          <BrandLogo size={68} className="auth-logo" />
           <div className="auth-wordmark">妆集</div>
           <p>让每一次练习，都被看见</p>
         </header>

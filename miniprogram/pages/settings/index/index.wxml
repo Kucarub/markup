@@ -18,6 +18,10 @@
       <text>设计 token 示例</text>
       <text class="muted">›</text>
     </view>
+    <view class="list__item" bindtap="goReport">
+      <text>举报与安全</text>
+      <text class="muted">›</text>
+    </view>
     <view class="list__item">
       <text>用户协议与隐私政策</text>
       <text class="muted">E1-08</text>

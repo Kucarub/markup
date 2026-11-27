@@ -95,8 +95,58 @@ function uploadWorkFile(options) {
     )
 }
 
+/**
+ * 上传头像（scene=avatar）。
+ * @param {string} filePath 本地图片路径
+ * @param {number} size 文件字节数
+ * @returns {Promise<{fileId: number}>} 展示地址由 GET /api/avatars/<fileId> 提供（稳定不过期）
+ */
+function uploadAvatarFile(filePath, size) {
+  const ext = extOf(filePath) || 'jpg'
+  const mimeType = MIME_BY_EXT[ext]
+  if (!mimeType || mimeType.indexOf('video/') === 0) {
+    return Promise.reject(new Error('仅支持 jpg / png / webp 图片'))
+  }
+  return request
+    .post(
+      '/api/upload/sign',
+      { scene: 'avatar', fileName: `avatar-${Date.now()}.${ext}`, mimeType, size },
+      { showError: false },
+    )
+    .then((sign) =>
+      readFile(filePath)
+        .then((buffer) => putBinary(`${env.baseURL}${sign.uploadPath}`, buffer, mimeType))
+        .then((uploaded) => ({ fileId: uploaded.fileId })),
+    )
+}
+
+/**
+ * 上传水印副本（E14-02，scene=watermark）。
+ * @returns {Promise<{fileId: number}>} 创建作品时作为 watermarkFileId 提交
+ */
+function uploadWatermarkFile(filePath, size) {
+  const ext = extOf(filePath) || 'jpg'
+  const mimeType = MIME_BY_EXT[ext]
+  if (!mimeType || mimeType.indexOf('video/') === 0) {
+    return Promise.reject(new Error('仅支持 jpg / png / webp 水印图'))
+  }
+  return request
+    .post(
+      '/api/upload/sign',
+      { scene: 'watermark', fileName: `watermark-${Date.now()}.${ext}`, mimeType, size },
+      { showError: false },
+    )
+    .then((sign) =>
+      readFile(filePath)
+        .then((buffer) => putBinary(`${env.baseURL}${sign.uploadPath}`, buffer, mimeType))
+        .then((uploaded) => ({ fileId: uploaded.fileId })),
+    )
+}
+
 module.exports = {
   uploadWorkFile,
+  uploadWatermarkFile,
+  uploadAvatarFile,
   signWorkUrl,
   absoluteUrl,
 }

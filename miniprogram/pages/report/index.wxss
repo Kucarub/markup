@@ -1,0 +1,181 @@
+/* 举报与安全（E14-03 / E14-04） */
+.report-page {
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.report-head {
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+.report-sub {
+  margin-top: var(--space-xs);
+  color: var(--color-text-secondary);
+  font-size: 21rpx;
+  line-height: 1.6;
+}
+
+.report-card,
+.report-history {
+  margin: var(--space-md);
+}
+
+.report-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.report-target__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-regular);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.report-target__switch {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: 21rpx;
+}
+
+.report-works {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.report-work {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 8rpx 20rpx;
+  box-sizing: border-box;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-card);
+  color: var(--color-text-regular);
+  font-size: 20rpx;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.report-work--on {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.report-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: var(--space-xs);
+}
+
+.report-reason {
+  padding: 12rpx 26rpx;
+  border: 2rpx solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-card);
+  color: var(--color-text-regular);
+  font-size: 21rpx;
+}
+
+.report-reason--on {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
+.report-submit {
+  margin-top: var(--space-md);
+}
+
+.report-list {
+  margin-top: var(--space-xs);
+}
+
+.report-item {
+  padding: var(--space-sm) 0;
+  border-bottom: 2rpx solid var(--color-divider);
+}
+
+.report-item:last-child {
+  border-bottom: none;
+}
+
+.report-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.report-item__target {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-regular);
+  font-size: 23rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.report-item__status {
+  flex: 0 0 auto;
+  font-size: 19rpx;
+}
+
+.report-item__status--pending {
+  color: var(--color-warning);
+}
+
+.report-item__status--handled {
+  color: var(--color-success);
+}
+
+.report-item__status--rejected {
+  color: var(--color-text-secondary);
+}
+
+.report-item__reason {
+  margin-top: 8rpx;
+  color: var(--color-text-secondary);
+  font-size: 21rpx;
+  line-height: 1.5;
+}
+
+.report-item__result {
+  margin-top: 8rpx;
+  padding: 12rpx 16rpx;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  color: var(--color-text-regular);
+  font-size: 20rpx;
+}
+
+.report-item__time {
+  margin-top: 8rpx;
+  color: var(--color-text-placeholder);
+  font-size: 18rpx;
+}
+
+.report-empty {
+  padding: var(--space-md) 0;
+  color: var(--color-text-placeholder);
+  font-size: 21rpx;
+  text-align: center;
+}
+
+.report-more {
+  margin-top: var(--space-sm);
+  color: var(--color-primary);
+  font-size: 21rpx;
+  text-align: center;
+}

@@ -48,49 +48,12 @@
 }
 
 .auth-logo {
-  position: relative;
+  display: block;
   width: 132rpx;
   height: 132rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin-bottom: 22rpx;
-  border: 2rpx solid #e4bec8;
   border-radius: 40rpx;
-  background: var(--color-primary);
-  box-shadow: 0 20rpx 48rpx rgba(180, 86, 110, 0.22);
-  transform: rotate(-3deg);
-}
-
-.auth-logo__petal {
-  position: absolute;
-  width: 30rpx;
-  height: 52rpx;
-  border-radius: 999rpx 999rpx 8rpx 8rpx;
-  background: rgba(255, 255, 255, 0.17);
-  transform-origin: 50% 100%;
-}
-
-.auth-logo__petal--left {
-  top: 14rpx;
-  transform: rotate(-38deg);
-}
-
-.auth-logo__petal--mid {
-  top: 8rpx;
-}
-
-.auth-logo__petal--right {
-  top: 14rpx;
-  transform: rotate(38deg);
-}
-
-.auth-logo__mark {
-  position: relative;
-  z-index: 1;
-  width: 46rpx;
-  height: 46rpx;
-  transform: rotate(3deg);
+  box-shadow: 0 20rpx 48rpx rgba(180, 86, 110, 0.18);
 }
 
 .auth-wordmark {

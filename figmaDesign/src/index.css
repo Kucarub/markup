@@ -449,20 +449,33 @@
 .wordmark {
   display: flex;
   align-items: center;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 6px;
   color: var(--neutral-900);
   font-family: serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
 }
 
-.wordmark span {
-  margin-top: -1px;
+.wordmark > svg {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 2px 4px rgb(180 86 110 / 14%));
+}
+
+.wordmark-copy {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.wordmark-copy small {
+  margin-top: 3px;
   color: var(--brand-600);
   font-family: Inter, sans-serif;
-  font-size: 6px;
-  letter-spacing: 0.28em;
+  font-size: 5px;
+  letter-spacing: 0.14em;
 }
 
 .notification-btn {
@@ -1812,47 +1825,8 @@
 }
 
 .auth-logo {
-  position: relative;
-  width: 66px;
-  height: 66px;
-  display: grid;
-  place-items: center;
   margin-bottom: 11px;
-  border: 1px solid #e4bec8;
-  border-radius: 20px;
-  background: var(--brand-600);
-  color: var(--white);
-  box-shadow: 0 10px 24px rgb(180 86 110 / 22%);
-  transform: rotate(-3deg);
-}
-
-.auth-logo > span {
-  position: absolute;
-  width: 15px;
-  height: 26px;
-  border-radius: 999px 999px 4px 4px;
-  background: rgb(255 255 255 / 17%);
-  transform-origin: 50% 100%;
-}
-
-.auth-logo > span:nth-child(1) {
-  top: 7px;
-  transform: rotate(-38deg);
-}
-
-.auth-logo > span:nth-child(2) {
-  top: 4px;
-}
-
-.auth-logo > span:nth-child(3) {
-  top: 7px;
-  transform: rotate(38deg);
-}
-
-.auth-logo svg {
-  position: relative;
-  z-index: 1;
-  transform: rotate(3deg);
+  filter: drop-shadow(0 10px 16px rgb(180 86 110 / 22%));
 }
 
 .auth-wordmark {
@@ -2059,6 +2033,583 @@
 
 .agreement button {
   color: var(--info);
+}
+
+/* Logo direction review */
+.logo-review-page {
+  background: #f6f3f4;
+}
+
+.logo-review-header {
+  flex: 0 0 auto;
+  padding: 16px 18px 13px;
+}
+
+.logo-review-header > span {
+  color: var(--brand-500);
+  font-family: Inter, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.logo-review-header h1 {
+  margin-top: 3px;
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.logo-review-header p {
+  margin-top: 4px;
+  color: var(--neutral-500);
+  font-size: 10.5px;
+}
+
+.logo-concept-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+  padding: 5px 14px 100px;
+}
+
+.logo-concept-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.concept-group-heading {
+  padding: 3px 2px 1px;
+}
+
+.concept-group-heading > span {
+  color: var(--brand-500);
+  font-family: Inter, sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.concept-group-heading h2 {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.logo-concept-card {
+  position: relative;
+  width: 100%;
+  min-height: 128px;
+  display: grid;
+  grid-template-columns: 92px 1fr 22px;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 12px;
+  overflow: hidden;
+  border: 1px solid var(--neutral-200);
+  border-radius: 13px;
+  background: var(--white);
+  text-align: left;
+  box-shadow: 0 2px 8px rgb(54 38 43 / 4%);
+  transition:
+    border-color 160ms,
+    box-shadow 160ms,
+    transform 100ms;
+}
+
+.logo-concept-card:active {
+  transform: scale(0.992);
+}
+
+.logo-concept-card.selected {
+  border-color: #d393a4;
+  box-shadow: 0 6px 18px rgb(180 86 110 / 10%);
+}
+
+.concept-number {
+  position: absolute;
+  top: 8px;
+  left: 9px;
+  color: var(--neutral-400);
+  font-family: Inter, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.logo-concept-card.selected .concept-number {
+  color: var(--brand-600);
+}
+
+.concept-mark-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.concept-mark-wrap > svg {
+  filter: drop-shadow(0 5px 9px rgb(69 41 49 / 10%));
+}
+
+.concept-mini {
+  position: absolute;
+  right: -1px;
+  bottom: -4px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--neutral-200);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
+.concept-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.concept-title {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.concept-title strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.concept-title small {
+  color: var(--brand-500);
+  font-family: Inter, sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.concept-description {
+  margin-top: 5px;
+  color: var(--neutral-500);
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.concept-traits {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.concept-traits i {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--neutral-100);
+  color: var(--neutral-500);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.concept-select {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--neutral-400);
+}
+
+.logo-concept-card.selected .concept-select {
+  background: var(--brand-600);
+  color: var(--white);
+}
+
+.logo-review-footer {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 79px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--neutral-200);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 -4px 14px rgb(55 40 44 / 5%);
+  backdrop-filter: blur(16px);
+}
+
+.logo-review-footer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logo-review-footer span {
+  color: var(--neutral-500);
+  font-size: 8px;
+}
+
+.logo-review-footer strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.logo-review-footer .btn {
+  min-height: 39px;
+}
+
+/* Merchant request tab review */
+.merchant-requests-page {
+  background: var(--white);
+}
+
+.merchant-mini-header {
+  flex: 0 0 auto;
+  background: rgb(255 255 255 / 96%);
+  backdrop-filter: blur(16px);
+}
+
+.merchant-nav-row {
+  height: 52px;
+  display: grid;
+  grid-template-columns: 74px 1fr 74px;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.merchant-nav-row > strong {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.merchant-nav-row > button {
+  width: 65px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  justify-self: end;
+  border: 1px solid var(--neutral-200);
+  border-radius: 999px;
+}
+
+.merchant-nav-row > button i {
+  display: grid;
+  place-items: center;
+}
+
+.merchant-requests-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px 138px;
+}
+
+.requests-title > span {
+  color: var(--brand-500);
+  font-family: Inter, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+.requests-title h1 {
+  margin-top: 2px;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.requests-title p {
+  margin-top: 3px;
+  color: var(--neutral-500);
+  font-size: 10.5px;
+}
+
+.request-search {
+  width: 100%;
+  height: 42px;
+  display: grid;
+  grid-template-columns: 18px 1fr 15px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 17px;
+  padding: 0 12px;
+  border: 1px solid #f2e5e9;
+  border-radius: 10px;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  text-align: left;
+}
+
+.request-search span {
+  overflow: hidden;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-tabs-wrap {
+  margin-top: 15px;
+}
+
+.request-status-tabs {
+  height: 43px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid #ebe6e7;
+  border-radius: 11px;
+  background: #f3f0f1;
+}
+
+.request-status-tabs button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 8px;
+  color: #777174;
+  font-size: 10px;
+  white-space: nowrap;
+  transition:
+    background 160ms,
+    color 160ms,
+    box-shadow 160ms,
+    transform 100ms;
+}
+
+.request-status-tabs button:active {
+  transform: scale(0.97);
+}
+
+.request-status-tabs button.active {
+  background: var(--white);
+  color: var(--brand-600);
+  font-weight: 650;
+  box-shadow:
+    0 2px 7px rgb(65 45 51 / 9%),
+    inset 0 0 0 1px rgb(180 86 110 / 8%);
+}
+
+.request-status-tabs button i {
+  min-width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e5dfe1;
+  color: var(--neutral-500);
+  font-family: Inter, sans-serif;
+  font-size: 7px;
+  font-style: normal;
+}
+
+.request-status-tabs button.active i {
+  background: var(--brand-600);
+  color: var(--white);
+}
+
+.tab-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 2px 9px;
+}
+
+.tab-context span {
+  color: var(--neutral-700);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tab-context small {
+  color: var(--neutral-400);
+  font-size: 9px;
+}
+
+.merchant-request-card {
+  padding: 16px;
+  border: 1px solid var(--neutral-200);
+  border-radius: 13px;
+  background: var(--white);
+  box-shadow: 0 2px 7px rgb(47 35 39 / 5%);
+}
+
+.request-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.request-date {
+  color: var(--neutral-500);
+  font-family: Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.request-card-top h2 {
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.request-quick-info {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 10px;
+  color: var(--neutral-500);
+  font-size: 10px;
+}
+
+.request-quick-info span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.request-quick-info strong {
+  color: var(--brand-600);
+  font-family: Inter, sans-serif;
+}
+
+.request-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.request-tags span {
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--neutral-100);
+  color: var(--neutral-500);
+  font-size: 9px;
+}
+
+.request-card-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid var(--neutral-200);
+}
+
+.request-card-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--neutral-500);
+  font-size: 10px;
+}
+
+.request-card-footer > div svg {
+  color: var(--warning);
+}
+
+.request-card-footer .btn {
+  min-height: 34px;
+  color: var(--brand-600);
+  font-size: 10.5px;
+}
+
+.request-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 53px 20px;
+  text-align: center;
+}
+
+.request-empty > span {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 13px;
+  border-radius: 18px;
+  background: var(--brand-50);
+  color: var(--brand-500);
+}
+
+.request-empty strong {
+  font-size: 14px;
+}
+
+.request-empty p,
+.list-end {
+  margin-top: 5px;
+  color: var(--neutral-400);
+  font-size: 10px;
+}
+
+.list-end {
+  padding: 12px 0;
+  text-align: center;
+}
+
+.publish-request-fab {
+  position: absolute;
+  z-index: 8;
+  right: 18px;
+  bottom: 79px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 17px;
+  border-radius: 999px;
+  background: var(--brand-600);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 7px 16px rgb(180 86 110 / 25%);
+}
+
+.merchant-bottom-nav {
+  position: absolute;
+  z-index: 7;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 70px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 7px 20px max(7px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--neutral-200);
+  background: rgb(255 255 255 / 97%);
+  backdrop-filter: blur(16px);
+}
+
+.merchant-bottom-nav button {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  color: var(--neutral-500);
+  font-size: 9px;
+}
+
+.merchant-bottom-nav button.active {
+  color: var(--brand-600);
+  font-weight: 650;
 }
 
 @keyframes page-in {

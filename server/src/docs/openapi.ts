@@ -19,7 +19,7 @@ export const openApiDocument = {
   openapi: '3.0.3',
   info: {
     title: '妆集 API（化妆师作品集 + 接单门户）',
-    version: '0.9.3',
+    version: '0.10.0',
     description: [
       '统一响应体：`{ code, message, data, traceId }`，`code === 0` 表示成功。',
       '错误码：40001 参数校验 / 40100 未登录 / 40101 登录过期 / 40300 无权限 / 40400 不存在 / 40900 冲突 / 41301 文件过大 / 41500 类型不支持 / 42301 账号锁定 / 50000 服务异常。',
@@ -1811,6 +1811,111 @@ export const openApiDocument = {
           404: errorResponse,
           409: errorResponse,
         },
+      },
+    },
+    '/api/admin/reports': {
+      get: {
+        tags: ['后台'],
+        summary: '举报列表（E14-04）：状态 / 对象类型 / 关键字筛选 + 状态计数',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'handled', 'rejected'] } },
+          { name: 'targetType', in: 'query', schema: { type: 'string', enum: ['portfolio', 'artist'] } },
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: '分页结果 + counts{all,pending,handled,rejected}' },
+          401: errorResponse,
+          403: errorResponse,
+        },
+      },
+    },
+    '/api/admin/reports/{id}/handle': {
+      post: {
+        tags: ['后台'],
+        summary: '举报处理（E14-04）：dismiss 未成立 / offline 下架作品 / ban 封禁账号，结果回显给举报人',
+        security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: {
+                  action: { type: 'string', enum: ['dismiss', 'offline', 'ban'] },
+                  note: { type: 'string', description: '处理备注（≤255 字）' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '结果（status + handleResult）' },
+          400: errorResponse,
+          401: errorResponse,
+          403: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/reports': {
+      post: {
+        tags: ['小程序'],
+        summary: '提交举报（E14-03）：作品 / 化妆师，同一对象 24 小时内限 1 次',
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['targetType', 'targetId', 'reason'],
+                properties: {
+                  targetType: { type: 'string', enum: ['portfolio', 'artist'] },
+                  targetId: { type: 'integer' },
+                  reason: { type: 'string', enum: ['porn', 'fraud', 'copyright', 'inappropriate', 'other'] },
+                  detail: { type: 'string', description: '补充说明（≤200 字，可选）' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '举报已受理' },
+          400: errorResponse,
+          401: errorResponse,
+          404: errorResponse,
+          409: errorResponse,
+        },
+      },
+    },
+    '/api/reports/mine': {
+      get: {
+        tags: ['小程序'],
+        summary: '我的举报记录（E14-03/E14-04）：含处理状态与结果',
+        security: bearer,
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: { 200: { description: '分页结果' }, 401: errorResponse },
+      },
+    },
+    '/api/wechat/callback': {
+      get: {
+        tags: ['回调'],
+        summary: '微信消息推送 URL 校验（E14-01）：回显 echostr',
+        responses: { 200: { description: 'echostr 原文' } },
+      },
+      post: {
+        tags: ['回调'],
+        summary: '内容安全检测结果回调（E14-01）：media_check_async 异步结果，pass → 作品上线 / 违规 → 驳回',
+        responses: { 200: { description: 'success' }, 400: errorResponse },
       },
     },
     '/api/admin/audit-logs': {

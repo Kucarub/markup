@@ -18,6 +18,7 @@
     "pages/apply/status/index",
     "pages/artist/portfolio/edit/index",
     "pages/artist/detail/index",
+    "pages/report/index",
     "pages/dev/tokens/index"
   ],
   "subPackages": [
@@ -41,7 +42,7 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "navigationBarTitleText": "妆集",
+    "navigationBarTitleText": "兰妆有约",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#FFFFFF"
   },

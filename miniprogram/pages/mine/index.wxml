@@ -6,9 +6,11 @@
     </view>
 
     <view class="mine-profile">
-      <view class="avatar avatar--lg">
+      <view class="avatar avatar--lg" bindtap="onAvatarTap">
         <image class="avatar__img" src="{{profile.avatar}}" mode="aspectFill" />
-        <view wx:if="{{isArtist}}" class="level-badge">{{profile.level}}</view>
+        <view wx:if="{{avatarUploading}}" class="avatar__mask">上传中…</view>
+        <view wx:else class="avatar__edit">更换</view>
+        <view wx:if="{{isArtist && credit}}" class="level-badge">{{credit.level}}</view>
       </view>
       <view class="mine-profile__copy">
         <view class="mine-name">{{profile.name}}</view>

@@ -209,6 +209,49 @@ artistRouter.get(
 )
 
 /**
+ * 化妆师工作台统计（真实口径）：
+ * - works：作品总数（含审核中，仅本人可见）；
+ * - visits：主页累计被查看（ArtistVisit 按设备+自然日去重的 UV 总量）；
+ * - responses：累计投递（DemandResponse，不含已撤回）；
+ * - targeted：待处理的定向预约需求数（status=pending）；
+ * - monthOrders：本月服务记录数（按服务日期，不含已取消）。
+ */
+artistRouter.get(
+  '/artist/stats',
+  requireAuth('artist'),
+  asyncHandler(async (req, res) => {
+    const prisma = getPrisma()
+    const artist = await prisma.artist.findUnique({
+      where: { userId: req.auth!.uid },
+      select: { id: true },
+    })
+    if (!artist) throw AppError.notFound('请先完善个人信息')
+
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+
+    const [works, visits, responses, targeted, monthOrders] = await Promise.all([
+      prisma.artistPortfolio.count({ where: { artistId: artist.id } }),
+      prisma.artistVisit.count({ where: { artistId: artist.id } }),
+      prisma.demandResponse.count({
+        where: { artistId: artist.id, status: { not: 'withdrawn' } },
+      }),
+      prisma.demand.count({ where: { targetArtistId: artist.id, status: 'pending' } }),
+      prisma.serviceOrder.count({
+        where: {
+          artistId: artist.id,
+          status: { not: 'cancelled' },
+          serviceDate: { gte: monthStart, lt: monthEnd },
+        },
+      }),
+    ])
+
+    res.ok({ works, visits, responses, targeted, monthOrders })
+  }),
+)
+
+/**
  * 编辑个人信息（E4-05，注册流程调整）：
  * 提交即生效，任何字段修改都不会回退状态或触发审核；
  * keyChanged 仅用于前端提示「资料已更新」。

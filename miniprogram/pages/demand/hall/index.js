@@ -1,6 +1,7 @@
 const request = require('../../../utils/request')
 const { businessGuard } = require('../../../utils/guard')
 const { track } = require('../../../utils/track')
+const { toDemandCard } = require('../../../utils/demand-card')
 
 const PAGE_SIZE = 10
 
@@ -12,59 +13,8 @@ const SERVICE_TYPES = [
   { code: 'photo', label: '写真拍摄' },
 ]
 
-const TYPE_LABEL = SERVICE_TYPES.reduce((acc, item) => {
-  if (item.code) acc[item.code] = item.label
-  return acc
-}, {})
-
-function monthDay(value) {
-  const parts = String(value || '').split('-')
-  if (parts.length !== 3) return value || ''
-  return `${Number(parts[1])}月${Number(parts[2])}日`
-}
-
-function budgetText(min, max) {
-  return min === max ? `${min}` : `${min}–${max}`
-}
-
-/** 服务日次日零点截止，剩余天数按自然日粗略计算 */
-function deadlineText(expireAt) {
-  if (!expireAt) return '长期有效'
-  const diff = new Date(expireAt).getTime() - Date.now()
-  const days = Math.ceil(diff / 86400000)
-  if (days <= 0) return '已截止'
-  if (days === 1) return '今日截止'
-  return `${days} 天后截止`
-}
-
 /** 接口 DTO → 需求卡片展示模型（E8-01） */
-function toCard(item) {
-  const typeLabel = TYPE_LABEL[item.serviceType] || item.serviceType
-  const responded = Boolean(item.myResponseId)
-  const dateText = monthDay(item.serviceDate)
-  const remarkText = (item.remark || '').trim()
-  return {
-    id: item.id,
-    eyebrow: `${typeLabel} · ${item.city}`,
-    title: remarkText
-      ? remarkText.length > 16
-        ? `${remarkText.slice(0, 16)}…`
-        : remarkText
-      : `${typeLabel}需求`,
-    occasion: typeLabel,
-    people: item.headcount,
-    duration: '当天服务',
-    pay: budgetText(item.budgetMin, item.budgetMax),
-    payUnit: '单',
-    district: `${item.city} · ${item.district}`,
-    distance: item.isTargeted ? '定向预约' : '同城',
-    date: `${dateText} 服务`,
-    deadline: responded ? '已响应，等待客户确认' : deadlineText(item.expireAt),
-    status: responded ? '已响应' : item.statusLabel,
-    statusTone: responded ? 'brand' : 'warning',
-    keyword: `${typeLabel}${item.city}${item.district}${item.remark || ''}`,
-  }
-}
+const toCard = toDemandCard
 
 /**
  * 需求大厅（E8-01）。
@@ -191,14 +141,14 @@ Page({
   /** 分享需求大厅：好友可直接浏览同城妆造需求 */
   onShareAppMessage() {
     return {
-      title: '妆集 · 同城妆造需求大厅',
+      title: '兰妆有约 · 同城妆造需求大厅',
       path: '/pages/demand/hall/index',
     }
   },
 
   onShareTimeline() {
     return {
-      title: '妆集 · 同城妆造需求大厅',
+      title: '兰妆有约 · 同城妆造需求大厅',
     }
   },
 })

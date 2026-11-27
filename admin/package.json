@@ -2,7 +2,7 @@
   "name": "wechat-markup-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "化妆师接单门户 运营后台",
+  "description": "后台管理系统 运营后台",
   "type": "module",
   "scripts": {
     "dev": "vite",

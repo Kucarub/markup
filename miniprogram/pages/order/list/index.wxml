@@ -5,18 +5,28 @@
     <view class="inbox__sub">定向预约请及时处理，接受后自动生成服务记录并占用档期</view>
   </view>
 
-  <scroll-view class="tabs" scroll-x show-scrollbar="{{false}}">
-    <view
-      wx:for="{{tabs}}"
-      wx:key="key"
-      class="tab {{activeTab === item.key ? 'tab--active' : ''}}"
-      data-key="{{item.key}}"
-      bindtap="onTabTap"
-    >
-      {{item.label}}
-      <text wx:if="{{item.key === 'pending' && unread > 0}}" class="tab__badge">{{unread}}</text>
+  <view class="status-tabs-wrap">
+    <view class="status-tabs">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="status-tabs__item {{activeTab === item.key ? 'status-tabs__item--active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTabTap"
+      >
+        <text>{{item.label}}</text>
+        <view
+          wx:if="{{item.count > 0}}"
+          class="status-tabs__count {{activeTab === item.key ? 'status-tabs__count--active' : ''}}"
+        >{{item.count}}</view>
+      </view>
     </view>
-  </scroll-view>
+
+    <view class="status-tabs__context">
+      <text class="status-tabs__context-label">{{activeTabLabel}}</text>
+      <text class="status-tabs__context-total">{{total > 0 ? '共 ' + total + ' 条' : '暂无记录'}}</text>
+    </view>
+  </view>
 
   <view wx:if="{{error}}" class="card inbox__notice">
     <view class="card__title">{{error}}</view>

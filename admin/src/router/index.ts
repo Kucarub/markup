@@ -61,6 +61,12 @@ const router = createRouter({
           meta: { title: '作品管理', roles: ALL_ROLES },
         },
         {
+          path: 'reports',
+          name: 'reports',
+          component: () => import('@/views/reports/ReportsView.vue'),
+          meta: { title: '举报处理', roles: ALL_ROLES },
+        },
+        {
           path: 'logs',
           name: 'logs',
           component: () => import('@/views/logs/AuditLogsView.vue'),
@@ -103,7 +109,7 @@ router.beforeEach((to) => {
 
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined
-  document.title = title ? `${title} · 化妆师接单门户后台` : '化妆师接单门户后台'
+  document.title = title ? `${title} · 后台管理系统后台` : '后台管理系统后台'
 })
 
 export default router

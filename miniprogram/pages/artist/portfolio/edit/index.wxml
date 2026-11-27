@@ -53,6 +53,7 @@
           <view class="work__mask" wx:if="{{item.status === 'waiting'}}">待上传</view>
           <view class="work__mask" wx:elif="{{item.status === 'compressing'}}">压缩中</view>
           <view class="work__mask" wx:elif="{{item.status === 'uploading'}}">上传中</view>
+          <view class="work__mask" wx:elif="{{item.status === 'watermarking'}}">水印生成中</view>
           <view class="work__mask work__mask--error" wx:elif="{{item.status === 'error'}}">
             {{item.message || '上传失败'}}
           </view>

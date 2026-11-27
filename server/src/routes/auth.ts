@@ -133,6 +133,33 @@ authRouter.get(
   }),
 )
 
+const avatarSchema = z.object({
+  fileId: z.coerce.number().int().positive('文件 ID 不合法'),
+})
+
+/** 更新头像（E4-06）：fileId 必须是本人已上传完成的 avatar 场景文件 */
+authRouter.put(
+  '/auth/avatar',
+  requireAuth(),
+  asyncHandler(async (req, res) => {
+    const { fileId } = avatarSchema.parse(req.body)
+    const prisma = getPrisma()
+
+    const file = await prisma.fileObject.findUnique({ where: { id: fileId } })
+    if (!file || file.userId !== req.auth!.uid || file.scene !== 'avatar' || file.status !== 'uploaded') {
+      throw AppError.badRequest('头像文件不存在或尚未上传完成')
+    }
+
+    // 存相对路径 /api/avatars/<fileId>，展示地址不随签名过期；前端按域名拼接
+    await prisma.userAuth.update({
+      where: { id: req.auth!.uid },
+      data: { avatarUrl: `/api/avatars/${fileId}` },
+    })
+
+    res.ok(await buildProfile(req.auth!.uid))
+  }),
+)
+
 /** 绑定 / 切换角色（E3-03 / E7-01）：写库后重签 token；选角色即自动建档（无需填表单/审核） */
 authRouter.post(
   '/auth/role',

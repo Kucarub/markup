@@ -200,7 +200,7 @@ Page({
             styles: styleLabels(artist.styles),
             intro: artist.intro || '',
             cover: artist.coverPath ? absoluteUrl(artist.coverPath) : '',
-            avatar: artist.avatarUrl || '',
+            avatar: artist.avatarUrl ? absoluteUrl(artist.avatarUrl) : '',
             worksTotal: artist.worksTotal || 0,
             nextAvailableDate: artist.nextAvailableDate || '',
             selectable:
@@ -228,7 +228,7 @@ Page({
           district: artist.district || '',
           styles: styleLabels(artist.styles),
           cover: artist.coverPath ? absoluteUrl(artist.coverPath) : '',
-          avatar: artist.avatarUrl || '',
+          avatar: artist.avatarUrl ? absoluteUrl(artist.avatarUrl) : '',
           worksTotal: artist.worksTotal || 0,
           nextAvailableDate: artist.nextAvailableDate || '',
         }))
@@ -339,7 +339,7 @@ Page({
   onShareAppMessage() {
     const { detail, typeLabel } = this.data
     return {
-      title: detail ? `${typeLabel}需求 · ${detail.city}${detail.district}` : '妆集 · 需求详情',
+      title: detail ? `${typeLabel}需求 · ${detail.city}${detail.district}` : '兰妆有约 · 需求详情',
       path: `/pages/demand/detail/index?id=${this.data.id}`,
     }
   },
@@ -347,7 +347,7 @@ Page({
   onShareTimeline() {
     const { detail, typeLabel } = this.data
     return {
-      title: detail ? `${typeLabel}需求 · ${detail.city}${detail.district}` : '妆集 · 需求详情',
+      title: detail ? `${typeLabel}需求 · ${detail.city}${detail.district}` : '兰妆有约 · 需求详情',
       query: `id=${this.data.id}`,
     }
   },

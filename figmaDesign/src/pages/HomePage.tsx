@@ -1,6 +1,7 @@
 import { Bell, ChevronRight, MapPin } from "lucide-react";
 import type { MainTab } from "../App";
 import { demands, profileImage, type Demand } from "../data/mockData";
+import { BrandLogo } from "../components/BrandLogo";
 import { Avatar, Button, DemandCard, StatusBar, TabBar } from "../components/ui";
 
 type Props = {
@@ -32,7 +33,10 @@ export function HomePage({ activeTab, onTabChange, onDemandOpen, onToast }: Prop
             <span>⌄</span>
           </button>
           <div className="wordmark">
-            妆集<span>ZHOWN</span>
+            <BrandLogo size={25} />
+            <span className="wordmark-copy">
+              妆集<small>ZHUANGJI</small>
+            </span>
           </div>
           <button
             className="notification-btn"

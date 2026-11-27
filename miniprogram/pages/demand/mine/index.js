@@ -63,8 +63,9 @@ function toItem(demand) {
  */
 Page({
   data: {
-    tabs: TABS,
+    tabs: TABS.map((tab) => ({ ...tab, count: 0 })),
     activeTab: '',
+    activeTabLabel: '全部',
     list: [],
     total: 0,
     page: 1,
@@ -129,7 +130,27 @@ Page({
       return
     }
 
+    this.refreshCounts()
     await this.fetchPage(1)
+  },
+
+  /** 各状态计数徽标：size=1 的轻量请求只取 total，失败静默 */
+  async refreshCounts() {
+    const statuses = TABS.filter((tab) => tab.key).map((tab) => tab.key)
+    const results = await Promise.all(
+      statuses.map((status) =>
+        request
+          .get('/api/demands', { scope: 'mine', page: 1, size: 1, status }, { showError: false })
+          .catch(() => null),
+      ),
+    )
+    const countMap = {}
+    statuses.forEach((status, index) => {
+      countMap[status] = (results[index] && results[index].total) || 0
+    })
+    this.setData({
+      tabs: TABS.map((tab) => ({ ...tab, count: tab.key ? countMap[tab.key] || 0 : 0 })),
+    })
   },
 
   async fetchPage(page) {
@@ -160,7 +181,8 @@ Page({
   onTabTap(event) {
     const { key } = event.currentTarget.dataset
     if (key === this.data.activeTab) return
-    this.setData({ activeTab: key, list: [], loading: true })
+    const activeTabLabel = (TABS.filter((tab) => tab.key === key)[0] || {}).label || '全部'
+    this.setData({ activeTab: key, activeTabLabel, list: [], loading: true })
     this.fetchPage(1)
   },
 
@@ -180,6 +202,7 @@ Page({
           const updated = await request.put(`/api/demands/${id}/close`, null, { showError: false })
           this.applyClosed(id, updated)
           wx.showToast({ title: '需求已关闭', icon: 'none' })
+          this.refreshCounts()
         } catch (error) {
           wx.showToast({ title: (error && error.message) || '关闭失败', icon: 'none' })
         }

@@ -16,8 +16,8 @@ const menus = [
   { path: '/demands', label: '需求管理', roles: allRoles },
   { path: '/orders', label: '服务记录', roles: allRoles },
   { path: '/portfolios', label: '作品管理', roles: allRoles },
+  { path: '/reports', label: '举报处理', roles: allRoles },
   { path: '/logs', label: '审核日志', roles: allRoles },
-  { path: '/reports', label: '举报处理（E14）', roles: [] as AdminRole[] },
 ]
 
 /** 按登录角色隐藏无权限菜单 */
@@ -39,7 +39,7 @@ async function handleLogout() {
 <template>
   <el-container class="layout">
     <el-aside width="220px" class="layout__aside">
-      <div class="layout__brand">化妆师接单门户</div>
+      <div class="layout__brand">后台管理系统</div>
       <el-menu :default-active="activeMenu" router class="layout__menu">
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
           {{ item.label }}

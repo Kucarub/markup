@@ -16,8 +16,8 @@
     <block wx:if="{{role === 'artist'}}">
       <view class="profile-card">
         <view class="avatar avatar--lg">
-          <image class="avatar__img" src="{{profile.avatar}}" mode="aspectFill" />
-          <view class="level-badge">{{profile.level}}</view>
+        <image class="avatar__img" src="{{profile.avatar || '/assets/logo.png'}}" mode="aspectFill" />
+        <view wx:if="{{profile.level}}" class="level-badge">{{profile.level}}</view>
         </view>
         <view class="profile-copy">
           <view class="profile-name">{{profile.name}}</view>
@@ -79,7 +79,9 @@
           </view>
         </view>
 
-        <view class="card-list">
+        <view wx:if="{{recommendedLoading}}" class="empty">加载中…</view>
+        <view wx:elif="{{!recommended.length}}" class="customer-empty">暂时没有匹配的需求</view>
+        <view wx:else class="card-list">
           <view class="card-item" wx:for="{{recommended}}" wx:key="id">
             <demand-card demand="{{item}}" compact bind:open="onDemandOpen" />
           </view>

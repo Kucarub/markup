@@ -23,7 +23,7 @@ export const fileRouter = Router()
 const SENSITIVE_SCENES = new Set(['id_card', 'license'])
 
 const signSchema = z.object({
-  scene: z.enum(['portfolio', 'avatar', 'license', 'id_card', 'report']),
+  scene: z.enum(['portfolio', 'watermark', 'avatar', 'license', 'id_card', 'report']),
   fileName: z.string().min(1).max(128),
   mimeType: z.string().min(3).max(64),
   size: z.coerce.number().int().positive('文件大小不合法'),
@@ -155,5 +155,27 @@ fileRouter.get(
     res.setHeader('Content-Length', String(file.size))
     res.setHeader('Cache-Control', 'private, max-age=300')
     res.send(await readObject(key))
+  }),
+)
+
+/**
+ * 头像公开读取：非敏感内容（对全平台展示），按 fileId 直读，无需访问签名。
+ * user_auth.avatarUrl 存 /api/avatars/<fileId> 相对路径，避免私有桶签名 15 分钟过期。
+ */
+fileRouter.get(
+  '/avatars/:fileId',
+  asyncHandler(async (req, res) => {
+    const fileId = Number(req.params.fileId)
+    if (!Number.isInteger(fileId) || fileId <= 0) throw AppError.badRequest('文件 ID 不合法')
+
+    const file = await getPrisma().fileObject.findFirst({
+      where: { id: fileId, scene: 'avatar', status: 'uploaded' },
+    })
+    if (!file || !(await objectExists(file.objectKey))) throw AppError.notFound('文件不存在')
+
+    res.setHeader('Content-Type', file.mimeType)
+    res.setHeader('Content-Length', String(file.size))
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+    res.send(await readObject(file.objectKey))
   }),
 )

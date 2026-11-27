@@ -67,6 +67,13 @@
         >
           二维码
         </view>
+        <view
+          class="btn btn--secondary hero__action"
+          hover-class="hero__action--hover"
+          bindtap="onReport"
+        >
+          举报
+        </view>
       </view>
     </view>
 

@@ -14,53 +14,7 @@
   line-height: 1.6;
 }
 
-/* ---------- Tabs ---------- */
-.tabs {
-  display: flex;
-  margin-top: var(--space-md);
-  padding: 0 var(--space-md);
-  white-space: nowrap;
-}
-
-.tab {
-  position: relative;
-  flex: 0 0 auto;
-  margin-right: 32rpx;
-  padding-bottom: 18rpx;
-  color: var(--color-text-secondary);
-  font-size: 26rpx;
-  line-height: 1.4;
-}
-
-.tab--active {
-  color: var(--color-primary);
-  font-weight: 650;
-}
-
-.tab--active::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 4rpx;
-  border-radius: 2rpx;
-  background: var(--color-primary);
-  content: '';
-}
-
-.tab__count {
-  display: inline-block;
-  min-width: 32rpx;
-  margin-left: 6rpx;
-  padding: 0 8rpx;
-  border-radius: 16rpx;
-  background: var(--color-primary-tint);
-  color: var(--color-primary);
-  font-size: 20rpx;
-  font-weight: 600;
-  line-height: 30rpx;
-  text-align: center;
-}
+/* 状态 Tab 使用全局分段式控件（styles/segmented-tabs.wxss） */
 
 /* ---------- 消息列表 ---------- */
 .notification__notice {

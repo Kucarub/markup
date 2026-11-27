@@ -25,6 +25,7 @@ const CODE2SESSION_URL = 'https://api.weixin.qq.com/sns/jscode2session'
 const ACCESS_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token'
 const WXACODE_URL = 'https://api.weixin.qq.com/wxa/getwxacodeunlimit'
 const SUBSCRIBE_SEND_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send'
+const MEDIA_CHECK_URL = 'https://api.weixin.qq.com/wxa/media_check_async'
 const TIMEOUT_MS = 8000
 /** 订阅消息发送单次超时：配合重试控制在 10s 送达 SLA 内 */
 const SUBSCRIBE_TIMEOUT_MS = 3000
@@ -198,4 +199,36 @@ export async function sendSubscribeMessage(input: {
     }
   }
   throw lastError instanceof Error ? lastError : new Error('订阅消息发送失败')
+}
+
+/**
+ * 内容安全异步检测（E14-01）：media_check_async 提交后由微信回调推送结果。
+ * 使用 base64 方式（≤1MB），避免私有桶签名地址无法被微信服务器访问的问题；
+ * 作品图已压缩至 ≤500KB，base64 后约 670KB，在限额内。
+ * 返回 trace_id，检测结果通过消息推送回调（POST /api/wechat/callback）更新作品状态。
+ */
+export async function mediaCheckAsync(input: {
+  mediaBase64?: string
+  mediaUrl?: string
+}): Promise<string> {
+  if (!hasWxConfig()) {
+    throw new AppError(ErrorCode.INTERNAL_ERROR, '未配置小程序 AppID / Secret，内容安全检测不可用')
+  }
+
+  const token = await getAccessToken()
+  const body = await wxPost<{ trace_id?: string }>(
+    `${MEDIA_CHECK_URL}?access_token=${token}`,
+    {
+      ...(input.mediaBase64 ? { media_base64: input.mediaBase64 } : {}),
+      ...(input.mediaUrl ? { media_url: input.mediaUrl } : {}),
+    },
+    TIMEOUT_MS,
+  )
+  if (body.errcode || !body.trace_id) {
+    throw new AppError(
+      ErrorCode.INTERNAL_ERROR,
+      `内容安全检测提交失败：${body.errmsg || body.errcode}`,
+    )
+  }
+  return body.trace_id
 }
